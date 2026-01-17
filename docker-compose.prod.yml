@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile.prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./api/public:/var/www/api/public:ro
+      - ./frontend/dist:/var/www/frontend:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - php
+    networks:
+      - zoho-network
+    restart: unless-stopped
+
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile.prod
+    volumes:
+      - ./api:/var/www/api:ro
+      - php_jwt:/var/www/api/config/jwt
+    environment:
+      DATABASE_URL: postgresql://zoho:${DB_PASSWORD}@postgres:5432/zoho_clone?serverVersion=16&charset=utf8
+      APP_ENV: prod
+      APP_SECRET: ${APP_SECRET}
+      CORS_ALLOW_ORIGIN: "^https?://${DOMAIN:-localhost}$"
+      JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
+      JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
+      JWT_PASSPHRASE: ${JWT_PASSPHRASE}
+      MAILER_DSN: ${MAILER_DSN:-smtp://localhost:25}
+      REDIS_URL: redis://redis:6379
+      APP_URL: https://${DOMAIN:-localhost}
+      FRONTEND_URL: https://${DOMAIN:-localhost}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - zoho-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: zoho_clone
+      POSTGRES_USER: zoho
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zoho-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - zoho-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  php_jwt:
+
+networks:
+  zoho-network:
+    driver: bridge

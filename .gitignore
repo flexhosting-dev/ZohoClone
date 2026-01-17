@@ -1,0 +1,40 @@
+# Dependencies
+/api/vendor/
+/frontend/node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+/frontend/dist/
+
+# Logs
+*.log
+
+# Symfony
+/api/var/
+/api/config/jwt/*.pem
+/api/.env.local
+/api/.env.*.local
+
+# Docker
+/docker/nginx/ssl/
+
+# Test coverage
+/coverage/
+
+# Temporary files
+*.tmp
+*.temp

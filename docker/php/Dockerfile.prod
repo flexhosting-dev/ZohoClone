@@ -1,0 +1,47 @@
+FROM php:8.3-fpm-alpine
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    unzip \
+    libzip-dev \
+    libpq-dev \
+    icu-dev \
+    $PHPIZE_DEPS
+
+# Install PHP extensions
+RUN docker-php-ext-install \
+    pdo_pgsql \
+    zip \
+    intl \
+    opcache
+
+# Install Redis extension
+RUN pecl install redis && docker-php-ext-enable redis
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/api
+
+# Copy PHP production configuration
+COPY php.prod.ini /usr/local/etc/php/conf.d/custom.ini
+
+# Copy application files
+COPY ../../api /var/www/api
+
+# Install dependencies (no dev)
+RUN composer install --no-dev --optimize-autoloader --no-scripts
+
+# Generate optimized autoload files
+RUN composer dump-autoload --optimize --classmap-authoritative
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/api
+
+USER www-data
+
+EXPOSE 9000
+
+CMD ["php-fpm"]
