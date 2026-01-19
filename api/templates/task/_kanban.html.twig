@@ -18,7 +18,7 @@
     {% set tasksByStatus = tasksByStatus|merge({(status): tasksByStatus[status]|merge([task])}) %}
 {% endfor %}
 
-<div class="space-y-4" id="kanban-board">
+<div class="space-y-4" id="kanban-board" data-status-url-template="{{ path('app_task_update_status', {id: '__TASK_ID__'}) }}">
     <div class="flex items-center justify-between">
         <h3 class="text-base font-semibold leading-6 text-gray-900">Tasks</h3>
     </div>
@@ -235,7 +235,11 @@
             };
 
             try {
-                const response = await fetch(`/tasks/${taskId}/status`, {
+                const kanbanBoard = document.getElementById('kanban-board');
+                const urlTemplate = kanbanBoard.dataset.statusUrlTemplate;
+                const statusUrl = urlTemplate.replace('__TASK_ID__', taskId);
+
+                const response = await fetch(statusUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

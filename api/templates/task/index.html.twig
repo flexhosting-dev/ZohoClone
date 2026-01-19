@@ -14,7 +14,7 @@
 
     {% if tasks|length > 0 %}
         {# Kanban Board #}
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        <div id="kanban-board" data-status-url-template="{{ path('app_task_update_status', {id: '__TASK_ID__'}) }}" class="grid grid-cols-1 gap-6 lg:grid-cols-4">
             {# To Do Column #}
             <div class="kanban-column rounded-lg bg-gray-100 p-4 flex flex-col" data-status="todo"
                  ondragover="kanbanDragOver(event)"
@@ -225,7 +225,11 @@
             };
 
             try {
-                const response = await fetch(`/tasks/${taskId}/status`, {
+                const kanbanBoard = document.getElementById('kanban-board');
+                const urlTemplate = kanbanBoard.dataset.statusUrlTemplate;
+                const statusUrl = urlTemplate.replace('__TASK_ID__', taskId);
+
+                const response = await fetch(statusUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

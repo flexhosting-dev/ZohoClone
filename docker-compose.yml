@@ -6,7 +6,7 @@ services:
       context: ./docker/nginx
       dockerfile: Dockerfile
     ports:
-      - "8080:80"
+      - "8081:80"
     volumes:
       - ./api:/var/www/api:cached
       - ./frontend/dist:/var/www/frontend:cached

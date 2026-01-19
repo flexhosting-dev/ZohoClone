@@ -199,7 +199,12 @@
 </div>
 
 <script>
-function showTab(index) {
+const PROJECT_ID = '{{ project.id }}';
+const STORAGE_KEY_TAB = `project_${PROJECT_ID}_tab`;
+const STORAGE_KEY_VIEW = `project_${PROJECT_ID}_view`;
+const STORAGE_KEY_LAST_PROJECT = 'zoho_last_project';
+
+function showTab(index, save = true) {
     // Update tab buttons
     document.querySelectorAll('.tab-btn').forEach((btn, i) => {
         if (i === index) {
@@ -219,9 +224,14 @@ function showTab(index) {
             panel.classList.add('hidden');
         }
     });
+
+    // Save to localStorage
+    if (save) {
+        localStorage.setItem(STORAGE_KEY_TAB, index);
+    }
 }
 
-function showView(index) {
+function showView(index, save = true) {
     // Update view buttons
     document.querySelectorAll('.view-btn').forEach((btn, i) => {
         if (i === index) {
@@ -241,7 +251,29 @@ function showView(index) {
             panel.classList.add('hidden');
         }
     });
+
+    // Save to localStorage
+    if (save) {
+        localStorage.setItem(STORAGE_KEY_VIEW, index);
+    }
 }
 
+// Restore state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Save this as last visited project
+    localStorage.setItem(STORAGE_KEY_LAST_PROJECT, PROJECT_ID);
+
+    // Restore tab
+    const savedTab = localStorage.getItem(STORAGE_KEY_TAB);
+    if (savedTab !== null) {
+        showTab(parseInt(savedTab), false);
+    }
+
+    // Restore view (for Tasks tab)
+    const savedView = localStorage.getItem(STORAGE_KEY_VIEW);
+    if (savedView !== null) {
+        showView(parseInt(savedView), false);
+    }
+});
 </script>
 {% endblock %}
