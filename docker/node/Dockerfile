@@ -5,13 +5,10 @@ WORKDIR /app
 # Install dependencies for native modules
 RUN apk add --no-cache python3 make g++
 
-# Create non-root user
-RUN addgroup -g 1000 -S node_user && adduser -u 1000 -S node_user -G node_user
+# Use the existing node user (already exists in node:20-alpine with uid/gid 1000)
+RUN chown -R node:node /app
 
-# Set ownership
-RUN chown -R node_user:node_user /app
-
-USER node_user
+USER node
 
 EXPOSE 3000
 

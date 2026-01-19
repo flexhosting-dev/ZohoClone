@@ -6,7 +6,7 @@ services:
       context: ./docker/nginx
       dockerfile: Dockerfile
     ports:
-      - "8080:80"
+      - "8081:80"
     volumes:
       - ./api:/var/www/api:cached
       - ./frontend/dist:/var/www/frontend:cached
@@ -78,10 +78,11 @@ services:
       - ./frontend:/app:cached
       - node_modules:/app/node_modules
     environment:
-      VITE_API_URL: http://localhost:8080/api
+      VITE_API_URL: https://dev.flexhosting.co/zohoclone/api
     networks:
       - zoho-network
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    command: sh -c "mkdir -p /app/node_modules && npm install && npm run dev -- --host 0.0.0.0"
+    user: root
 
 volumes:
   postgres_data:

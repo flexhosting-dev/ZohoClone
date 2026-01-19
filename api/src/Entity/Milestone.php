@@ -30,15 +30,14 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ApiResource(
     uriTemplate: '/projects/{projectId}/milestones',
     operations: [
-        new GetCollection(),
-        new Post(processor: MilestoneProcessor::class),
+        new GetCollection(security: "is_granted('ROLE_USER')"),
+        new Post(processor: MilestoneProcessor::class, security: "is_granted('ROLE_USER')", read: false),
     ],
     uriVariables: [
-        'projectId' => new Link(toProperty: 'project', fromClass: Project::class),
+        'projectId' => new Link(toProperty: 'project', fromClass: Project::class, identifiers: ['id']),
     ],
     normalizationContext: ['groups' => ['milestone:read']],
     denormalizationContext: ['groups' => ['milestone:write']],
-    security: "is_granted('PROJECT_VIEW', object.getProject())",
     order: ['dueDate' => 'ASC'],
 )]
 #[ApiResource(
