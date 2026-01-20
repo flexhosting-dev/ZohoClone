@@ -114,6 +114,32 @@ class ActivityService
         );
     }
 
+    public function logTaskPriorityChanged(Project $project, User $user, UuidInterface $taskId, string $taskTitle, string $oldPriority, string $newPriority): Activity
+    {
+        return $this->log(
+            $project,
+            $user,
+            'task',
+            $taskId,
+            ActivityAction::PRIORITY_CHANGED,
+            $taskTitle,
+            ['from' => $oldPriority, 'to' => $newPriority],
+        );
+    }
+
+    public function logTaskMilestoneChanged(Project $project, User $user, UuidInterface $taskId, string $taskTitle, string $oldMilestone, string $newMilestone): Activity
+    {
+        return $this->log(
+            $project,
+            $user,
+            'task',
+            $taskId,
+            ActivityAction::MILESTONE_CHANGED,
+            $taskTitle,
+            ['from' => $oldMilestone, 'to' => $newMilestone],
+        );
+    }
+
     public function logTaskAssigned(Project $project, User $user, UuidInterface $taskId, string $taskTitle, string $assigneeName): Activity
     {
         return $this->log(

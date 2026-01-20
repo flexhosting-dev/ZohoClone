@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Milestone;
 use App\Entity\Task;
 use App\Entity\User;
+use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
 use App\Form\TaskFormType;
 use App\Repository\MilestoneRepository;
@@ -297,6 +298,95 @@ class TaskController extends AbstractController
             'success' => true,
             'status' => $newStatus->value,
             'statusLabel' => $newStatus->label(),
+        ]);
+    }
+
+    #[Route('/tasks/{id}/priority', name: 'app_task_update_priority', methods: ['POST'])]
+    public function updatePriority(Request $request, Task $task): JsonResponse
+    {
+        $project = $task->getProject();
+        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
+
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $data = json_decode($request->getContent(), true);
+        $newPriorityValue = $data['priority'] ?? null;
+
+        if (!$newPriorityValue) {
+            return $this->json(['error' => 'Priority is required'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $newPriority = TaskPriority::tryFrom($newPriorityValue);
+        if (!$newPriority) {
+            return $this->json(['error' => 'Invalid priority'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $oldPriority = $task->getPriority();
+        $task->setPriority($newPriority);
+
+        $this->activityService->logTaskPriorityChanged(
+            $project,
+            $user,
+            $task->getId(),
+            $task->getTitle(),
+            $oldPriority->label(),
+            $newPriority->label()
+        );
+
+        $this->entityManager->flush();
+
+        return $this->json([
+            'success' => true,
+            'priority' => $newPriority->value,
+            'priorityLabel' => $newPriority->label(),
+        ]);
+    }
+
+    #[Route('/tasks/{id}/milestone', name: 'app_task_update_milestone', methods: ['POST'])]
+    public function updateMilestone(Request $request, Task $task): JsonResponse
+    {
+        $project = $task->getProject();
+        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
+
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $data = json_decode($request->getContent(), true);
+        $newMilestoneId = $data['milestone'] ?? null;
+
+        if (!$newMilestoneId) {
+            return $this->json(['error' => 'Milestone is required'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $newMilestone = $this->milestoneRepository->find($newMilestoneId);
+        if (!$newMilestone) {
+            return $this->json(['error' => 'Invalid milestone'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Ensure the milestone belongs to the same project
+        if ($newMilestone->getProject()->getId()->toString() !== $project->getId()->toString()) {
+            return $this->json(['error' => 'Milestone does not belong to this project'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $oldMilestone = $task->getMilestone();
+        $task->setMilestone($newMilestone);
+
+        $this->activityService->logTaskMilestoneChanged(
+            $project,
+            $user,
+            $task->getId(),
+            $task->getTitle(),
+            $oldMilestone ? $oldMilestone->getName() : 'None',
+            $newMilestone->getName()
+        );
+
+        $this->entityManager->flush();
+
+        return $this->json([
+            'success' => true,
+            'milestone' => $newMilestone->getId()->toString(),
+            'milestoneName' => $newMilestone->getName(),
         ]);
     }
 }

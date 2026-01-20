@@ -1,4 +1,4 @@
-{# Kanban Board for Project Tasks #}
+{# Multi-Mode Kanban Board for Project Tasks #}
 {% set projectTasks = [] %}
 {% for milestone in project.milestones %}
     {% for task in milestone.tasks %}
@@ -6,27 +6,81 @@
     {% endfor %}
 {% endfor %}
 
+{# Group tasks by status #}
 {% set tasksByStatus = {
     'todo': [],
     'in_progress': [],
     'in_review': [],
     'completed': []
 } %}
-
 {% for task in projectTasks %}
     {% set status = task.status.value %}
     {% set tasksByStatus = tasksByStatus|merge({(status): tasksByStatus[status]|merge([task])}) %}
 {% endfor %}
 
-<div class="space-y-4" id="kanban-board" data-status-url-template="{{ path('app_task_update_status', {id: '__TASK_ID__'}) }}">
+{# Group tasks by priority #}
+{% set tasksByPriority = {
+    'low': [],
+    'medium': [],
+    'high': [],
+    'urgent': []
+} %}
+{% for task in projectTasks %}
+    {% set priority = task.priority.value %}
+    {% set tasksByPriority = tasksByPriority|merge({(priority): tasksByPriority[priority]|merge([task])}) %}
+{% endfor %}
+
+{# Group tasks by milestone #}
+{% set tasksByMilestone = {} %}
+{% for milestone in project.milestones %}
+    {% set milestoneId = milestone.id ~ '' %}
+    {% set tasksByMilestone = tasksByMilestone|merge({(milestoneId): milestone.tasks}) %}
+{% endfor %}
+
+{% set hasMilestones = project.milestones|length > 0 %}
+
+<div class="space-y-4" id="kanban-board"
+     data-project-id="{{ project.id }}"
+     data-status-url-template="{{ path('app_task_update_status', {id: '__TASK_ID__'}) }}"
+     data-priority-url-template="{{ path('app_task_update_priority', {id: '__TASK_ID__'}) }}"
+     data-milestone-url-template="{{ path('app_task_update_milestone', {id: '__TASK_ID__'}) }}">
+
     <div class="flex items-center justify-between">
         <h3 class="text-base font-semibold leading-6 text-gray-900">Tasks</h3>
+
+        {# Mode Selector #}
+        <div class="inline-flex rounded-lg bg-gray-100 p-1" role="tablist">
+            <button type="button"
+                    class="kanban-mode-btn px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+                    data-mode="status"
+                    role="tab"
+                    onclick="setKanbanMode('status')">
+                Status
+            </button>
+            <button type="button"
+                    class="kanban-mode-btn px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+                    data-mode="priority"
+                    role="tab"
+                    onclick="setKanbanMode('priority')">
+                Priority
+            </button>
+            {% if hasMilestones %}
+            <button type="button"
+                    class="kanban-mode-btn px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+                    data-mode="milestone"
+                    role="tab"
+                    onclick="setKanbanMode('milestone')">
+                Milestone
+            </button>
+            {% endif %}
+        </div>
     </div>
 
     {% if projectTasks|length > 0 %}
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        {# Status Board #}
+        <div id="kanban-status" class="kanban-board grid grid-cols-1 gap-4 lg:grid-cols-4">
             {# To Do Column #}
-            <div class="kanban-column rounded-lg bg-gray-100 p-4 flex flex-col" data-status="todo"
+            <div class="kanban-column rounded-lg bg-gray-100 p-4 flex flex-col" data-value="todo"
                  ondragover="kanbanDragOver(event)"
                  ondragleave="kanbanDragLeave(event)"
                  ondrop="kanbanDrop(event, 'todo')">
@@ -44,7 +98,7 @@
             </div>
 
             {# In Progress Column #}
-            <div class="kanban-column rounded-lg bg-blue-50 p-4 flex flex-col" data-status="in_progress"
+            <div class="kanban-column rounded-lg bg-blue-50 p-4 flex flex-col" data-value="in_progress"
                  ondragover="kanbanDragOver(event)"
                  ondragleave="kanbanDragLeave(event)"
                  ondrop="kanbanDrop(event, 'in_progress')">
@@ -62,7 +116,7 @@
             </div>
 
             {# In Review Column #}
-            <div class="kanban-column rounded-lg bg-yellow-50 p-4 flex flex-col" data-status="in_review"
+            <div class="kanban-column rounded-lg bg-yellow-50 p-4 flex flex-col" data-value="in_review"
                  ondragover="kanbanDragOver(event)"
                  ondragleave="kanbanDragLeave(event)"
                  ondrop="kanbanDrop(event, 'in_review')">
@@ -80,7 +134,7 @@
             </div>
 
             {# Completed Column #}
-            <div class="kanban-column rounded-lg bg-green-50 p-4 flex flex-col" data-status="completed"
+            <div class="kanban-column rounded-lg bg-green-50 p-4 flex flex-col" data-value="completed"
                  ondragover="kanbanDragOver(event)"
                  ondragleave="kanbanDragLeave(event)"
                  ondrop="kanbanDrop(event, 'completed')">
@@ -98,9 +152,205 @@
             </div>
         </div>
 
+        {# Priority Board #}
+        <div id="kanban-priority" class="kanban-board hidden grid grid-cols-1 gap-4 lg:grid-cols-4">
+            {# Low Priority Column #}
+            <div class="kanban-column rounded-lg bg-slate-100 p-4 flex flex-col" data-value="low"
+                 ondragover="kanbanDragOver(event)"
+                 ondragleave="kanbanDragLeave(event)"
+                 ondrop="kanbanDrop(event, 'low')">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-sm font-semibold text-slate-700">Low</h4>
+                    <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-slate-200 text-xs font-medium text-slate-600">
+                        {{ tasksByPriority.low|length }}
+                    </span>
+                </div>
+                <div class="kanban-dropzone space-y-3 flex-1">
+                    {% for task in tasksByPriority.low %}
+                        {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# Medium Priority Column #}
+            <div class="kanban-column rounded-lg bg-blue-50 p-4 flex flex-col" data-value="medium"
+                 ondragover="kanbanDragOver(event)"
+                 ondragleave="kanbanDragLeave(event)"
+                 ondrop="kanbanDrop(event, 'medium')">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-sm font-semibold text-blue-700">Medium</h4>
+                    <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-xs font-medium text-blue-600">
+                        {{ tasksByPriority.medium|length }}
+                    </span>
+                </div>
+                <div class="kanban-dropzone space-y-3 flex-1">
+                    {% for task in tasksByPriority.medium %}
+                        {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# High Priority Column #}
+            <div class="kanban-column rounded-lg bg-orange-50 p-4 flex flex-col" data-value="high"
+                 ondragover="kanbanDragOver(event)"
+                 ondragleave="kanbanDragLeave(event)"
+                 ondrop="kanbanDrop(event, 'high')">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-sm font-semibold text-orange-700">High</h4>
+                    <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-orange-100 text-xs font-medium text-orange-600">
+                        {{ tasksByPriority.high|length }}
+                    </span>
+                </div>
+                <div class="kanban-dropzone space-y-3 flex-1">
+                    {% for task in tasksByPriority.high %}
+                        {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# Urgent Priority Column #}
+            <div class="kanban-column rounded-lg bg-red-50 p-4 flex flex-col" data-value="urgent"
+                 ondragover="kanbanDragOver(event)"
+                 ondragleave="kanbanDragLeave(event)"
+                 ondrop="kanbanDrop(event, 'urgent')">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-sm font-semibold text-red-700">Urgent</h4>
+                    <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-red-100 text-xs font-medium text-red-600">
+                        {{ tasksByPriority.urgent|length }}
+                    </span>
+                </div>
+                <div class="kanban-dropzone space-y-3 flex-1">
+                    {% for task in tasksByPriority.urgent %}
+                        {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {# Milestone Board #}
+        {% if hasMilestones %}
+        {% set milestoneColors = ['indigo', 'purple', 'pink', 'teal', 'cyan', 'amber'] %}
+        <div id="kanban-milestone" class="kanban-board hidden overflow-x-auto">
+            <div class="inline-flex gap-4 min-w-full pb-2" style="min-width: max-content;">
+                {% for milestone in project.milestones %}
+                    {% set colorIndex = loop.index0 % milestoneColors|length %}
+                    {% set color = milestoneColors[colorIndex] %}
+                    {% set milestoneId = milestone.id ~ '' %}
+                    <div class="kanban-column rounded-lg bg-{{ color }}-50 p-4 flex flex-col w-72 flex-shrink-0"
+                         data-value="{{ milestoneId }}"
+                         ondragover="kanbanDragOver(event)"
+                         ondragleave="kanbanDragLeave(event)"
+                         ondrop="kanbanDrop(event, '{{ milestoneId }}')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-sm font-semibold text-{{ color }}-700 truncate">{{ milestone.name }}</h4>
+                                {% if milestone.dueDate %}
+                                <p class="text-xs text-{{ color }}-600 mt-0.5">Due {{ milestone.dueDate|date('M j, Y') }}</p>
+                                {% endif %}
+                            </div>
+                            <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-{{ color }}-100 text-xs font-medium text-{{ color }}-600 ml-2 flex-shrink-0">
+                                {{ milestone.tasks|length }}
+                            </span>
+                        </div>
+                        <div class="kanban-dropzone space-y-3 flex-1">
+                            {% for task in milestone.tasks %}
+                                {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
         <script>
+        // Mode configuration
+        const modeConfig = {
+            status: {
+                urlTemplate: document.getElementById('kanban-board').dataset.statusUrlTemplate,
+                fieldName: 'status',
+                labels: {
+                    'todo': 'To Do',
+                    'in_progress': 'In Progress',
+                    'in_review': 'In Review',
+                    'completed': 'Completed'
+                }
+            },
+            priority: {
+                urlTemplate: document.getElementById('kanban-board').dataset.priorityUrlTemplate,
+                fieldName: 'priority',
+                labels: {
+                    'low': 'Low',
+                    'medium': 'Medium',
+                    'high': 'High',
+                    'urgent': 'Urgent'
+                }
+            },
+            milestone: {
+                urlTemplate: document.getElementById('kanban-board').dataset.milestoneUrlTemplate,
+                fieldName: 'milestone',
+                labels: {}
+            }
+        };
+
+        // Build milestone labels from DOM
+        document.querySelectorAll('#kanban-milestone .kanban-column').forEach(col => {
+            const milestoneId = col.dataset.value;
+            const milestoneName = col.querySelector('h4')?.textContent?.trim() || 'Milestone';
+            modeConfig.milestone.labels[milestoneId] = milestoneName;
+        });
+
+        let currentKanbanMode = 'status';
         let draggedCard = null;
         let dropPlaceholder = null;
+
+        // Initialize mode from localStorage
+        function initKanbanMode() {
+            const projectId = document.getElementById('kanban-board').dataset.projectId;
+            const savedMode = localStorage.getItem(`project_${projectId}_kanban_mode`);
+
+            // Check if milestone mode is available
+            const hasMilestones = document.getElementById('kanban-milestone') !== null;
+
+            if (savedMode && (savedMode !== 'milestone' || hasMilestones)) {
+                setKanbanMode(savedMode, false);
+            } else {
+                setKanbanMode('status', false);
+            }
+        }
+
+        function setKanbanMode(mode, save = true) {
+            currentKanbanMode = mode;
+
+            // Save to localStorage
+            if (save) {
+                const projectId = document.getElementById('kanban-board').dataset.projectId;
+                localStorage.setItem(`project_${projectId}_kanban_mode`, mode);
+            }
+
+            // Update button states
+            document.querySelectorAll('.kanban-mode-btn').forEach(btn => {
+                if (btn.dataset.mode === mode) {
+                    btn.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
+                    btn.classList.remove('text-gray-500', 'hover:text-gray-700');
+                    btn.setAttribute('aria-selected', 'true');
+                } else {
+                    btn.classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
+                    btn.classList.add('text-gray-500', 'hover:text-gray-700');
+                    btn.setAttribute('aria-selected', 'false');
+                }
+            });
+
+            // Show/hide boards
+            document.querySelectorAll('.kanban-board').forEach(board => {
+                board.classList.add('hidden');
+            });
+
+            const activeBoard = document.getElementById(`kanban-${mode}`);
+            if (activeBoard) {
+                activeBoard.classList.remove('hidden');
+            }
+        }
 
         function createDropPlaceholder() {
             const placeholder = document.createElement('div');
@@ -182,7 +432,7 @@
             }
         }
 
-        async function kanbanDrop(event, newStatus) {
+        async function kanbanDrop(event, newValue) {
             event.preventDefault();
             event.stopPropagation();
 
@@ -194,9 +444,9 @@
 
             if (!card || !dropzone) return;
 
-            // Get the current status from the card's parent column
+            // Get the current value from the card's parent column
             const currentColumn = card.closest('.kanban-column');
-            const currentStatus = currentColumn ? currentColumn.dataset.status : null;
+            const currentValue = currentColumn ? currentColumn.dataset.value : null;
 
             // Insert card at placeholder position
             if (dropPlaceholder && dropPlaceholder.parentNode === dropzone) {
@@ -207,14 +457,14 @@
             }
             dropPlaceholder = null;
 
-            // Update counts
+            // Update counts for the active board
             updateColumnCounts();
 
             // Get task title for notification
             const taskTitle = card.querySelector('h4 a')?.textContent?.trim() || 'Task';
 
             // If same column, just show reorder feedback
-            if (currentStatus === newStatus) {
+            if (currentValue === newValue) {
                 Toastr.success('Task Reordered', `"${taskTitle}" position updated`);
                 return;
             }
@@ -227,29 +477,26 @@
             card.style.position = 'relative';
             card.appendChild(loadingOverlay);
 
-            const statusLabels = {
-                'todo': 'To Do',
-                'in_progress': 'In Progress',
-                'in_review': 'In Review',
-                'completed': 'Completed'
-            };
+            // Get mode-specific configuration
+            const config = modeConfig[currentKanbanMode];
+            const labels = config.labels;
+            const fieldName = config.fieldName;
 
             try {
-                const kanbanBoard = document.getElementById('kanban-board');
-                const urlTemplate = kanbanBoard.dataset.statusUrlTemplate;
-                const statusUrl = urlTemplate.replace('__TASK_ID__', taskId);
+                const urlTemplate = config.urlTemplate;
+                const url = urlTemplate.replace('__TASK_ID__', taskId);
 
-                const response = await fetch(statusUrl, {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({ status: newStatus })
+                    body: JSON.stringify({ [fieldName]: newValue })
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to update status');
+                    throw new Error(`Failed to update ${fieldName}`);
                 }
 
                 // Success - remove loading state
@@ -257,10 +504,11 @@
                 loadingOverlay.remove();
 
                 // Show success toastr
-                Toastr.success('Task Updated', `"${taskTitle}" moved to ${statusLabels[newStatus] || newStatus}`);
+                const newLabel = labels[newValue] || newValue;
+                Toastr.success('Task Updated', `"${taskTitle}" moved to ${newLabel}`);
 
             } catch (error) {
-                console.error('Error updating task status:', error);
+                console.error(`Error updating task ${fieldName}:`, error);
 
                 // Revert: move card back to original column
                 if (currentColumn) {
@@ -273,18 +521,28 @@
                 loadingOverlay.remove();
 
                 // Show error toastr
-                Toastr.error('Update Failed', 'Could not update task status. Please try again.');
+                Toastr.error('Update Failed', `Could not update task ${fieldName}. Please try again.`);
             }
         }
 
         function updateColumnCounts() {
-            document.querySelectorAll('.kanban-column').forEach(column => {
+            const activeBoard = document.getElementById(`kanban-${currentKanbanMode}`);
+            if (!activeBoard) return;
+
+            activeBoard.querySelectorAll('.kanban-column').forEach(column => {
                 const count = column.querySelectorAll('.kanban-dropzone [data-task-id]').length;
                 const countEl = column.querySelector('.kanban-count');
                 if (countEl) {
                     countEl.textContent = count;
                 }
             });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initKanbanMode);
+        // Also run immediately in case DOM is already ready
+        if (document.readyState !== 'loading') {
+            initKanbanMode();
         }
         </script>
 
@@ -303,6 +561,24 @@
             color: #9ca3af;
             font-size: 0.8125rem;
             font-weight: 400;
+        }
+        #kanban-milestone {
+            scrollbar-width: thin;
+            scrollbar-color: #d1d5db #f3f4f6;
+        }
+        #kanban-milestone::-webkit-scrollbar {
+            height: 8px;
+        }
+        #kanban-milestone::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 4px;
+        }
+        #kanban-milestone::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+        #kanban-milestone::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
         }
         </style>
     {% else %}
