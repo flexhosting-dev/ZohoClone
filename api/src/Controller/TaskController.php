@@ -389,4 +389,61 @@ class TaskController extends AbstractController
             'milestoneName' => $newMilestone->getName(),
         ]);
     }
+
+    #[Route('/tasks/{id}/panel', name: 'app_task_panel', methods: ['GET'])]
+    public function panel(Task $task): Response
+    {
+        $project = $task->getProject();
+        $this->denyAccessUnlessGranted('PROJECT_VIEW', $project);
+
+        return $this->render('task/_panel.html.twig', [
+            'task' => $task,
+            'project' => $project,
+        ]);
+    }
+
+    #[Route('/tasks/reorder', name: 'app_task_reorder', methods: ['POST'])]
+    public function reorder(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $taskIds = $data['taskIds'] ?? [];
+
+        if (empty($taskIds) || !is_array($taskIds)) {
+            return $this->json(['error' => 'Task IDs array is required'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Fetch all tasks and verify they belong to the same project
+        $tasks = [];
+        $project = null;
+
+        foreach ($taskIds as $taskId) {
+            $task = $this->taskRepository->find($taskId);
+            if (!$task) {
+                return $this->json(['error' => 'Task not found: ' . $taskId], Response::HTTP_BAD_REQUEST);
+            }
+
+            $taskProject = $task->getProject();
+
+            if ($project === null) {
+                $project = $taskProject;
+                $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
+            } elseif ($taskProject->getId()->toString() !== $project->getId()->toString()) {
+                return $this->json(['error' => 'All tasks must belong to the same project'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $tasks[] = $task;
+        }
+
+        // Update positions based on array order
+        foreach ($tasks as $index => $task) {
+            $task->setPosition($index);
+        }
+
+        $this->entityManager->flush();
+
+        return $this->json([
+            'success' => true,
+            'updated' => count($tasks),
+        ]);
+    }
 }

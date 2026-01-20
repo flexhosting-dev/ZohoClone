@@ -47,6 +47,7 @@ class Milestone
 
     /** @var Collection<int, Task> */
     #[ORM\OneToMany(targetEntity: Task::class, mappedBy: 'milestone', orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $tasks;
 
     public function __construct()

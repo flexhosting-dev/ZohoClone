@@ -6,7 +6,10 @@
     {% endfor %}
 {% endfor %}
 
-{# Group tasks by status #}
+{# Sort all tasks by position #}
+{% set projectTasks = projectTasks|sort((a, b) => a.position <=> b.position) %}
+
+{# Group tasks by status (preserving position order) #}
 {% set tasksByStatus = {
     'todo': [],
     'in_progress': [],
@@ -18,7 +21,7 @@
     {% set tasksByStatus = tasksByStatus|merge({(status): tasksByStatus[status]|merge([task])}) %}
 {% endfor %}
 
-{# Group tasks by priority #}
+{# Group tasks by priority (preserving position order) #}
 {% set tasksByPriority = {
     'low': [],
     'medium': [],
@@ -43,7 +46,8 @@
      data-project-id="{{ project.id }}"
      data-status-url-template="{{ path('app_task_update_status', {id: '__TASK_ID__'}) }}"
      data-priority-url-template="{{ path('app_task_update_priority', {id: '__TASK_ID__'}) }}"
-     data-milestone-url-template="{{ path('app_task_update_milestone', {id: '__TASK_ID__'}) }}">
+     data-milestone-url-template="{{ path('app_task_update_milestone', {id: '__TASK_ID__'}) }}"
+     data-reorder-url="{{ path('app_task_reorder') }}">
 
     <div class="flex items-center justify-between">
         <h3 class="text-base font-semibold leading-6 text-gray-900">Tasks</h3>
@@ -78,151 +82,335 @@
 
     {% if projectTasks|length > 0 %}
         {# Status Board #}
-        <div id="kanban-status" class="kanban-board grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <div id="kanban-status" class="kanban-board kanban-grid">
             {# To Do Column #}
-            <div class="kanban-column rounded-lg bg-gray-100 p-4 flex flex-col" data-value="todo"
+            <div class="kanban-column rounded-lg bg-gray-100 flex flex-col" data-value="todo"
                  ondragover="kanbanDragOver(event)"
                  ondragleave="kanbanDragLeave(event)"
                  ondrop="kanbanDrop(event, 'todo')">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-sm font-semibold text-gray-700">To Do</h4>
-                    <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-gray-200 text-xs font-medium text-gray-600">
-                        {{ tasksByStatus.todo|length }}
-                    </span>
+                {# Expanded Header #}
+                <div class="kanban-header p-4 pb-0">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="kanban-title-badge inline-flex items-center rounded-full bg-gray-500 px-3 py-1 text-xs font-medium text-white">
+                                To Do (<span class="kanban-count">{{ tasksByStatus.todo|length }}</span>)
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" class="kanban-collapse-btn p-1 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700" title="Collapse">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="kanban-dropzone space-y-3 flex-1">
-                    {% for task in tasksByStatus.todo %}
-                        {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
-                    {% endfor %}
+                <div class="kanban-content p-4 pt-0 flex-1">
+                    <div class="kanban-dropzone space-y-3 h-full">
+                        {% for task in tasksByStatus.todo %}
+                            {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {# Collapsed State #}
+                <div class="kanban-collapsed-content">
+                    <button type="button" class="kanban-expand-btn p-1 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 mb-2" title="Expand">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <div class="kanban-vertical-title">
+                        <span class="kanban-title-badge inline-flex items-center rounded-full bg-gray-500 px-3 py-1 text-xs font-medium text-white whitespace-nowrap">
+                            To Do (<span class="kanban-count-collapsed">{{ tasksByStatus.todo|length }}</span>)
+                        </span>
+                    </div>
                 </div>
             </div>
 
             {# In Progress Column #}
-            <div class="kanban-column rounded-lg bg-blue-50 p-4 flex flex-col" data-value="in_progress"
+            <div class="kanban-column rounded-lg bg-blue-50 flex flex-col" data-value="in_progress"
                  ondragover="kanbanDragOver(event)"
                  ondragleave="kanbanDragLeave(event)"
                  ondrop="kanbanDrop(event, 'in_progress')">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-sm font-semibold text-blue-700">In Progress</h4>
-                    <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-xs font-medium text-blue-600">
-                        {{ tasksByStatus.in_progress|length }}
-                    </span>
+                {# Expanded Header #}
+                <div class="kanban-header p-4 pb-0">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="kanban-title-badge inline-flex items-center rounded-full bg-blue-500 px-3 py-1 text-xs font-medium text-white">
+                                In Progress (<span class="kanban-count">{{ tasksByStatus.in_progress|length }}</span>)
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" class="kanban-collapse-btn p-1 rounded hover:bg-blue-100 text-blue-500 hover:text-blue-700" title="Collapse">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="kanban-dropzone space-y-3 flex-1">
-                    {% for task in tasksByStatus.in_progress %}
-                        {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
-                    {% endfor %}
+                <div class="kanban-content p-4 pt-0 flex-1">
+                    <div class="kanban-dropzone space-y-3 h-full">
+                        {% for task in tasksByStatus.in_progress %}
+                            {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {# Collapsed State #}
+                <div class="kanban-collapsed-content">
+                    <button type="button" class="kanban-expand-btn p-1 rounded hover:bg-blue-100 text-blue-500 hover:text-blue-700 mb-2" title="Expand">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <div class="kanban-vertical-title">
+                        <span class="kanban-title-badge inline-flex items-center rounded-full bg-blue-500 px-3 py-1 text-xs font-medium text-white whitespace-nowrap">
+                            In Progress (<span class="kanban-count-collapsed">{{ tasksByStatus.in_progress|length }}</span>)
+                        </span>
+                    </div>
                 </div>
             </div>
 
             {# In Review Column #}
-            <div class="kanban-column rounded-lg bg-yellow-50 p-4 flex flex-col" data-value="in_review"
+            <div class="kanban-column rounded-lg bg-yellow-50 flex flex-col" data-value="in_review"
                  ondragover="kanbanDragOver(event)"
                  ondragleave="kanbanDragLeave(event)"
                  ondrop="kanbanDrop(event, 'in_review')">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-sm font-semibold text-yellow-700">In Review</h4>
-                    <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-yellow-100 text-xs font-medium text-yellow-600">
-                        {{ tasksByStatus.in_review|length }}
-                    </span>
+                {# Expanded Header #}
+                <div class="kanban-header p-4 pb-0">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="kanban-title-badge inline-flex items-center rounded-full bg-yellow-500 px-3 py-1 text-xs font-medium text-white">
+                                In Review (<span class="kanban-count">{{ tasksByStatus.in_review|length }}</span>)
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" class="kanban-collapse-btn p-1 rounded hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700" title="Collapse">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="kanban-dropzone space-y-3 flex-1">
-                    {% for task in tasksByStatus.in_review %}
-                        {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
-                    {% endfor %}
+                <div class="kanban-content p-4 pt-0 flex-1">
+                    <div class="kanban-dropzone space-y-3 h-full">
+                        {% for task in tasksByStatus.in_review %}
+                            {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {# Collapsed State #}
+                <div class="kanban-collapsed-content">
+                    <button type="button" class="kanban-expand-btn p-1 rounded hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 mb-2" title="Expand">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <div class="kanban-vertical-title">
+                        <span class="kanban-title-badge inline-flex items-center rounded-full bg-yellow-500 px-3 py-1 text-xs font-medium text-white whitespace-nowrap">
+                            In Review (<span class="kanban-count-collapsed">{{ tasksByStatus.in_review|length }}</span>)
+                        </span>
+                    </div>
                 </div>
             </div>
 
             {# Completed Column #}
-            <div class="kanban-column rounded-lg bg-green-50 p-4 flex flex-col" data-value="completed"
+            <div class="kanban-column rounded-lg bg-green-50 flex flex-col" data-value="completed"
                  ondragover="kanbanDragOver(event)"
                  ondragleave="kanbanDragLeave(event)"
                  ondrop="kanbanDrop(event, 'completed')">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-sm font-semibold text-green-700">Completed</h4>
-                    <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-green-100 text-xs font-medium text-green-600">
-                        {{ tasksByStatus.completed|length }}
-                    </span>
+                {# Expanded Header #}
+                <div class="kanban-header p-4 pb-0">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="kanban-title-badge inline-flex items-center rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">
+                                Completed (<span class="kanban-count">{{ tasksByStatus.completed|length }}</span>)
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" class="kanban-collapse-btn p-1 rounded hover:bg-green-100 text-green-500 hover:text-green-700" title="Collapse">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="kanban-dropzone space-y-3 flex-1">
-                    {% for task in tasksByStatus.completed %}
-                        {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
-                    {% endfor %}
+                <div class="kanban-content p-4 pt-0 flex-1">
+                    <div class="kanban-dropzone space-y-3 h-full">
+                        {% for task in tasksByStatus.completed %}
+                            {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {# Collapsed State #}
+                <div class="kanban-collapsed-content">
+                    <button type="button" class="kanban-expand-btn p-1 rounded hover:bg-green-100 text-green-500 hover:text-green-700 mb-2" title="Expand">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <div class="kanban-vertical-title">
+                        <span class="kanban-title-badge inline-flex items-center rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white whitespace-nowrap">
+                            Completed (<span class="kanban-count-collapsed">{{ tasksByStatus.completed|length }}</span>)
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
 
         {# Priority Board #}
-        <div id="kanban-priority" class="kanban-board hidden grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <div id="kanban-priority" class="kanban-board hidden kanban-grid">
             {# Low Priority Column #}
-            <div class="kanban-column rounded-lg bg-slate-100 p-4 flex flex-col" data-value="low"
+            <div class="kanban-column rounded-lg bg-slate-100 flex flex-col" data-value="low"
                  ondragover="kanbanDragOver(event)"
                  ondragleave="kanbanDragLeave(event)"
                  ondrop="kanbanDrop(event, 'low')">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-sm font-semibold text-slate-700">Low</h4>
-                    <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-slate-200 text-xs font-medium text-slate-600">
-                        {{ tasksByPriority.low|length }}
-                    </span>
+                <div class="kanban-header p-4 pb-0">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="kanban-title-badge inline-flex items-center rounded-full bg-slate-500 px-3 py-1 text-xs font-medium text-white">
+                            Low (<span class="kanban-count">{{ tasksByPriority.low|length }}</span>)
+                        </span>
+                        <button type="button" class="kanban-collapse-btn p-1 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-700" title="Collapse">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="kanban-dropzone space-y-3 flex-1">
-                    {% for task in tasksByPriority.low %}
-                        {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
-                    {% endfor %}
+                <div class="kanban-content p-4 pt-0 flex-1">
+                    <div class="kanban-dropzone space-y-3 h-full">
+                        {% for task in tasksByPriority.low %}
+                            {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="kanban-collapsed-content">
+                    <button type="button" class="kanban-expand-btn p-1 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-700 mb-2" title="Expand">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <div class="kanban-vertical-title">
+                        <span class="kanban-title-badge inline-flex items-center rounded-full bg-slate-500 px-3 py-1 text-xs font-medium text-white whitespace-nowrap">
+                            Low (<span class="kanban-count-collapsed">{{ tasksByPriority.low|length }}</span>)
+                        </span>
+                    </div>
                 </div>
             </div>
 
             {# Medium Priority Column #}
-            <div class="kanban-column rounded-lg bg-blue-50 p-4 flex flex-col" data-value="medium"
+            <div class="kanban-column rounded-lg bg-blue-50 flex flex-col" data-value="medium"
                  ondragover="kanbanDragOver(event)"
                  ondragleave="kanbanDragLeave(event)"
                  ondrop="kanbanDrop(event, 'medium')">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-sm font-semibold text-blue-700">Medium</h4>
-                    <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-xs font-medium text-blue-600">
-                        {{ tasksByPriority.medium|length }}
-                    </span>
+                <div class="kanban-header p-4 pb-0">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="kanban-title-badge inline-flex items-center rounded-full bg-blue-500 px-3 py-1 text-xs font-medium text-white">
+                            Medium (<span class="kanban-count">{{ tasksByPriority.medium|length }}</span>)
+                        </span>
+                        <button type="button" class="kanban-collapse-btn p-1 rounded hover:bg-blue-100 text-blue-500 hover:text-blue-700" title="Collapse">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="kanban-dropzone space-y-3 flex-1">
-                    {% for task in tasksByPriority.medium %}
-                        {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
-                    {% endfor %}
+                <div class="kanban-content p-4 pt-0 flex-1">
+                    <div class="kanban-dropzone space-y-3 h-full">
+                        {% for task in tasksByPriority.medium %}
+                            {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="kanban-collapsed-content">
+                    <button type="button" class="kanban-expand-btn p-1 rounded hover:bg-blue-100 text-blue-500 hover:text-blue-700 mb-2" title="Expand">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <div class="kanban-vertical-title">
+                        <span class="kanban-title-badge inline-flex items-center rounded-full bg-blue-500 px-3 py-1 text-xs font-medium text-white whitespace-nowrap">
+                            Medium (<span class="kanban-count-collapsed">{{ tasksByPriority.medium|length }}</span>)
+                        </span>
+                    </div>
                 </div>
             </div>
 
             {# High Priority Column #}
-            <div class="kanban-column rounded-lg bg-orange-50 p-4 flex flex-col" data-value="high"
+            <div class="kanban-column rounded-lg bg-orange-50 flex flex-col" data-value="high"
                  ondragover="kanbanDragOver(event)"
                  ondragleave="kanbanDragLeave(event)"
                  ondrop="kanbanDrop(event, 'high')">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-sm font-semibold text-orange-700">High</h4>
-                    <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-orange-100 text-xs font-medium text-orange-600">
-                        {{ tasksByPriority.high|length }}
-                    </span>
+                <div class="kanban-header p-4 pb-0">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="kanban-title-badge inline-flex items-center rounded-full bg-orange-500 px-3 py-1 text-xs font-medium text-white">
+                            High (<span class="kanban-count">{{ tasksByPriority.high|length }}</span>)
+                        </span>
+                        <button type="button" class="kanban-collapse-btn p-1 rounded hover:bg-orange-100 text-orange-500 hover:text-orange-700" title="Collapse">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="kanban-dropzone space-y-3 flex-1">
-                    {% for task in tasksByPriority.high %}
-                        {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
-                    {% endfor %}
+                <div class="kanban-content p-4 pt-0 flex-1">
+                    <div class="kanban-dropzone space-y-3 h-full">
+                        {% for task in tasksByPriority.high %}
+                            {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="kanban-collapsed-content">
+                    <button type="button" class="kanban-expand-btn p-1 rounded hover:bg-orange-100 text-orange-500 hover:text-orange-700 mb-2" title="Expand">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <div class="kanban-vertical-title">
+                        <span class="kanban-title-badge inline-flex items-center rounded-full bg-orange-500 px-3 py-1 text-xs font-medium text-white whitespace-nowrap">
+                            High (<span class="kanban-count-collapsed">{{ tasksByPriority.high|length }}</span>)
+                        </span>
+                    </div>
                 </div>
             </div>
 
             {# Urgent Priority Column #}
-            <div class="kanban-column rounded-lg bg-red-50 p-4 flex flex-col" data-value="urgent"
+            <div class="kanban-column rounded-lg bg-red-50 flex flex-col" data-value="urgent"
                  ondragover="kanbanDragOver(event)"
                  ondragleave="kanbanDragLeave(event)"
                  ondrop="kanbanDrop(event, 'urgent')">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-sm font-semibold text-red-700">Urgent</h4>
-                    <span class="kanban-count inline-flex items-center justify-center h-6 w-6 rounded-full bg-red-100 text-xs font-medium text-red-600">
-                        {{ tasksByPriority.urgent|length }}
-                    </span>
+                <div class="kanban-header p-4 pb-0">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="kanban-title-badge inline-flex items-center rounded-full bg-red-500 px-3 py-1 text-xs font-medium text-white">
+                            Urgent (<span class="kanban-count">{{ tasksByPriority.urgent|length }}</span>)
+                        </span>
+                        <button type="button" class="kanban-collapse-btn p-1 rounded hover:bg-red-100 text-red-500 hover:text-red-700" title="Collapse">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="kanban-dropzone space-y-3 flex-1">
-                    {% for task in tasksByPriority.urgent %}
-                        {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
-                    {% endfor %}
+                <div class="kanban-content p-4 pt-0 flex-1">
+                    <div class="kanban-dropzone space-y-3 h-full">
+                        {% for task in tasksByPriority.urgent %}
+                            {% include 'task/_card.html.twig' with {task: task, draggable: true} %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="kanban-collapsed-content">
+                    <button type="button" class="kanban-expand-btn p-1 rounded hover:bg-red-100 text-red-500 hover:text-red-700 mb-2" title="Expand">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <div class="kanban-vertical-title">
+                        <span class="kanban-title-badge inline-flex items-center rounded-full bg-red-500 px-3 py-1 text-xs font-medium text-white whitespace-nowrap">
+                            Urgent (<span class="kanban-count-collapsed">{{ tasksByPriority.urgent|length }}</span>)
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -350,6 +538,9 @@
             if (activeBoard) {
                 activeBoard.classList.remove('hidden');
             }
+
+            // Re-initialize collapse for the active board
+            initKanbanCollapse();
         }
 
         function createDropPlaceholder() {
@@ -440,7 +631,10 @@
             const dropzone = column.querySelector('.kanban-dropzone');
 
             const taskId = event.dataTransfer.getData('text/plain');
-            const card = document.querySelector(`[data-task-id="${taskId}"]`);
+
+            // Find the card within the active board only (not from hidden boards)
+            const activeBoard = document.getElementById(`kanban-${currentKanbanMode}`);
+            const card = activeBoard ? activeBoard.querySelector(`[data-task-id="${taskId}"]`) : null;
 
             if (!card || !dropzone) return;
 
@@ -463,9 +657,9 @@
             // Get task title for notification
             const taskTitle = card.querySelector('h4 a')?.textContent?.trim() || 'Task';
 
-            // If same column, just show reorder feedback
+            // If same column, persist the new order
             if (currentValue === newValue) {
-                Toastr.success('Task Reordered', `"${taskTitle}" position updated`);
+                await persistColumnOrder(dropzone, taskTitle);
                 return;
             }
 
@@ -532,8 +726,125 @@
             activeBoard.querySelectorAll('.kanban-column').forEach(column => {
                 const count = column.querySelectorAll('.kanban-dropzone [data-task-id]').length;
                 const countEl = column.querySelector('.kanban-count');
+                const countElCollapsed = column.querySelector('.kanban-count-collapsed');
                 if (countEl) {
                     countEl.textContent = count;
+                }
+                if (countElCollapsed) {
+                    countElCollapsed.textContent = count;
+                }
+            });
+        }
+
+        async function persistColumnOrder(dropzone, taskTitle) {
+            // Get all task IDs in the column in order
+            const taskIds = [...dropzone.querySelectorAll('[data-task-id]')]
+                .map(card => card.dataset.taskId);
+
+            if (taskIds.length === 0) return;
+
+            try {
+                const reorderUrl = document.getElementById('kanban-board').dataset.reorderUrl;
+
+                const response = await fetch(reorderUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ taskIds: taskIds })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save order');
+                }
+
+                Toastr.success('Task Reordered', `"${taskTitle}" position updated`);
+
+            } catch (error) {
+                console.error('Error saving task order:', error);
+                Toastr.error('Save Failed', 'Could not save task order. Please try again.');
+            }
+        }
+
+        // Kanban Column Collapse/Expand Functionality
+        function initKanbanCollapse() {
+            const STORAGE_KEY = 'kanban_collapsed_columns';
+
+            // Load saved collapsed state
+            function getCollapsedState() {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    return saved ? JSON.parse(saved) : {};
+                } catch (e) {
+                    return {};
+                }
+            }
+
+            // Save collapsed state
+            function saveCollapsedState(state) {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                } catch (e) {
+                    // Ignore storage errors
+                }
+            }
+
+            // Toggle column collapse
+            function toggleColumn(column, collapse) {
+                const value = column.dataset.value;
+                const key = `${currentKanbanMode}_${value}`;
+                const state = getCollapsedState();
+
+                if (collapse) {
+                    column.classList.add('collapsed');
+                    state[key] = true;
+                } else {
+                    column.classList.remove('collapsed');
+                    delete state[key];
+                }
+
+                saveCollapsedState(state);
+            }
+
+            // Get active board
+            const activeBoard = document.getElementById(`kanban-${currentKanbanMode}`);
+            if (!activeBoard) return;
+
+            // Restore saved state on load
+            const savedState = getCollapsedState();
+            activeBoard.querySelectorAll('.kanban-column').forEach(column => {
+                const value = column.dataset.value;
+                const key = `${currentKanbanMode}_${value}`;
+
+                if (savedState[key]) {
+                    column.classList.add('collapsed');
+                } else {
+                    column.classList.remove('collapsed');
+                }
+
+                // Add collapse button listener
+                const collapseBtn = column.querySelector('.kanban-collapse-btn');
+                if (collapseBtn) {
+                    // Remove old listeners by cloning
+                    const newCollapseBtn = collapseBtn.cloneNode(true);
+                    collapseBtn.parentNode.replaceChild(newCollapseBtn, collapseBtn);
+                    newCollapseBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        toggleColumn(column, true);
+                    });
+                }
+
+                // Add expand button listener
+                const expandBtn = column.querySelector('.kanban-expand-btn');
+                if (expandBtn) {
+                    // Remove old listeners by cloning
+                    const newExpandBtn = expandBtn.cloneNode(true);
+                    expandBtn.parentNode.replaceChild(newExpandBtn, expandBtn);
+                    newExpandBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        toggleColumn(column, false);
+                    });
                 }
             });
         }
@@ -562,6 +873,123 @@
             font-size: 0.8125rem;
             font-weight: 400;
         }
+
+        /* Kanban Board visibility */
+        .kanban-board.hidden {
+            display: none !important;
+        }
+
+        /* Kanban Grid Layout */
+        .kanban-grid {
+            display: flex;
+            gap: 1rem;
+            align-items: stretch;
+            min-height: 500px;
+            max-height: 70vh;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Kanban grid scrollbar */
+        .kanban-grid {
+            scrollbar-width: thin;
+            scrollbar-color: #d1d5db #f3f4f6;
+        }
+        .kanban-grid::-webkit-scrollbar {
+            height: 8px;
+        }
+        .kanban-grid::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 4px;
+        }
+        .kanban-grid::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+        .kanban-grid::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        /* Kanban Column */
+        .kanban-grid > .kanban-column {
+            flex: 1 0 220px;
+            min-width: 220px;
+            max-width: 400px;
+            transition: flex 0.3s ease, min-width 0.3s ease, width 0.3s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .kanban-grid > .kanban-column.collapsed {
+            flex: 0 0 48px;
+            min-width: 48px;
+            max-width: 48px;
+        }
+
+        /* Expanded state content */
+        .kanban-header {
+            flex-shrink: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .kanban-content {
+            flex: 1;
+            overflow-y: auto;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        /* Column content scrollbar */
+        .kanban-content {
+            scrollbar-width: thin;
+            scrollbar-color: #d1d5db transparent;
+        }
+        .kanban-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .kanban-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .kanban-content::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+        .kanban-content::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        .kanban-column.collapsed .kanban-header,
+        .kanban-column.collapsed .kanban-content {
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            visibility: hidden;
+        }
+
+        /* Collapsed state content */
+        .kanban-collapsed-content {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.75rem 0.5rem;
+            height: 100%;
+        }
+
+        .kanban-column.collapsed .kanban-collapsed-content {
+            display: flex;
+        }
+
+        /* Vertical rotated title */
+        .kanban-vertical-title {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            white-space: nowrap;
+            margin-top: 0.5rem;
+        }
+
+        /* Milestone board scrollbar */
         #kanban-milestone {
             scrollbar-width: thin;
             scrollbar-color: #d1d5db #f3f4f6;
@@ -579,6 +1007,42 @@
         }
         #kanban-milestone::-webkit-scrollbar-thumb:hover {
             background: #9ca3af;
+        }
+
+        /* Responsive: stack on mobile */
+        @media (max-width: 1023px) {
+            .kanban-grid {
+                flex-direction: column;
+                max-height: none;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+            .kanban-grid > .kanban-column {
+                flex: none !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+            }
+            .kanban-grid > .kanban-column.collapsed {
+                flex: none !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+                min-height: 48px;
+                max-height: 48px;
+            }
+            .kanban-content {
+                max-height: 300px;
+            }
+            .kanban-column.collapsed .kanban-collapsed-content {
+                flex-direction: row;
+                padding: 0.5rem 1rem;
+                height: auto;
+            }
+            .kanban-vertical-title {
+                writing-mode: horizontal-tb;
+                transform: none;
+                margin-top: 0;
+                margin-left: 0.5rem;
+            }
         }
         </style>
     {% else %}

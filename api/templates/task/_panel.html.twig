@@ -1,0 +1,147 @@
+{# Task Panel Content - loaded via AJAX into off-canvas #}
+<div class="flex flex-col h-full">
+    {# Header #}
+    <div class="flex-shrink-0 px-6 py-4 border-b border-gray-200">
+        <div class="flex items-start justify-between">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center flex-wrap gap-2">
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                        {% if task.status.value == 'completed' %}bg-green-100 text-green-700
+                        {% elseif task.status.value == 'in_progress' %}bg-blue-100 text-blue-700
+                        {% elseif task.status.value == 'in_review' %}bg-yellow-100 text-yellow-700
+                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {{ task.status.label }}
+                    </span>
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                        {% if task.priority.value == 'urgent' %}bg-red-100 text-red-700
+                        {% elseif task.priority.value == 'high' %}bg-orange-100 text-orange-700
+                        {% elseif task.priority.value == 'medium' %}bg-yellow-100 text-yellow-700
+                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                        {{ task.priority.label }}
+                    </span>
+                </div>
+                <h2 class="mt-2 text-lg font-semibold text-gray-900">{{ task.title }}</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ project.name }} / {{ task.milestone.name }}
+                </p>
+            </div>
+            <button type="button" onclick="closeTaskPanel()" class="ml-4 rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <span class="sr-only">Close panel</span>
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    {# Content #}
+    <div class="flex-1 overflow-y-auto px-6 py-4">
+        {# Description #}
+        <div class="mb-6">
+            <h3 class="text-sm font-medium text-gray-900 mb-2">Description</h3>
+            {% if task.description %}
+                <p class="text-sm text-gray-600 whitespace-pre-wrap">{{ task.description }}</p>
+            {% else %}
+                <p class="text-sm text-gray-400 italic">No description</p>
+            {% endif %}
+        </div>
+
+        {# Details Grid #}
+        <div class="mb-6 grid grid-cols-2 gap-4">
+            {% if task.dueDate %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Due Date</dt>
+                    <dd class="mt-1 text-sm {{ task.isOverdue ? 'text-red-600 font-medium' : 'text-gray-900' }}">
+                        {{ task.dueDate|date('M d, Y') }}
+                        {% if task.isOverdue %}
+                            <span class="text-xs">(Overdue)</span>
+                        {% endif %}
+                    </dd>
+                </div>
+            {% endif %}
+            <div>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Created</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ task.createdAt|date('M d, Y') }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Updated</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ task.updatedAt|date('M d, Y') }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Milestone</dt>
+                <dd class="mt-1 text-sm text-gray-900">{{ task.milestone.name }}</dd>
+            </div>
+        </div>
+
+        {# Assignees #}
+        <div class="mb-6">
+            <h3 class="text-sm font-medium text-gray-900 mb-2">Assignees</h3>
+            {% if task.assignees|length > 0 %}
+                <div class="flex flex-wrap gap-2">
+                    {% for assignee in task.assignees %}
+                        <span class="inline-flex items-center rounded-full bg-gray-100 py-1 pl-2 pr-3 text-sm font-medium text-gray-800">
+                            <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 mr-2">
+                                <span class="text-xs font-medium text-primary-700">
+                                    {{ assignee.user.firstName|slice(0, 1)|upper }}{{ assignee.user.lastName|slice(0, 1)|upper }}
+                                </span>
+                            </span>
+                            {{ assignee.user.fullName }}
+                        </span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-sm text-gray-400 italic">No assignees</p>
+            {% endif %}
+        </div>
+
+        {# Comments #}
+        <div>
+            <h3 class="text-sm font-medium text-gray-900 mb-2">
+                Comments
+                {% if task.comments|length > 0 %}
+                    <span class="text-gray-400 font-normal">({{ task.comments|length }})</span>
+                {% endif %}
+            </h3>
+            {% if task.comments|length > 0 %}
+                <div class="space-y-4">
+                    {% for comment in task.comments %}
+                        <div class="bg-gray-50 rounded-lg p-3">
+                            <div class="flex items-center mb-2">
+                                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 mr-2">
+                                    <span class="text-xs font-medium text-primary-700">
+                                        {{ comment.author.firstName|slice(0, 1)|upper }}
+                                    </span>
+                                </span>
+                                <span class="text-sm font-medium text-gray-900">{{ comment.author.fullName }}</span>
+                                <span class="ml-auto text-xs text-gray-500">{{ comment.createdAt|date('M d, H:i') }}</span>
+                            </div>
+                            <p class="text-sm text-gray-600 whitespace-pre-wrap">{{ comment.content }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-sm text-gray-400 italic">No comments yet</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Footer Actions #}
+    <div class="flex-shrink-0 px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div class="flex justify-between">
+            <a href="{{ path('app_task_show', {id: task.id}) }}"
+               class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                </svg>
+                Open Full Page
+            </a>
+            <a href="{{ path('app_task_edit', {id: task.id}) }}"
+               class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600">
+                <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                </svg>
+                Edit Task
+            </a>
+        </div>
+    </div>
+</div>
