@@ -1446,19 +1446,46 @@
         }
     });
 
-    // ===== ACTIVITY TAB FUNCTIONS =====
-    let activityLoaded = false;
+    // ===== DETAIL PAGE TAB FUNCTIONS =====
+    function switchDetailTab(tabName, btn) {
+        // Update button states
+        const container = btn.closest('.task-detail-tabs');
+        container.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('active', 'text-gray-700', 'border-primary-500');
+            b.classList.add('text-gray-500', 'border-transparent');
+        });
+        btn.classList.add('active', 'text-gray-700', 'border-primary-500');
+        btn.classList.remove('text-gray-500', 'border-transparent');
 
+        // Show/hide tab content
+        container.querySelectorAll('.detail-tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        document.getElementById('detail-tab-' + tabName).classList.remove('hidden');
+    }
+
+    // ===== ACTIVITY TAB FUNCTIONS =====
     async function loadActivityTab(taskId) {
+        // For panel: find activity container in the tab
         const activityTab = document.getElementById('tab-activity');
         if (!activityTab) return;
 
-        // Only load once per panel open
-        if (activityTab.dataset.loaded === 'true') return;
+        const container = activityTab.querySelector('.activity-container');
+        if (container) {
+            await loadActivityForContainer(container);
+        }
+    }
 
-        const loadingEl = activityTab.querySelector('.activity-loading');
-        const listEl = activityTab.querySelector('.activity-list');
-        const noActivityEl = activityTab.querySelector('.no-activity-msg');
+    async function loadActivityForContainer(container) {
+        if (!container) return;
+
+        // Only load once
+        if (container.dataset.loaded === 'true') return;
+
+        const taskId = container.dataset.taskId;
+        const loadingEl = container.querySelector('.activity-loading');
+        const listEl = container.querySelector('.activity-list');
+        const noActivityEl = container.querySelector('.no-activity-msg');
 
         try {
             const response = await fetch(`${BASE_PATH}/tasks/${taskId}/activity`, {
@@ -1479,7 +1506,7 @@
                 listEl.classList.remove('hidden');
             }
 
-            activityTab.dataset.loaded = 'true';
+            container.dataset.loaded = 'true';
         } catch (error) {
             console.error('Error loading activity:', error);
             loadingEl.innerHTML = '<p class="text-sm text-red-500">Failed to load activity</p>';

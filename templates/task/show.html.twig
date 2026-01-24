@@ -18,7 +18,7 @@
             {# Header #}
             <div class="flex items-start justify-between">
                 <div class="flex-1">
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center flex-wrap gap-2">
                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
                             {% if task.status.value == 'completed' %}bg-green-100 text-green-700
                             {% elseif task.status.value == 'in_progress' %}bg-blue-100 text-blue-700
@@ -33,6 +33,13 @@
                             {% else %}bg-gray-100 text-gray-700{% endif %}">
                             {{ task.priority.label }} Priority
                         </span>
+                        {# Inline Tags Display #}
+                        {% for tag in task.tags %}
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
+                                  style="background-color: {{ tag.color }};">
+                                {{ tag.name }}
+                            </span>
+                        {% endfor %}
                     </div>
                     <h1 class="mt-2 text-2xl font-bold text-gray-900">{{ task.title }}</h1>
                     <p class="mt-1 text-sm text-gray-500">
@@ -106,12 +113,56 @@
                     <p class="mt-2 text-sm text-gray-500">No assignees yet.</p>
                 {% endif %}
             </div>
+
+            {# Tags Section #}
+            <div class="mt-6 border-t border-gray-200 pt-6">
+                <h3 class="text-sm font-medium text-gray-900 mb-3">Tags</h3>
+                {% include 'task/_tags.html.twig' with {task: task} %}
+            </div>
         </div>
 
-        {# Comments Section #}
+        {# Tabs for Checklist, Comments and Activity #}
         <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
-            <h3 class="text-base font-semibold text-gray-900 mb-4">Comments</h3>
-            {% include 'comment/_list.html.twig' with {task: task, comments: task.comments} %}
+            <div class="task-detail-tabs">
+                {# Tab Navigation #}
+                <div class="flex border-b border-gray-200 mb-6">
+                    <button type="button"
+                            class="tab-btn active px-4 py-2 text-sm font-medium text-gray-700 border-b-2 border-primary-500 -mb-px"
+                            data-tab="checklist"
+                            onclick="switchDetailTab('checklist', this)">
+                        Checklist
+                        <span class="checklist-count text-gray-400 font-normal ml-1">({{ task.checklistCount }})</span>
+                    </button>
+                    <button type="button"
+                            class="tab-btn px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-900 hover:border-gray-300 -mb-px"
+                            data-tab="comments"
+                            onclick="switchDetailTab('comments', this)">
+                        Comments
+                        <span class="comments-count text-gray-400 font-normal ml-1">{% if task.comments|length > 0 %}({{ task.comments|length }}){% endif %}</span>
+                    </button>
+                    <button type="button"
+                            class="tab-btn px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-900 hover:border-gray-300 -mb-px"
+                            data-tab="activity"
+                            onclick="switchDetailTab('activity', this); loadActivityForContainer(document.querySelector('#detail-tab-activity .activity-container'));">
+                        Activity
+                    </button>
+                </div>
+
+                {# Checklist Tab Content #}
+                <div class="detail-tab-content" id="detail-tab-checklist">
+                    {% include 'task/_checklist.html.twig' with {task: task} %}
+                </div>
+
+                {# Comments Tab Content #}
+                <div class="detail-tab-content hidden" id="detail-tab-comments">
+                    {% include 'comment/_list.html.twig' with {task: task, comments: task.comments} %}
+                </div>
+
+                {# Activity Tab Content #}
+                <div class="detail-tab-content hidden" id="detail-tab-activity">
+                    {% include 'task/_activity.html.twig' with {task: task} %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
