@@ -110,6 +110,9 @@
     </div>
 
     <script>
+    // Base path for all API calls (handles proxy prefix)
+    const BASE_PATH = '{{ app.request.basePath }}';
+
     function openTaskPanel(taskId, updateUrl = true) {
         const panel = document.getElementById('task-panel');
         const overlay = document.getElementById('task-panel-overlay');
@@ -140,7 +143,7 @@
         document.body.style.overflow = 'hidden';
 
         // Fetch task details
-        fetch(`/tasks/${taskId}/panel`, {
+        fetch(`${BASE_PATH}/tasks/${taskId}/panel`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
@@ -282,7 +285,7 @@
         };
 
         try {
-            const response = await fetch(`/tasks/${taskId}/status`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/status`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -325,7 +328,7 @@
         };
 
         try {
-            const response = await fetch(`/tasks/${taskId}/priority`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/priority`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -353,7 +356,7 @@
     // Update Task Milestone
     async function updateTaskMilestone(taskId, milestoneId, milestoneName, btn) {
         try {
-            const response = await fetch(`/tasks/${taskId}/milestone`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/milestone`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -580,7 +583,7 @@
     // Assignee management
     async function removeAssignee(taskId, userId, btn) {
         try {
-            const response = await fetch(`/tasks/${taskId}/assignees`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/assignees`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -628,7 +631,7 @@
 
         // Load project members
         try {
-            const response = await fetch(`/projects/${projectId}/members`, {
+            const response = await fetch(`${BASE_PATH}/projects/${projectId}/members`, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
 
@@ -664,7 +667,7 @@
 
     async function addAssignee(taskId, userId, fullName, initials, btn) {
         try {
-            const response = await fetch(`/tasks/${taskId}/assignees`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/assignees`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -729,7 +732,7 @@
         btn.textContent = 'Posting...';
 
         try {
-            const response = await fetch(`/tasks/${taskId}/comments`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/comments`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -829,7 +832,7 @@
         input.disabled = true;
 
         try {
-            const response = await fetch(`/tasks/${taskId}/checklists`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/checklists`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -893,7 +896,7 @@
         checkbox.disabled = true;
 
         try {
-            const response = await fetch(`/tasks/${taskId}/checklists/${itemId}/toggle`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/checklists/${itemId}/toggle`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -955,7 +958,7 @@
             }
 
             try {
-                const response = await fetch(`/tasks/${taskId}/checklists/${itemId}`, {
+                const response = await fetch(`${BASE_PATH}/tasks/${taskId}/checklists/${itemId}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/merge-patch+json',
@@ -999,7 +1002,7 @@
         itemEl.style.opacity = '0.5';
 
         try {
-            const response = await fetch(`/tasks/${taskId}/checklists/${itemId}`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/checklists/${itemId}`, {
                 method: 'DELETE',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -1134,7 +1137,7 @@
 
         // Save new order to server
         try {
-            const response = await fetch(`/tasks/${taskId}/checklists/reorder`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/checklists/reorder`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1181,7 +1184,7 @@
 
         tagSearchTimeout = setTimeout(async () => {
             try {
-                const response = await fetch(`/tags/search?q=${encodeURIComponent(query)}&limit=50`, {
+                const response = await fetch(`${BASE_PATH}/tags/search?q=${encodeURIComponent(query)}&limit=50`, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
 
@@ -1284,7 +1287,7 @@
 
         try {
             console.log('Sending POST to', `/tasks/${taskId}/tags`);
-            const response = await fetch(`/tasks/${taskId}/tags`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/tags`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1340,7 +1343,7 @@
 
         try {
             console.log('Sending POST to', `/tasks/${taskId}/tags`);
-            const response = await fetch(`/tasks/${taskId}/tags`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/tags`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1404,7 +1407,7 @@
         chip.style.opacity = '0.5';
 
         try {
-            const response = await fetch(`/tasks/${taskId}/tags/${tagId}`, {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/tags/${tagId}`, {
                 method: 'DELETE',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
