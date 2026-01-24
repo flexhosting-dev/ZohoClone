@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import {
   Plus,
   Loader2,
@@ -35,8 +35,27 @@ const statusColors = {
 
 export function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { taskViewMode, setTaskViewMode } = useUIStore();
   const [showMilestoneDialog, setShowMilestoneDialog] = useState(false);
+
+  // Sync view mode with URL
+  const urlView = searchParams.get('view') as 'list' | 'kanban' | null;
+  const currentView = urlView || taskViewMode;
+
+  useEffect(() => {
+    // If URL has a view param, sync it to store
+    if (urlView && urlView !== taskViewMode) {
+      setTaskViewMode(urlView);
+    }
+  }, [urlView, taskViewMode, setTaskViewMode]);
+
+  const handleViewModeChange = (mode: 'list' | 'kanban') => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('view', mode);
+    setSearchParams(newParams, { replace: false });
+    setTaskViewMode(mode);
+  };
 
   const { data: project, isLoading: isLoadingProject } = useProject(projectId!);
   const { data: milestones, isLoading: isLoadingMilestones } = useMilestones(projectId!);
@@ -119,17 +138,17 @@ export function ProjectDetailPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Button
-                variant={taskViewMode === 'list' ? 'default' : 'outline'}
+                variant={currentView === 'list' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setTaskViewMode('list')}
+                onClick={() => handleViewModeChange('list')}
               >
                 <LayoutList className="h-4 w-4 mr-2" />
                 List
               </Button>
               <Button
-                variant={taskViewMode === 'kanban' ? 'default' : 'outline'}
+                variant={currentView === 'kanban' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setTaskViewMode('kanban')}
+                onClick={() => handleViewModeChange('kanban')}
               >
                 <LayoutDashboard className="h-4 w-4 mr-2" />
                 Kanban
@@ -142,7 +161,7 @@ export function ProjectDetailPage() {
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : milestones && milestones.length > 0 ? (
-            taskViewMode === 'list' ? (
+            currentView === 'list' ? (
               <TaskList
                 tasks={tasks || []}
                 milestones={milestones}

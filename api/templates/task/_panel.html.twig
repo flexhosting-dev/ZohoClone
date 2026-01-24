@@ -223,58 +223,136 @@
             </div>
         </div>
 
-        {# Comments with Inline Form #}
-        <div>
-            <h3 class="text-sm font-medium text-gray-900 mb-2">
-                Comments
-                <span class="comments-count text-gray-400 font-normal">{% if task.comments|length > 0 %}({{ task.comments|length }}){% endif %}</span>
-            </h3>
+        {# Tabs for Checklist and Comments #}
+        <div class="task-panel-tabs">
+            {# Tab Navigation #}
+            <div class="flex border-b border-gray-200 mb-4">
+                <button type="button"
+                        class="tab-btn active px-4 py-2 text-sm font-medium text-gray-700 border-b-2 border-transparent hover:text-gray-900 hover:border-gray-300 -mb-px"
+                        data-tab="checklist"
+                        onclick="switchTab('checklist', this)">
+                    Checklist
+                    <span class="checklist-count text-gray-400 font-normal ml-1">({{ task.checklistCount }})</span>
+                </button>
+                <button type="button"
+                        class="tab-btn px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-900 hover:border-gray-300 -mb-px"
+                        data-tab="comments"
+                        onclick="switchTab('comments', this)">
+                    Comments
+                    <span class="comments-count text-gray-400 font-normal ml-1">{% if task.comments|length > 0 %}({{ task.comments|length }}){% endif %}</span>
+                </button>
+            </div>
 
-            {# Add Comment Form #}
-            <div class="add-comment-form mb-4">
-                <div class="flex gap-3">
-                    <div class="flex-shrink-0">
-                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary-100">
-                            <span class="text-sm font-medium text-primary-700">
-                                {{ app.user.firstName|slice(0, 1)|upper }}
-                            </span>
-                        </span>
+            {# Checklist Tab Content #}
+            <div class="tab-content" id="tab-checklist">
+                {# Progress Bar #}
+                <div class="checklist-progress mb-4 {{ task.checklistCount == 0 ? 'hidden' : '' }}">
+                    <div class="flex items-center justify-between text-sm mb-1">
+                        <span class="text-gray-500">Progress</span>
+                        <span class="font-medium checklist-progress-text">{{ task.completedChecklistCount }}/{{ task.checklistCount }}</span>
                     </div>
-                    <div class="flex-1">
-                        <textarea class="comment-textarea w-full text-sm border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
-                                  rows="2"
-                                  placeholder="Add a comment..."
-                                  data-task-id="{{ task.id }}"></textarea>
-                        <div class="flex justify-end mt-2">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="checklist-progress-bar bg-primary-600 h-2 rounded-full transition-all"
+                             style="width: {{ task.checklistCount > 0 ? (task.completedChecklistCount / task.checklistCount * 100) : 0 }}%"></div>
+                    </div>
+                </div>
+
+                {# Add Checklist Item Form #}
+                <div class="add-checklist-form mb-4">
+                    <div class="flex gap-2">
+                        <input type="text"
+                               class="checklist-input flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                               placeholder="Add an item..."
+                               data-task-id="{{ task.id }}"
+                               onkeydown="if(event.key === 'Enter') addChecklistItem('{{ task.id }}', this)">
+                        <button type="button"
+                                onclick="addChecklistItem('{{ task.id }}', this.previousElementSibling)"
+                                class="add-checklist-btn px-3 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-500">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                {# Checklist Items List #}
+                <div class="checklist-items space-y-1" data-task-id="{{ task.id }}">
+                    {% for item in task.checklistItems %}
+                        <div class="checklist-item group flex items-center gap-2 p-2 rounded-md hover:bg-gray-50" data-item-id="{{ item.id }}">
+                            <div class="checklist-drag-handle cursor-grab text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                </svg>
+                            </div>
+                            <input type="checkbox"
+                                   class="checklist-checkbox h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                   {{ item.isCompleted ? 'checked' : '' }}
+                                   onchange="toggleChecklistItem('{{ task.id }}', '{{ item.id }}', this)">
+                            <span class="checklist-item-title flex-1 text-sm cursor-pointer {{ item.isCompleted ? 'line-through text-gray-400' : 'text-gray-900' }}"
+                                  onclick="editChecklistItem(this, '{{ task.id }}', '{{ item.id }}')"
+                                  data-original="{{ item.title }}">{{ item.title }}</span>
                             <button type="button"
-                                    onclick="addComment('{{ task.id }}', this)"
-                                    class="add-comment-btn px-3 py-1.5 text-sm bg-primary-600 text-white rounded-md hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    disabled>
-                                Post Comment
+                                    onclick="deleteChecklistItem('{{ task.id }}', '{{ item.id }}', this)"
+                                    class="checklist-delete-btn opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-600">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                </svg>
                             </button>
                         </div>
-                    </div>
+                    {% else %}
+                        <p class="no-checklist-msg text-sm text-gray-400 italic py-4">No checklist items yet</p>
+                    {% endfor %}
                 </div>
             </div>
 
-            {# Comments List #}
-            <div class="comments-list space-y-4">
-                {% for comment in task.comments %}
-                    <div class="comment-item bg-gray-50 rounded-lg p-3" data-comment-id="{{ comment.id }}">
-                        <div class="flex items-center mb-2">
-                            <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 mr-2">
-                                <span class="text-xs font-medium text-primary-700">
-                                    {{ comment.author.firstName|slice(0, 1)|upper }}
+            {# Comments Tab Content #}
+            <div class="tab-content hidden" id="tab-comments">
+                {# Add Comment Form #}
+                <div class="add-comment-form mb-4">
+                    <div class="flex gap-3">
+                        <div class="flex-shrink-0">
+                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary-100">
+                                <span class="text-sm font-medium text-primary-700">
+                                    {{ app.user.firstName|slice(0, 1)|upper }}
                                 </span>
                             </span>
-                            <span class="text-sm font-medium text-gray-900">{{ comment.author.fullName }}</span>
-                            <span class="ml-auto text-xs text-gray-500">{{ comment.createdAt|date('M d, H:i') }}</span>
                         </div>
-                        <p class="text-sm text-gray-600 whitespace-pre-wrap">{{ comment.content }}</p>
+                        <div class="flex-1">
+                            <textarea class="comment-textarea w-full text-sm border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+                                      rows="2"
+                                      placeholder="Add a comment..."
+                                      data-task-id="{{ task.id }}"></textarea>
+                            <div class="flex justify-end mt-2">
+                                <button type="button"
+                                        onclick="addComment('{{ task.id }}', this)"
+                                        class="add-comment-btn px-3 py-1.5 text-sm bg-primary-600 text-white rounded-md hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled>
+                                    Post Comment
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                {% else %}
-                    <p class="no-comments-msg text-sm text-gray-400 italic">No comments yet</p>
-                {% endfor %}
+                </div>
+
+                {# Comments List #}
+                <div class="comments-list space-y-4">
+                    {% for comment in task.comments %}
+                        <div class="comment-item bg-gray-50 rounded-lg p-3" data-comment-id="{{ comment.id }}">
+                            <div class="flex items-center mb-2">
+                                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 mr-2">
+                                    <span class="text-xs font-medium text-primary-700">
+                                        {{ comment.author.firstName|slice(0, 1)|upper }}
+                                    </span>
+                                </span>
+                                <span class="text-sm font-medium text-gray-900">{{ comment.author.fullName }}</span>
+                                <span class="ml-auto text-xs text-gray-500">{{ comment.createdAt|date('M d, H:i') }}</span>
+                            </div>
+                            <p class="text-sm text-gray-600 whitespace-pre-wrap">{{ comment.content }}</p>
+                        </div>
+                    {% else %}
+                        <p class="no-comments-msg text-sm text-gray-400 italic">No comments yet</p>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>

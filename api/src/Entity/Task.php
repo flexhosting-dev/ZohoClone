@@ -76,12 +76,18 @@ class Task
     #[ORM\OrderBy(['createdAt' => 'DESC'])]
     private Collection $comments;
 
+    /** @var Collection<int, TaskChecklist> */
+    #[ORM\OneToMany(targetEntity: TaskChecklist::class, mappedBy: 'task', orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC'])]
+    private Collection $checklistItems;
+
     public function __construct()
     {
         $this->id = Uuid::uuid7();
         $this->subtasks = new ArrayCollection();
         $this->assignees = new ArrayCollection();
         $this->comments = new ArrayCollection();
+        $this->checklistItems = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -265,6 +271,22 @@ class Task
     public function getComments(): Collection
     {
         return $this->comments;
+    }
+
+    /** @return Collection<int, TaskChecklist> */
+    public function getChecklistItems(): Collection
+    {
+        return $this->checklistItems;
+    }
+
+    public function getChecklistCount(): int
+    {
+        return $this->checklistItems->count();
+    }
+
+    public function getCompletedChecklistCount(): int
+    {
+        return $this->checklistItems->filter(fn(TaskChecklist $item) => $item->isCompleted())->count();
     }
 
     public function getSubtaskCount(): int

@@ -151,6 +151,29 @@ export interface UpdateCommentData {
   content: string;
 }
 
+// Checklist
+export interface ChecklistItem {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+  position: number;
+  createdAt: string;
+}
+
+export interface ChecklistResponse {
+  items: ChecklistItem[];
+  totalCount: number;
+  completedCount: number;
+}
+
+export interface CreateChecklistItemData {
+  title: string;
+}
+
+export interface UpdateChecklistItemData {
+  title: string;
+}
+
 // Activity
 export interface Activity {
   id: string;

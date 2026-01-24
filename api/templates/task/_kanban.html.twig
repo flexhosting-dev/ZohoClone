@@ -492,28 +492,44 @@
         let draggedCard = null;
         let dropPlaceholder = null;
 
-        // Initialize mode from localStorage
+        // Initialize mode from URL or localStorage
         function initKanbanMode() {
             const projectId = document.getElementById('kanban-board').dataset.projectId;
+
+            // Check URL first
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlMode = urlParams.get('kanban');
+
             const savedMode = localStorage.getItem(`project_${projectId}_kanban_mode`);
 
             // Check if milestone mode is available
             const hasMilestones = document.getElementById('kanban-milestone') !== null;
+            const validModes = ['status', 'priority'];
+            if (hasMilestones) validModes.push('milestone');
 
-            if (savedMode && (savedMode !== 'milestone' || hasMilestones)) {
-                setKanbanMode(savedMode, false);
-            } else {
-                setKanbanMode('status', false);
+            // Priority: URL > localStorage > default
+            let mode = 'status';
+            if (urlMode && validModes.includes(urlMode)) {
+                mode = urlMode;
+            } else if (savedMode && validModes.includes(savedMode)) {
+                mode = savedMode;
             }
+
+            setKanbanMode(mode, !urlMode); // Don't update URL if we read from it
         }
 
         function setKanbanMode(mode, save = true) {
             currentKanbanMode = mode;
 
             // Save to localStorage
+            const projectId = document.getElementById('kanban-board').dataset.projectId;
+            localStorage.setItem(`project_${projectId}_kanban_mode`, mode);
+
+            // Update URL
             if (save) {
-                const projectId = document.getElementById('kanban-board').dataset.projectId;
-                localStorage.setItem(`project_${projectId}_kanban_mode`, mode);
+                const url = new URL(window.location);
+                url.searchParams.set('kanban', mode);
+                window.history.pushState({ kanbanMode: mode }, '', url);
             }
 
             // Update button states
@@ -848,6 +864,15 @@
                 }
             });
         }
+
+        // Handle browser back/forward for kanban mode
+        window.addEventListener('popstate', function(e) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlMode = urlParams.get('kanban');
+            if (urlMode && urlMode !== currentKanbanMode) {
+                setKanbanMode(urlMode, false);
+            }
+        });
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', initKanbanMode);
