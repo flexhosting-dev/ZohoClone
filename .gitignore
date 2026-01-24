@@ -1,6 +1,5 @@
 # Dependencies
-/api/vendor/
-/frontend/node_modules/
+/vendor/
 
 # Environment files
 .env
@@ -17,23 +16,21 @@
 .DS_Store
 Thumbs.db
 
-# Build outputs
-/frontend/dist/
-
 # Logs
 *.log
 
 # Symfony
-/api/var/
-/api/config/jwt/*.pem
-/api/.env.local
-/api/.env.*.local
-
-# Docker
-/docker/nginx/ssl/
+/var/
+/config/jwt/*.pem
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/public/assets/
+/assets/vendor/
 
 # Test coverage
 /coverage/
+/phpunit.xml
+.phpunit.result.cache
 
 # Temporary files
 *.tmp
