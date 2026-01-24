@@ -153,6 +153,19 @@ class ActivityService
         );
     }
 
+    public function logTaskUnassigned(Project $project, User $user, UuidInterface $taskId, string $taskTitle, string $assigneeName): Activity
+    {
+        return $this->log(
+            $project,
+            $user,
+            'task',
+            $taskId,
+            ActivityAction::UNASSIGNED,
+            $taskTitle,
+            ['assignee' => $assigneeName],
+        );
+    }
+
     public function logCommentAdded(Project $project, User $user, UuidInterface $taskId, string $taskTitle): Activity
     {
         return $this->log(

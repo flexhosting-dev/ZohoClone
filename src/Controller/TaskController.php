@@ -9,6 +9,7 @@ use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
 use App\Form\TaskFormType;
 use App\Entity\TaskAssignee;
+use App\Repository\ActivityRepository;
 use App\Repository\MilestoneRepository;
 use App\Repository\ProjectRepository;
 use App\Repository\TaskRepository;
@@ -28,6 +29,7 @@ class TaskController extends AbstractController
         private readonly MilestoneRepository $milestoneRepository,
         private readonly ProjectRepository $projectRepository,
         private readonly UserRepository $userRepository,
+        private readonly ActivityRepository $activityRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly ActivityService $activityService,
     ) {
@@ -405,6 +407,65 @@ class TaskController extends AbstractController
         ]);
     }
 
+    #[Route('/tasks/{id}/activity', name: 'app_task_activity', methods: ['GET'])]
+    public function activity(Task $task): JsonResponse
+    {
+        $project = $task->getProject();
+        $this->denyAccessUnlessGranted('PROJECT_VIEW', $project);
+
+        $activities = $this->activityRepository->findByTask($task->getId());
+
+        $activityData = [];
+        foreach ($activities as $activity) {
+            $user = $activity->getUser();
+            $action = $activity->getAction();
+            $metadata = $activity->getMetadata() ?? [];
+
+            $activityData[] = [
+                'id' => $activity->getId()->toString(),
+                'action' => $action->value,
+                'actionLabel' => $this->formatActionLabel($action, $metadata),
+                'user' => [
+                    'fullName' => $user->getFullName(),
+                    'initials' => strtoupper(substr($user->getFirstName(), 0, 1) . substr($user->getLastName(), 0, 1)),
+                ],
+                'metadata' => $metadata,
+                'createdAt' => $activity->getCreatedAt()->format('M d, H:i'),
+            ];
+        }
+
+        return $this->json(['activities' => $activityData]);
+    }
+
+    private function formatActionLabel(\App\Enum\ActivityAction $action, array $metadata): string
+    {
+        return match($action) {
+            \App\Enum\ActivityAction::CREATED => 'created this task',
+            \App\Enum\ActivityAction::UPDATED => $this->formatUpdatedLabel($metadata),
+            \App\Enum\ActivityAction::STATUS_CHANGED => 'changed status',
+            \App\Enum\ActivityAction::PRIORITY_CHANGED => 'changed priority',
+            \App\Enum\ActivityAction::MILESTONE_CHANGED => 'moved to milestone',
+            \App\Enum\ActivityAction::ASSIGNED => 'assigned',
+            \App\Enum\ActivityAction::UNASSIGNED => 'unassigned',
+            \App\Enum\ActivityAction::COMMENTED => 'commented',
+            default => $action->label(),
+        };
+    }
+
+    private function formatUpdatedLabel(array $metadata): string
+    {
+        if (isset($metadata['changes']['title'])) {
+            return 'changed title';
+        }
+        if (isset($metadata['changes']['dueDate'])) {
+            return 'changed due date';
+        }
+        if (isset($metadata['changes']['startDate'])) {
+            return 'changed start date';
+        }
+        return 'updated';
+    }
+
     #[Route('/tasks/reorder', name: 'app_task_reorder', methods: ['POST'])]
     public function reorder(Request $request): JsonResponse
     {
@@ -693,12 +754,12 @@ class TaskController extends AbstractController
             $task->removeAssignee($assigneeToRemove);
             $this->entityManager->remove($assigneeToRemove);
 
-            $this->activityService->logTaskUpdated(
+            $this->activityService->logTaskUnassigned(
                 $project,
                 $user,
                 $task->getId(),
                 $task->getTitle(),
-                ['unassigned' => $targetUser->getFullName()]
+                $targetUser->getFullName()
             );
         }
 
