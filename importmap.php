@@ -49,4 +49,7 @@ return [
     'vue/components/KanbanBoard' => [
         'path' => './assets/vue/components/KanbanBoard.js',
     ],
+    'vue/components/TaskCreateForm' => [
+        'path' => './assets/vue/components/TaskCreateForm.js',
+    ],
 ];

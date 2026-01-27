@@ -1,0 +1,54 @@
+<div class="h-full flex flex-col">
+    {# Header #}
+    <div class="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Add New Task</h2>
+                <p class="mt-1 text-sm text-gray-500">{{ project.name }}</p>
+            </div>
+            <button
+                type="button"
+                onclick="closeTaskPanel()"
+                class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+                <span class="sr-only">Close panel</span>
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    {# Content #}
+    <div class="flex-1 overflow-y-auto px-6 py-6">
+        {% if project.milestones|length > 0 %}
+            {# Vue component mount point #}
+            <div data-vue-component="TaskCreateForm"
+                 data-vue-project-id="{{ project.id }}"
+                 data-vue-milestones="{{ project.milestones|map(m => {id: m.id ~ '', name: m.name})|json_encode|e('html_attr') }}"
+                 data-vue-default-milestone-id="{{ project.milestones|first ? (project.milestones|first.id ~ '') : '' }}"
+                 data-vue-base-path="{{ app.request.basePath }}">
+            </div>
+        {% else %}
+            {# No milestones - show message #}
+            <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />
+                </svg>
+                <h3 class="mt-4 text-sm font-medium text-gray-900">No milestones</h3>
+                <p class="mt-2 text-sm text-gray-500">
+                    Create a milestone first to start adding tasks.
+                </p>
+                <div class="mt-6">
+                    <a href="{{ path('app_milestone_new', {projectId: project.id}) }}"
+                       class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
+                        <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                        </svg>
+                        Add Milestone
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>

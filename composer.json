@@ -1,6 +1,6 @@
 {
-    "name": "zoho-clone/api",
-    "description": "Zoho Projects Clone - Symfony MVC Application",
+    "name": "workflow/api",
+    "description": "WorkFlow - Project Management Application",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",

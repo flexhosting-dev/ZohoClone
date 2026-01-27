@@ -1,6 +1,6 @@
 # Future Features
 
-This document tracks planned features for the ZohoClone project.
+This document tracks planned features for the WorkFlow project.
 
 ---
 

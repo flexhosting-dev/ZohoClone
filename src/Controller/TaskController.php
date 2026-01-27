@@ -781,6 +781,123 @@ class TaskController extends AbstractController
         ]);
     }
 
+    #[Route('/projects/{projectId}/tasks/create-panel', name: 'app_task_create_panel', methods: ['GET'])]
+    public function createPanel(string $projectId): Response
+    {
+        $project = $this->projectRepository->find($projectId);
+        if (!$project) {
+            throw $this->createNotFoundException('Project not found');
+        }
+
+        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
+
+        return $this->render('task/_create_panel.html.twig', [
+            'project' => $project,
+        ]);
+    }
+
+    #[Route('/projects/{projectId}/tasks/json', name: 'app_task_create_json', methods: ['POST'])]
+    public function createJson(Request $request, string $projectId): JsonResponse
+    {
+        $project = $this->projectRepository->find($projectId);
+        if (!$project) {
+            return $this->json(['error' => 'Project not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
+
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $data = json_decode($request->getContent(), true);
+
+        // Validate required fields
+        $title = trim($data['title'] ?? '');
+        if (empty($title)) {
+            return $this->json(['error' => 'Title is required'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $milestoneId = $data['milestone'] ?? null;
+        if (empty($milestoneId)) {
+            return $this->json(['error' => 'Milestone is required'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $milestone = $this->milestoneRepository->find($milestoneId);
+        if (!$milestone || $milestone->getProject()->getId()->toString() !== $project->getId()->toString()) {
+            return $this->json(['error' => 'Invalid milestone'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Create the task
+        $task = new Task();
+        $task->setTitle($title);
+        $task->setMilestone($milestone);
+
+        // Optional fields
+        if (!empty($data['status'])) {
+            $status = TaskStatus::tryFrom($data['status']);
+            if ($status) {
+                $task->setStatus($status);
+            }
+        }
+
+        if (!empty($data['priority'])) {
+            $priority = TaskPriority::tryFrom($data['priority']);
+            if ($priority) {
+                $task->setPriority($priority);
+            }
+        }
+
+        if (!empty($data['dueDate'])) {
+            try {
+                $task->setDueDate(new \DateTimeImmutable($data['dueDate']));
+            } catch (\Exception $e) {
+                // Ignore invalid date
+            }
+        }
+
+        if (!empty($data['description'])) {
+            $task->setDescription(trim($data['description']));
+        }
+
+        // Set position to end of list
+        $maxPosition = $this->taskRepository->findMaxPositionInMilestone($milestone);
+        $task->setPosition($maxPosition + 1);
+
+        $this->entityManager->persist($task);
+
+        $this->activityService->logTaskCreated(
+            $project,
+            $user,
+            $task->getId(),
+            $task->getTitle()
+        );
+
+        $this->entityManager->flush();
+
+        return $this->json([
+            'success' => true,
+            'task' => [
+                'id' => $task->getId(),
+                'title' => $task->getTitle(),
+                'status' => [
+                    'value' => $task->getStatus()->value,
+                    'label' => $task->getStatus()->label(),
+                ],
+                'priority' => [
+                    'value' => $task->getPriority()->value,
+                    'label' => $task->getPriority()->label(),
+                ],
+                'milestoneId' => $milestone->getId()->toString(),
+                'milestone' => [
+                    'id' => $milestone->getId()->toString(),
+                    'name' => $milestone->getName(),
+                ],
+                'dueDate' => $task->getDueDate()?->format('Y-m-d'),
+                'position' => $task->getPosition(),
+            ],
+        ]);
+    }
+
     #[Route('/projects/{projectId}/members', name: 'app_project_members_list', methods: ['GET'])]
     public function getProjectMembers(string $projectId): JsonResponse
     {

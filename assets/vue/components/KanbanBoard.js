@@ -28,6 +28,7 @@ export default {
         const collapsedColumns = ref({});
         const draggedTask = ref(null);
         const dragOverColumn = ref(null);
+        const dropIndex = ref(null);
         const isUpdating = ref(false);
 
         const basePath = props.basePath || window.BASE_PATH || '';
@@ -166,12 +167,35 @@ export default {
         const handleDragEnd = () => {
             draggedTask.value = null;
             dragOverColumn.value = null;
+            dropIndex.value = null;
         };
 
         const handleDragOver = (event, columnValue) => {
             event.preventDefault();
             event.dataTransfer.dropEffect = 'move';
             dragOverColumn.value = columnValue;
+
+            // Calculate drop index based on mouse position
+            const dropzone = event.currentTarget.querySelector('.kanban-dropzone');
+            if (!dropzone) return;
+
+            const taskCards = dropzone.querySelectorAll('.task-card');
+            const mouseY = event.clientY;
+
+            let newDropIndex = taskCards.length; // Default to end
+
+            for (let i = 0; i < taskCards.length; i++) {
+                const card = taskCards[i];
+                const rect = card.getBoundingClientRect();
+                const cardMiddle = rect.top + rect.height / 2;
+
+                if (mouseY < cardMiddle) {
+                    newDropIndex = i;
+                    break;
+                }
+            }
+
+            dropIndex.value = newDropIndex;
         };
 
         const handleDragLeave = (event, columnValue) => {
@@ -180,6 +204,7 @@ export default {
             const column = event.currentTarget;
             if (!column.contains(relatedTarget)) {
                 dragOverColumn.value = null;
+                dropIndex.value = null;
             }
         };
 
@@ -190,12 +215,15 @@ export default {
 
             const task = draggedTask.value;
             const oldValue = getCurrentValue(task);
+            const targetIndex = dropIndex.value;
 
             // Clear drag state
             dragOverColumn.value = null;
+            dropIndex.value = null;
 
-            // If same column, just reorder
+            // If same column, reorder within column
             if (oldValue === newValue) {
+                reorderTaskInColumn(task, newValue, targetIndex);
                 await persistColumnOrder(newValue);
                 draggedTask.value = null;
                 return;
@@ -203,6 +231,9 @@ export default {
 
             // Update task locally first (optimistic)
             updateTaskValue(task, newValue);
+
+            // Reorder to target position in new column
+            reorderTaskInColumn(task, newValue, targetIndex);
 
             isUpdating.value = true;
 
@@ -223,6 +254,9 @@ export default {
                     throw new Error('Update failed');
                 }
 
+                // Persist the new order in target column
+                await persistColumnOrder(newValue);
+
                 // Show success notification
                 const columnLabel = columns.value.find(c => c.value === newValue)?.label || newValue;
                 if (typeof Toastr !== 'undefined') {
@@ -240,6 +274,37 @@ export default {
                 isUpdating.value = false;
                 draggedTask.value = null;
             }
+        };
+
+        const reorderTaskInColumn = (task, columnValue, targetIndex) => {
+            // Get all tasks currently in this column
+            const allColumnTasks = tasksByColumn.value[columnValue] || [];
+
+            // Find current position of the dragged task in this column
+            const currentIndex = allColumnTasks.findIndex(t => t.id === task.id);
+
+            // Get column tasks excluding the dragged task
+            const columnTasks = allColumnTasks.filter(t => t.id !== task.id);
+
+            // Adjust target index if dragging within same column and moving down
+            let insertAt = targetIndex !== null ? targetIndex : columnTasks.length;
+            if (currentIndex !== -1 && insertAt > currentIndex) {
+                // When moving down in the same column, the visual index includes the dragged card
+                // so we need to subtract 1 for the actual insertion position
+                insertAt = Math.max(0, insertAt - 1);
+            }
+            insertAt = Math.min(insertAt, columnTasks.length);
+
+            // Insert task at new position
+            columnTasks.splice(insertAt, 0, task);
+
+            // Update position values in the tasks array
+            columnTasks.forEach((t, index) => {
+                const taskIndex = tasks.value.findIndex(tt => tt.id === t.id);
+                if (taskIndex !== -1) {
+                    tasks.value[taskIndex].position = index;
+                }
+            });
         };
 
         // Helper functions
@@ -417,15 +482,31 @@ export default {
             }
         };
 
+        // Handle task created from create panel
+        const handleTaskCreated = (e) => {
+            const { task } = e.detail;
+            if (!task) return;
+
+            // Only add if task belongs to this project (check milestone)
+            const taskMilestoneId = task.milestoneId || task.milestone?.id;
+            const projectMilestoneIds = props.milestones.map(m => m.id);
+
+            if (projectMilestoneIds.includes(taskMilestoneId)) {
+                tasks.value.push(task);
+            }
+        };
+
         onMounted(() => {
             loadSavedState();
             window.addEventListener('popstate', handlePopState);
             document.addEventListener('task-updated', handleTaskUpdate);
+            document.addEventListener('task-created', handleTaskCreated);
         });
 
         onUnmounted(() => {
             window.removeEventListener('popstate', handlePopState);
             document.removeEventListener('task-updated', handleTaskUpdate);
+            document.removeEventListener('task-created', handleTaskCreated);
         });
 
         return {
@@ -437,6 +518,7 @@ export default {
             collapsedColumns,
             draggedTask,
             dragOverColumn,
+            dropIndex,
             isUpdating,
             setMode,
             toggleCollapse,
@@ -508,7 +590,7 @@ export default {
                     :class="[
                         column.bgColor,
                         isCollapsed(column.value) ? 'kanban-column-collapsed' : 'kanban-column-expanded',
-                        dragOverColumn === column.value ? 'ring-2 ring-primary-500' : ''
+                        dragOverColumn === column.value ? 'ring-1 ring-gray-300 bg-opacity-80' : ''
                     ]"
                     :data-value="column.value"
                     @dragover="handleDragOver($event, column.value)"
@@ -555,18 +637,22 @@ export default {
                     >
                         <div class="kanban-content p-4 pt-0 overflow-y-auto">
                             <div class="kanban-dropzone space-y-3 min-h-[100px]">
-                                <!-- Inline Task Card -->
-                                <div
-                                    v-for="task in tasksByColumn[column.value]"
-                                    :key="task.id"
-                                    :data-task-id="task.id"
-                                    draggable="true"
-                                    @click="handleTaskClick(task)"
-                                    @dragstart="handleDragStart($event, task)"
-                                    @dragend="handleDragEnd"
-                                    class="task-card bg-white rounded-lg shadow-sm border border-gray-200 p-4 cursor-move hover:shadow-md transition-all duration-200"
-                                    :class="{ 'opacity-40 scale-95': draggedTask?.id === task.id }"
-                                >
+                                <!-- Task Cards with drop indicators -->
+                                <template v-for="(task, index) in tasksByColumn[column.value]" :key="task.id">
+                                    <!-- Drop indicator before this task -->
+                                    <div
+                                        v-if="dragOverColumn === column.value && draggedTask && dropIndex === index"
+                                        class="drop-indicator h-1 bg-primary-400 rounded-full mx-2 transition-all"
+                                    ></div>
+                                    <div
+                                        :data-task-id="task.id"
+                                        draggable="true"
+                                        @click="handleTaskClick(task)"
+                                        @dragstart="handleDragStart($event, task)"
+                                        @dragend="handleDragEnd"
+                                        class="task-card bg-white rounded-lg shadow-sm border border-gray-200 p-4 cursor-move hover:shadow-md transition-all duration-200"
+                                        :class="{ 'opacity-40 scale-95': draggedTask?.id === task.id }"
+                                    >
                                     <div class="flex items-start justify-between">
                                         <h4 class="text-sm font-medium text-gray-900 flex-1">
                                             <a href="#" class="hover:text-primary-600" @click.prevent="handleTaskClick(task)">
@@ -615,11 +701,12 @@ export default {
                                             </span>
                                         </div>
                                     </div>
-                                </div>
+                                    </div>
+                                </template>
 
-                                <!-- Drop placeholder when empty and dragging -->
+                                <!-- Drop placeholder at end of column -->
                                 <div
-                                    v-if="tasksByColumn[column.value]?.length === 0 && draggedTask"
+                                    v-if="dragOverColumn === column.value && draggedTask"
                                     class="drop-placeholder"
                                 >
                                     <span>Drop here</span>
