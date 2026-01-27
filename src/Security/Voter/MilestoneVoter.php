@@ -2,22 +2,20 @@
 
 namespace App\Security\Voter;
 
-use App\Entity\Task;
+use App\Entity\Milestone;
 use App\Entity\User;
 use App\Enum\Permission;
 use App\Service\PermissionChecker;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
-class TaskVoter extends Voter
+class MilestoneVoter extends Voter
 {
-    public const VIEW = 'TASK_VIEW';
-    public const CREATE = 'TASK_CREATE';
-    public const EDIT = 'TASK_EDIT';
-    public const DELETE = 'TASK_DELETE';
-    public const ASSIGN = 'TASK_ASSIGN';
-    public const CHANGE_STATUS = 'TASK_CHANGE_STATUS';
-    public const CHANGE_PRIORITY = 'TASK_CHANGE_PRIORITY';
+    public const VIEW = 'MILESTONE_VIEW';
+    public const CREATE = 'MILESTONE_CREATE';
+    public const EDIT = 'MILESTONE_EDIT';
+    public const DELETE = 'MILESTONE_DELETE';
+    public const COMPLETE = 'MILESTONE_COMPLETE';
 
     public function __construct(
         private readonly PermissionChecker $permissionChecker,
@@ -31,10 +29,8 @@ class TaskVoter extends Voter
             self::CREATE,
             self::EDIT,
             self::DELETE,
-            self::ASSIGN,
-            self::CHANGE_STATUS,
-            self::CHANGE_PRIORITY,
-        ]) && $subject instanceof Task;
+            self::COMPLETE,
+        ]) && $subject instanceof Milestone;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
@@ -53,13 +49,11 @@ class TaskVoter extends Voter
     private function mapAttributeToPermission(string $attribute): string
     {
         return match ($attribute) {
-            self::VIEW => Permission::TASK_VIEW,
-            self::CREATE => Permission::TASK_CREATE,
-            self::EDIT => Permission::TASK_EDIT,
-            self::DELETE => Permission::TASK_DELETE,
-            self::ASSIGN => Permission::TASK_ASSIGN,
-            self::CHANGE_STATUS => Permission::TASK_CHANGE_STATUS,
-            self::CHANGE_PRIORITY => Permission::TASK_CHANGE_PRIORITY,
+            self::VIEW => Permission::MILESTONE_VIEW,
+            self::CREATE => Permission::MILESTONE_CREATE,
+            self::EDIT => Permission::MILESTONE_EDIT,
+            self::DELETE => Permission::MILESTONE_DELETE,
+            self::COMPLETE => Permission::MILESTONE_COMPLETE,
             default => throw new \InvalidArgumentException("Unknown attribute: $attribute"),
         };
     }

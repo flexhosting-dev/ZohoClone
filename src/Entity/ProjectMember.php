@@ -2,7 +2,6 @@
 
 namespace App\Entity;
 
-use App\Enum\ProjectRole;
 use App\Repository\ProjectMemberRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Uuid;
@@ -28,8 +27,9 @@ class ProjectMember
     #[Assert\NotNull]
     private User $user;
 
-    #[ORM\Column(type: 'string', enumType: ProjectRole::class)]
-    private ProjectRole $role = ProjectRole::MEMBER;
+    #[ORM\ManyToOne(targetEntity: Role::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private Role $role;
 
     #[ORM\Column]
     private \DateTimeImmutable $joinedAt;
@@ -67,12 +67,12 @@ class ProjectMember
         return $this;
     }
 
-    public function getRole(): ProjectRole
+    public function getRole(): Role
     {
         return $this->role;
     }
 
-    public function setRole(ProjectRole $role): static
+    public function setRole(Role $role): static
     {
         $this->role = $role;
         return $this;
@@ -81,5 +81,13 @@ class ProjectMember
     public function getJoinedAt(): \DateTimeImmutable
     {
         return $this->joinedAt;
+    }
+
+    /**
+     * Check if this member has a specific permission.
+     */
+    public function hasPermission(string $permission): bool
+    {
+        return $this->role->hasPermission($permission);
     }
 }

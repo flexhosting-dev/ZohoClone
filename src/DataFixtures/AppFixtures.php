@@ -10,24 +10,40 @@ use App\Entity\Task;
 use App\Entity\TaskAssignee;
 use App\Entity\TaskChecklist;
 use App\Entity\Comment;
+use App\Entity\Role;
 use App\Entity\Tag;
 use App\Enum\ProjectStatus;
-use App\Enum\ProjectRole;
 use App\Enum\MilestoneStatus;
 use App\Enum\TaskStatus;
 use App\Enum\TaskPriority;
 use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-class AppFixtures extends Fixture
+class AppFixtures extends Fixture implements DependentFixtureInterface
 {
     public function __construct(
         private UserPasswordHasherInterface $passwordHasher
     ) {}
 
+    public function getDependencies(): array
+    {
+        return [
+            RoleFixtures::class,
+        ];
+    }
+
     public function load(ObjectManager $manager): void
     {
+        // Get role references
+        /** @var Role $portalSuperAdmin */
+        $portalSuperAdmin = $this->getReference(RoleFixtures::PORTAL_SUPER_ADMIN, Role::class);
+        /** @var Role $projectManager */
+        $projectManager = $this->getReference(RoleFixtures::PROJECT_MANAGER, Role::class);
+        /** @var Role $projectMember */
+        $projectMember = $this->getReference(RoleFixtures::PROJECT_MEMBER, Role::class);
+
         // Create users
         $testUser = new User();
         $testUser->setEmail('test@example.com');
@@ -44,6 +60,7 @@ class AppFixtures extends Fixture
         $adminUser->setPassword($this->passwordHasher->hashPassword($adminUser, 'admin123'));
         $adminUser->setIsVerified(true);
         $adminUser->setRoles(['ROLE_ADMIN']);
+        $adminUser->setPortalRole($portalSuperAdmin);
         $manager->persist($adminUser);
 
         $johnDoe = new User();
@@ -78,19 +95,19 @@ class AppFixtures extends Fixture
         $member1 = new ProjectMember();
         $member1->setProject($project1);
         $member1->setUser($testUser);
-        $member1->setRole(ProjectRole::ADMIN);
+        $member1->setRole($projectManager);
         $manager->persist($member1);
 
         $member2 = new ProjectMember();
         $member2->setProject($project1);
         $member2->setUser($johnDoe);
-        $member2->setRole(ProjectRole::MEMBER);
+        $member2->setRole($projectMember);
         $manager->persist($member2);
 
         $member3 = new ProjectMember();
         $member3->setProject($project1);
         $member3->setUser($janeSmith);
-        $member3->setRole(ProjectRole::MEMBER);
+        $member3->setRole($projectMember);
         $manager->persist($member3);
 
         // Project 1 - Milestone 1: Backend Setup
@@ -157,13 +174,13 @@ class AppFixtures extends Fixture
         $member4 = new ProjectMember();
         $member4->setProject($project2);
         $member4->setUser($adminUser);
-        $member4->setRole(ProjectRole::ADMIN);
+        $member4->setRole($projectManager);
         $manager->persist($member4);
 
         $member5 = new ProjectMember();
         $member5->setProject($project2);
         $member5->setUser($testUser);
-        $member5->setRole(ProjectRole::MEMBER);
+        $member5->setRole($projectMember);
         $manager->persist($member5);
 
         // Project 2 - Milestone 1: Security & Authentication
@@ -209,7 +226,7 @@ class AppFixtures extends Fixture
         $member6 = new ProjectMember();
         $member6->setProject($project3);
         $member6->setUser($testUser);
-        $member6->setRole(ProjectRole::ADMIN);
+        $member6->setRole($projectManager);
         $manager->persist($member6);
 
         // Project 3 - Milestone 1: Design Phase
@@ -256,13 +273,13 @@ class AppFixtures extends Fixture
         $member7 = new ProjectMember();
         $member7->setProject($project4);
         $member7->setUser($adminUser);
-        $member7->setRole(ProjectRole::ADMIN);
+        $member7->setRole($projectManager);
         $manager->persist($member7);
 
         $member8 = new ProjectMember();
         $member8->setProject($project4);
         $member8->setUser($johnDoe);
-        $member8->setRole(ProjectRole::MEMBER);
+        $member8->setRole($projectMember);
         $manager->persist($member8);
 
         // Project 4 - Milestone 1: Employee Management (completed)

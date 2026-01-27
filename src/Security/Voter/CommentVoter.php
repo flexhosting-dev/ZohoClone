@@ -4,23 +4,26 @@ namespace App\Security\Voter;
 
 use App\Entity\Comment;
 use App\Entity\User;
-use App\Repository\ProjectMemberRepository;
+use App\Enum\Permission;
+use App\Service\PermissionChecker;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 class CommentVoter extends Voter
 {
+    public const VIEW = 'COMMENT_VIEW';
+    public const CREATE = 'COMMENT_CREATE';
     public const EDIT = 'COMMENT_EDIT';
     public const DELETE = 'COMMENT_DELETE';
 
     public function __construct(
-        private readonly ProjectMemberRepository $projectMemberRepository,
+        private readonly PermissionChecker $permissionChecker,
     ) {
     }
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return in_array($attribute, [self::EDIT, self::DELETE])
+        return in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::DELETE])
             && $subject instanceof Comment;
     }
 
@@ -35,26 +38,34 @@ class CommentVoter extends Voter
         /** @var Comment $comment */
         $comment = $subject;
 
-        // Comment author can always edit/delete their own comments
-        if ($comment->getAuthor()->getId()->equals($user->getId())) {
-            return true;
-        }
+        return match ($attribute) {
+            self::VIEW => $this->permissionChecker->hasPermission($user, Permission::COMMENT_VIEW, $comment),
+            self::CREATE => $this->permissionChecker->hasPermission($user, Permission::COMMENT_CREATE, $comment),
+            self::EDIT => $this->canEdit($user, $comment),
+            self::DELETE => $this->canDelete($user, $comment),
+            default => false,
+        };
+    }
 
-        $project = $comment->getTask()->getMilestone()->getProject();
+    private function canEdit(User $user, Comment $comment): bool
+    {
+        return $this->permissionChecker->hasOwnResourcePermission(
+            $user,
+            Permission::COMMENT_EDIT_OWN,
+            Permission::COMMENT_EDIT_ANY,
+            $comment,
+            $comment->getAuthor()
+        );
+    }
 
-        // Project owner can delete any comment
-        if ($attribute === self::DELETE && $project->getOwner()->getId()->equals($user->getId())) {
-            return true;
-        }
-
-        // Project admins can delete any comment
-        if ($attribute === self::DELETE) {
-            $membership = $this->projectMemberRepository->findByProjectAndUser($project, $user);
-            if ($membership && $membership->getRole()->canManageMembers()) {
-                return true;
-            }
-        }
-
-        return false;
+    private function canDelete(User $user, Comment $comment): bool
+    {
+        return $this->permissionChecker->hasOwnResourcePermission(
+            $user,
+            Permission::COMMENT_DELETE_OWN,
+            Permission::COMMENT_DELETE_ANY,
+            $comment,
+            $comment->getAuthor()
+        );
     }
 }

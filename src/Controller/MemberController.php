@@ -5,9 +5,9 @@ namespace App\Controller;
 use App\Entity\Project;
 use App\Entity\ProjectMember;
 use App\Entity\User;
-use App\Enum\ProjectRole;
 use App\Repository\ProjectMemberRepository;
 use App\Repository\ProjectRepository;
+use App\Repository\RoleRepository;
 use App\Repository\UserRepository;
 use App\Service\ActivityService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -23,6 +23,7 @@ class MemberController extends AbstractController
         private readonly ProjectRepository $projectRepository,
         private readonly ProjectMemberRepository $projectMemberRepository,
         private readonly UserRepository $userRepository,
+        private readonly RoleRepository $roleRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly ActivityService $activityService,
     ) {
@@ -37,7 +38,7 @@ class MemberController extends AbstractController
         $currentUser = $this->getUser();
 
         $email = $request->request->get('email');
-        $roleValue = $request->request->get('role', 'member');
+        $roleSlug = $request->request->get('role', 'project-member');
 
         if (!$email) {
             $this->addFlash('error', 'Email is required.');
@@ -56,7 +57,15 @@ class MemberController extends AbstractController
             return $this->redirectToRoute('app_project_show', ['id' => $project->getId()]);
         }
 
-        $role = ProjectRole::tryFrom($roleValue) ?? ProjectRole::MEMBER;
+        $role = $this->roleRepository->findBySlug($roleSlug);
+        if (!$role || !$role->isProjectRole()) {
+            $role = $this->roleRepository->findBySlug('project-member');
+        }
+
+        if (!$role) {
+            $this->addFlash('error', 'Invalid role specified.');
+            return $this->redirectToRoute('app_project_show', ['id' => $project->getId()]);
+        }
 
         $member = new ProjectMember();
         $member->setProject($project);
@@ -69,7 +78,7 @@ class MemberController extends AbstractController
             $project,
             $currentUser,
             $user->getFullName(),
-            $role->label()
+            $role->getName()
         );
 
         $this->entityManager->flush();
@@ -84,18 +93,33 @@ class MemberController extends AbstractController
     {
         $this->denyAccessUnlessGranted('PROJECT_MANAGE_MEMBERS', $project);
 
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+
         $member = $this->projectMemberRepository->find($memberId);
         if (!$member || $member->getProject()->getId()->toString() !== $project->getId()->toString()) {
             throw $this->createNotFoundException('Member not found');
         }
 
-        $roleValue = $request->request->get('role');
-        $role = ProjectRole::tryFrom($roleValue);
+        $roleSlug = $request->request->get('role');
+        $role = $this->roleRepository->findBySlug($roleSlug);
 
-        if ($role) {
+        if ($role && $role->isProjectRole()) {
+            $oldRoleName = $member->getRole()->getName();
             $member->setRole($role);
+
+            $this->activityService->logMemberRoleChanged(
+                $project,
+                $currentUser,
+                $member->getUser()->getFullName(),
+                $oldRoleName,
+                $role->getName()
+            );
+
             $this->entityManager->flush();
             $this->addFlash('success', 'Member role updated.');
+        } else {
+            $this->addFlash('error', 'Invalid role specified.');
         }
 
         return $this->redirectToRoute('app_project_show', ['id' => $project->getId()]);

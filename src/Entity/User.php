@@ -37,6 +37,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $googleId = null;
 
+    #[ORM\ManyToOne(targetEntity: Role::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Role $portalRole = null;
+
     #[ORM\Column(length: 100)]
     #[Assert\NotBlank]
     #[Assert\Length(min: 1, max: 100)]
@@ -153,6 +157,32 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->googleId = $googleId;
         return $this;
+    }
+
+    public function getPortalRole(): ?Role
+    {
+        return $this->portalRole;
+    }
+
+    public function setPortalRole(?Role $portalRole): static
+    {
+        $this->portalRole = $portalRole;
+        return $this;
+    }
+
+    public function hasPortalPermission(string $permission): bool
+    {
+        return $this->portalRole !== null && $this->portalRole->hasPermission($permission);
+    }
+
+    public function isPortalSuperAdmin(): bool
+    {
+        return $this->portalRole !== null && $this->portalRole->getSlug() === 'portal-super-admin';
+    }
+
+    public function isPortalAdmin(): bool
+    {
+        return $this->portalRole !== null && in_array($this->portalRole->getSlug(), ['portal-super-admin', 'portal-admin'], true);
     }
 
     public function eraseCredentials(): void
