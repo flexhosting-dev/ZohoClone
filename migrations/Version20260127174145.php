@@ -6,7 +6,7 @@ namespace DoctrineMigrations;
 
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
-use Symfony\Component\Uid\Uuid;
+use Ramsey\Uuid\Uuid;
 
 /**
  * Migration to add Role-based permission system.
@@ -42,7 +42,7 @@ final class Version20260127174145 extends AbstractMigration
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
 
         // Portal SuperAdmin
-        $superAdminId = Uuid::v7()->toRfc4122();
+        $superAdminId = Uuid::uuid7()->toString();
         $superAdminPermissions = json_encode([
             'project.view', 'project.create', 'project.edit', 'project.delete', 'project.manage_members', 'project.archive',
             'milestone.view', 'milestone.create', 'milestone.edit', 'milestone.delete', 'milestone.complete',
@@ -56,7 +56,7 @@ final class Version20260127174145 extends AbstractMigration
         $this->addSql("INSERT INTO role (id, name, slug, description, type, is_system_role, permissions, created_at, updated_at) VALUES ('{$superAdminId}', 'Portal SuperAdmin', 'portal-super-admin', 'Full system access with all permissions', 'portal', 1, '{$superAdminPermissions}', '{$now}', '{$now}')");
 
         // Portal Admin
-        $adminId = Uuid::v7()->toRfc4122();
+        $adminId = Uuid::uuid7()->toString();
         $adminPermissions = json_encode([
             'project.view', 'project.create', 'project.edit', 'project.delete', 'project.manage_members', 'project.archive',
             'milestone.view', 'milestone.create', 'milestone.edit', 'milestone.delete', 'milestone.complete',
@@ -70,7 +70,7 @@ final class Version20260127174145 extends AbstractMigration
         $this->addSql("INSERT INTO role (id, name, slug, description, type, is_system_role, permissions, created_at, updated_at) VALUES ('{$adminId}', 'Portal Admin', 'portal-admin', 'Manage users and access all projects', 'portal', 1, '{$adminPermissions}', '{$now}', '{$now}')");
 
         // Project Manager
-        $managerId = Uuid::v7()->toRfc4122();
+        $managerId = Uuid::uuid7()->toString();
         $managerPermissions = json_encode([
             'project.view', 'project.edit', 'project.delete', 'project.manage_members', 'project.archive',
             'milestone.view', 'milestone.create', 'milestone.edit', 'milestone.delete', 'milestone.complete',
@@ -82,7 +82,7 @@ final class Version20260127174145 extends AbstractMigration
         $this->addSql("INSERT INTO role (id, name, slug, description, type, is_system_role, permissions, created_at, updated_at) VALUES ('{$managerId}', 'Project Manager', 'project-manager', 'Full control over assigned projects', 'project', 1, '{$managerPermissions}', '{$now}', '{$now}')");
 
         // Project Member
-        $memberId = Uuid::v7()->toRfc4122();
+        $memberId = Uuid::uuid7()->toString();
         $memberPermissions = json_encode([
             'project.view',
             'milestone.view', 'milestone.complete',
@@ -94,7 +94,7 @@ final class Version20260127174145 extends AbstractMigration
         $this->addSql("INSERT INTO role (id, name, slug, description, type, is_system_role, permissions, created_at, updated_at) VALUES ('{$memberId}', 'Project Member', 'project-member', 'Work on tasks and collaborate', 'project', 1, '{$memberPermissions}', '{$now}', '{$now}')");
 
         // Project Viewer
-        $viewerId = Uuid::v7()->toRfc4122();
+        $viewerId = Uuid::uuid7()->toString();
         $viewerPermissions = json_encode([
             'project.view', 'milestone.view', 'task.view', 'checklist.view', 'comment.view', 'tag.view',
         ]);

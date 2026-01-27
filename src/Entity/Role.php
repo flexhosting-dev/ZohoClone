@@ -5,8 +5,8 @@ namespace App\Entity;
 use App\Enum\RoleType;
 use App\Repository\RoleRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\Types\UuidType;
-use Symfony\Component\Uid\Uuid;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 #[ORM\Entity(repositoryClass: RoleRepository::class)]
 #[ORM\Table(name: 'role')]
@@ -14,8 +14,8 @@ use Symfony\Component\Uid\Uuid;
 class Role
 {
     #[ORM\Id]
-    #[ORM\Column(type: UuidType::NAME, unique: true)]
-    private Uuid $id;
+    #[ORM\Column(type: 'uuid', unique: true)]
+    private UuidInterface $id;
 
     #[ORM\Column(length: 100)]
     private string $name;
@@ -43,12 +43,12 @@ class Role
 
     public function __construct()
     {
-        $this->id = Uuid::v7();
+        $this->id = Uuid::uuid7();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): Uuid
+    public function getId(): UuidInterface
     {
         return $this->id;
     }
