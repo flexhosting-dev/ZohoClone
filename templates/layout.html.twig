@@ -61,6 +61,36 @@
                             </li>
                         </ul>
                     </li>
+                    <li id="favourite-projects-section-mobile" class="{{ favourite_projects is not defined or favourite_projects|length == 0 ? 'hidden' : '' }}">
+                        <div class="text-xs font-semibold leading-6 text-white/50 uppercase tracking-wider flex items-center gap-1">
+                            <svg class="h-3 w-3 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            Favourites
+                        </div>
+                        <ul role="list" class="-mx-2 mt-2 space-y-1" id="favourite-projects-list-mobile">
+                            {% for project in favourite_projects|default([]) %}
+                            <li class="favourite-project-item group/item" data-project-id="{{ project.id }}" data-project-name="{{ project.name }}">
+                                <div class="flex items-center gap-x-1">
+                                    <a href="{{ path('app_project_show', {id: project.id}) }}" class="text-white/80 hover:bg-white/10 hover:text-white flex-1 flex gap-x-3 rounded-lg p-2.5 text-sm font-semibold leading-6 transition-all">
+                                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-yellow-500/20 text-[0.625rem] font-medium text-yellow-300 group-hover/item:bg-yellow-500/30">
+                                            {{ project.name|slice(0, 1)|upper }}
+                                        </span>
+                                        <span class="truncate">{{ project.name }}</span>
+                                    </a>
+                                    <button type="button"
+                                            onclick="removeFavourite('{{ project.id }}', this)"
+                                            class="opacity-0 group-hover/item:opacity-100 p-1.5 rounded-md text-white/50 hover:text-white hover:bg-white/10 transition-all"
+                                            title="Remove from favourites">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
                     {% if recent_projects is defined and recent_projects|length > 0 %}
                     <li>
                         <div class="text-xs font-semibold leading-6 text-white/50 uppercase tracking-wider">Recent Projects</div>
@@ -170,10 +200,40 @@
                             </li>
                         </ul>
                     </li>
+                    <li id="favourite-projects-section-mobile-classic" class="{{ favourite_projects is not defined or favourite_projects|length == 0 ? 'hidden' : '' }}">
+                        <div class="text-xs font-semibold leading-6 text-gray-400 flex items-center gap-1">
+                            <svg class="h-3 w-3 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            Favourites
+                        </div>
+                        <ul role="list" class="-mx-2 mt-2 space-y-1" id="favourite-projects-list-mobile-classic">
+                            {% for project in favourite_projects|default([]) %}
+                            <li class="favourite-project-item group/item" data-project-id="{{ project.id }}" data-project-name="{{ project.name }}">
+                                <div class="flex items-center gap-x-1">
+                                    <a href="{{ path('app_project_show', {id: project.id}) }}" class="text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 flex-1 flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-yellow-300 bg-yellow-50 text-[0.625rem] font-medium text-yellow-600 group-hover/item:border-yellow-400 group-hover/item:bg-yellow-100">
+                                            {{ project.name|slice(0, 1)|upper }}
+                                        </span>
+                                        <span class="truncate">{{ project.name }}</span>
+                                    </a>
+                                    <button type="button"
+                                            onclick="removeFavourite('{{ project.id }}', this)"
+                                            class="opacity-0 group-hover/item:opacity-100 p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+                                            title="Remove from favourites">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
                     {% if recent_projects is defined and recent_projects|length > 0 %}
                     <li>
                         <div class="text-xs font-semibold leading-6 text-gray-400">Recent Projects</div>
-                        <ul role="list" class="-mx-2 mt-2 space-y-1" id="recent-projects-list-mobile">
+                        <ul role="list" class="-mx-2 mt-2 space-y-1" id="recent-projects-list-mobile-classic">
                             {% for project in recent_projects %}
                             <li class="recent-project-item group/item" data-project-id="{{ project.id }}">
                                 <div class="flex items-center gap-x-1">
@@ -1752,6 +1812,205 @@
             closeColorPicker();
         }
     });
+
+    // ===== TOGGLE FAVOURITE PROJECT =====
+    async function toggleFavourite(projectId, btn) {
+        const isFavourite = btn.dataset.isFavourite === 'true';
+        const svg = btn.querySelector('svg');
+
+        try {
+            const response = await fetch(`${BASE_PATH}/projects/${projectId}/toggle-favourite`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to toggle favourite');
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update button state
+                btn.dataset.isFavourite = data.isFavourite ? 'true' : 'false';
+
+                if (data.isFavourite) {
+                    btn.classList.remove('text-gray-300', 'hover:text-yellow-500', 'text-gray-400');
+                    btn.classList.add('text-yellow-500', 'hover:text-yellow-600', 'bg-yellow-50');
+                    svg.setAttribute('fill', 'currentColor');
+                    btn.title = 'Remove from favourites';
+                    Toastr.success('Added to favourites');
+
+                    // Add to sidebar
+                    const projectCard = btn.closest('[data-project-id]') || btn.closest('.card-accent-green, .card-accent-blue, .card-accent-purple, .card-accent-orange, .card-accent-yellow, .card-accent-pink');
+                    let projectName = '';
+                    if (projectCard) {
+                        const nameEl = projectCard.querySelector('h3 a, h2');
+                        if (nameEl) projectName = nameEl.textContent.trim();
+                    }
+                    // Try to get from page title if on show page
+                    if (!projectName) {
+                        const pageTitle = document.querySelector('h2.text-2xl');
+                        if (pageTitle) projectName = pageTitle.textContent.trim();
+                    }
+                    if (projectName) {
+                        addFavouriteToSidebar(projectId, projectName);
+                    }
+                } else {
+                    btn.classList.add('text-gray-300', 'hover:text-yellow-500');
+                    btn.classList.remove('text-yellow-500', 'hover:text-yellow-600', 'bg-yellow-50', 'text-gray-400');
+                    svg.setAttribute('fill', 'none');
+                    btn.title = 'Add to favourites';
+                    Toastr.success('Removed from favourites');
+
+                    // Remove from sidebar
+                    removeFavouriteFromSidebar(projectId);
+                }
+            }
+        } catch (error) {
+            console.error('Error toggling favourite:', error);
+            Toastr.error('Failed to update favourite');
+        }
+    }
+
+    // ===== REMOVE FAVOURITE FROM SIDEBAR =====
+    async function removeFavourite(projectId, btn) {
+        const item = btn.closest('.favourite-project-item');
+        item.style.opacity = '0.5';
+
+        try {
+            const response = await fetch(`${BASE_PATH}/projects/${projectId}/toggle-favourite`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to remove favourite');
+
+            const data = await response.json();
+
+            if (data.success && !data.isFavourite) {
+                // Remove from sidebar with animation
+                removeFavouriteFromSidebar(projectId);
+
+                // Update any favourite buttons on the page for this project
+                document.querySelectorAll(`.favourite-btn[data-is-favourite="true"]`).forEach(favBtn => {
+                    const btnProjectId = favBtn.closest('[data-project-id]')?.dataset.projectId ||
+                                         (favBtn.onclick && favBtn.onclick.toString().includes(projectId) ? projectId : null);
+                    if (btnProjectId === projectId || favBtn.getAttribute('onclick')?.includes(projectId)) {
+                        favBtn.dataset.isFavourite = 'false';
+                        favBtn.classList.add('text-gray-300', 'hover:text-yellow-500');
+                        favBtn.classList.remove('text-yellow-500', 'hover:text-yellow-600', 'bg-yellow-50');
+                        const svg = favBtn.querySelector('svg');
+                        if (svg) svg.setAttribute('fill', 'none');
+                        favBtn.title = 'Add to favourites';
+                    }
+                });
+
+                Toastr.success('Removed from favourites');
+            }
+        } catch (error) {
+            console.error('Error removing favourite:', error);
+            item.style.opacity = '1';
+            Toastr.error('Failed to remove favourite');
+        }
+    }
+
+    // ===== ADD FAVOURITE TO SIDEBAR =====
+    function addFavouriteToSidebar(projectId, projectName) {
+        const initial = projectName.charAt(0).toUpperCase();
+
+        // Template for gradient theme
+        const gradientHtml = `
+            <li class="favourite-project-item group/item" data-project-id="${projectId}" data-project-name="${projectName}">
+                <div class="flex items-center gap-x-1">
+                    <a href="${BASE_PATH}/projects/${projectId}"
+                       class="text-white/80 hover:bg-white/10 hover:text-white flex-1 flex gap-x-3 rounded-lg p-2.5 text-sm font-semibold leading-6 transition-all">
+                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-yellow-500/20 text-[0.625rem] font-medium text-yellow-300 group-hover/item:bg-yellow-500/30">
+                            ${initial}
+                        </span>
+                        <span class="truncate">${projectName}</span>
+                    </a>
+                    <button type="button"
+                            onclick="removeFavourite('${projectId}', this)"
+                            class="opacity-0 group-hover/item:opacity-100 p-1.5 rounded-md text-white/50 hover:text-white hover:bg-white/10 transition-all"
+                            title="Remove from favourites">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </li>`;
+
+        // Template for classic theme
+        const classicHtml = `
+            <li class="favourite-project-item group/item" data-project-id="${projectId}" data-project-name="${projectName}">
+                <div class="flex items-center gap-x-1">
+                    <a href="${BASE_PATH}/projects/${projectId}"
+                       class="text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 flex-1 flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-yellow-300 bg-yellow-50 text-[0.625rem] font-medium text-yellow-600 group-hover/item:border-yellow-400 group-hover/item:bg-yellow-100">
+                            ${initial}
+                        </span>
+                        <span class="truncate">${projectName}</span>
+                    </a>
+                    <button type="button"
+                            onclick="removeFavourite('${projectId}', this)"
+                            class="opacity-0 group-hover/item:opacity-100 p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+                            title="Remove from favourites">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </li>`;
+
+        // Add to gradient theme lists
+        ['favourite-projects-list', 'favourite-projects-list-mobile'].forEach(listId => {
+            const list = document.getElementById(listId);
+            if (list && !list.querySelector(`[data-project-id="${projectId}"]`)) {
+                list.insertAdjacentHTML('beforeend', gradientHtml);
+            }
+        });
+
+        // Add to classic theme lists
+        ['favourite-projects-list-classic', 'favourite-projects-list-mobile-classic'].forEach(listId => {
+            const list = document.getElementById(listId);
+            if (list && !list.querySelector(`[data-project-id="${projectId}"]`)) {
+                list.insertAdjacentHTML('beforeend', classicHtml);
+            }
+        });
+
+        // Show sections if hidden
+        ['favourite-projects-section', 'favourite-projects-section-mobile', 'favourite-projects-section-classic', 'favourite-projects-section-mobile-classic'].forEach(sectionId => {
+            const section = document.getElementById(sectionId);
+            if (section) section.classList.remove('hidden');
+        });
+    }
+
+    // ===== REMOVE FAVOURITE FROM SIDEBAR =====
+    function removeFavouriteFromSidebar(projectId) {
+        document.querySelectorAll(`.favourite-project-item[data-project-id="${projectId}"]`).forEach(el => {
+            el.style.transition = 'opacity 0.2s, transform 0.2s, height 0.2s, margin 0.2s, padding 0.2s';
+            el.style.opacity = '0';
+            el.style.transform = 'translateX(-10px)';
+            setTimeout(() => {
+                el.style.height = '0';
+                el.style.margin = '0';
+                el.style.padding = '0';
+                el.style.overflow = 'hidden';
+                setTimeout(() => {
+                    const list = el.parentElement;
+                    el.remove();
+                    // Hide section if no more favourites
+                    if (list && list.children.length === 0) {
+                        const section = list.closest('[id^="favourite-projects-section"]');
+                        if (section) section.classList.add('hidden');
+                    }
+                }, 200);
+            }, 200);
+        });
+    }
 
     // ===== HIDE RECENT PROJECT =====
     async function hideRecentProject(projectId, btn) {

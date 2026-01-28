@@ -66,6 +66,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json')]
     private array $hiddenRecentProjectIds = [];
 
+    #[ORM\Column(type: 'json')]
+    private array $favouriteProjectIds = [];
+
     #[ORM\Column(length: 50, options: ['default' => 'gradient'])]
     private string $uiTheme = 'gradient';
 
@@ -363,5 +366,38 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->uiTheme = $uiTheme;
         return $this;
+    }
+
+    public function getFavouriteProjectIds(): array
+    {
+        return $this->favouriteProjectIds;
+    }
+
+    public function setFavouriteProjectIds(array $favouriteProjectIds): static
+    {
+        $this->favouriteProjectIds = $favouriteProjectIds;
+        return $this;
+    }
+
+    public function addFavouriteProject(string $projectId): static
+    {
+        if (!in_array($projectId, $this->favouriteProjectIds, true)) {
+            $this->favouriteProjectIds[] = $projectId;
+        }
+        return $this;
+    }
+
+    public function removeFavouriteProject(string $projectId): static
+    {
+        $this->favouriteProjectIds = array_values(array_filter(
+            $this->favouriteProjectIds,
+            fn($id) => $id !== $projectId
+        ));
+        return $this;
+    }
+
+    public function isFavouriteProject(string $projectId): bool
+    {
+        return in_array($projectId, $this->favouriteProjectIds, true);
     }
 }

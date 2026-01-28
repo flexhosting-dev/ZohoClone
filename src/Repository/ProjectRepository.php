@@ -54,4 +54,25 @@ class ProjectRepository extends ServiceEntityRepository
 
         return array_slice(array_values($filtered), 0, $limit);
     }
+
+    /**
+     * Get favourite projects for sidebar.
+     *
+     * @return Project[]
+     */
+    public function findFavouritesForUser(User $user): array
+    {
+        $favouriteIds = $user->getFavouriteProjectIds();
+
+        if (empty($favouriteIds)) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('p')
+            ->where('p.id IN (:ids)')
+            ->setParameter('ids', $favouriteIds)
+            ->orderBy('p.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

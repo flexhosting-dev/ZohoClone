@@ -43,6 +43,7 @@ class ProjectController extends AbstractController
             'page_title' => 'Projects',
             'projects' => $projects,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);
     }
 
@@ -86,6 +87,7 @@ class ProjectController extends AbstractController
             'page_title' => 'New Project',
             'form' => $form,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);
     }
 
@@ -104,6 +106,8 @@ class ProjectController extends AbstractController
             'tasks' => $tasks,
             'projectRoles' => $projectRoles,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
+            'is_favourite' => $user->isFavouriteProject((string) $project->getId()),
         ]);
     }
 
@@ -131,6 +135,8 @@ class ProjectController extends AbstractController
             'project' => $project,
             'form' => $form,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
+            'is_favourite' => $user->isFavouriteProject((string) $project->getId()),
         ]);
     }
 
@@ -198,6 +204,29 @@ class ProjectController extends AbstractController
         $this->entityManager->flush();
 
         return $this->json(['success' => true]);
+    }
+
+    #[Route('/{id}/toggle-favourite', name: 'app_project_toggle_favourite', methods: ['POST'])]
+    public function toggleFavourite(Request $request, Project $project): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $projectId = (string) $project->getId();
+        $isFavourite = $user->isFavouriteProject($projectId);
+
+        if ($isFavourite) {
+            $user->removeFavouriteProject($projectId);
+        } else {
+            $user->addFavouriteProject($projectId);
+        }
+
+        $this->entityManager->flush();
+
+        return $this->json([
+            'success' => true,
+            'isFavourite' => !$isFavourite,
+        ]);
     }
 
     #[Route('/{id}/members', name: 'app_project_members', methods: ['GET'])]

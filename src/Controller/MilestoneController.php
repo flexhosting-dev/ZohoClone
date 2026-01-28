@@ -68,6 +68,7 @@ class MilestoneController extends AbstractController
             'project' => $project,
             'form' => $form,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);
     }
 
@@ -103,6 +104,7 @@ class MilestoneController extends AbstractController
             'milestone' => $milestone,
             'form' => $form,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);
     }
 

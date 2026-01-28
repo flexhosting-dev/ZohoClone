@@ -41,16 +41,29 @@
                 </div>
             </div>
 
-            <div class="relative" data-controller="dropdown">
-                <button type="button" data-action="click->dropdown#toggle" class="-m-2.5 block p-2.5 text-gray-400 hover:text-gray-500">
-                    <span class="sr-only">Options</span>
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M3 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM15.5 8.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" />
+            {% set projectIdStr = project.id ~ '' %}
+            {% set isFav = app.user.isFavouriteProject(projectIdStr) %}
+            <div class="flex items-center gap-1">
+                <button type="button"
+                        onclick="toggleFavourite('{{ project.id }}', this)"
+                        class="favourite-btn p-1.5 rounded-md transition-colors {{ isFav ? 'text-yellow-500 hover:text-yellow-600' : 'text-gray-300 hover:text-yellow-500' }}"
+                        title="{{ isFav ? 'Remove from favourites' : 'Add to favourites' }}"
+                        data-is-favourite="{{ isFav ? 'true' : 'false' }}">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="{{ isFav ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                     </svg>
                 </button>
-                <div data-dropdown-target="menu" class="hidden absolute right-0 z-10 mt-2 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5">
-                    <a href="{{ path('app_project_show', {id: project.id}) }}" class="block px-3 py-1 text-sm leading-6 text-gray-900 hover:bg-gray-50">View</a>
-                    <a href="{{ path('app_project_edit', {id: project.id}) }}" class="block px-3 py-1 text-sm leading-6 text-gray-900 hover:bg-gray-50">Edit</a>
+                <div class="relative" data-controller="dropdown">
+                    <button type="button" data-action="click->dropdown#toggle" class="-m-2.5 block p-2.5 text-gray-400 hover:text-gray-500">
+                        <span class="sr-only">Options</span>
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M3 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM15.5 8.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" />
+                        </svg>
+                    </button>
+                    <div data-dropdown-target="menu" class="hidden absolute right-0 z-10 mt-2 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5">
+                        <a href="{{ path('app_project_show', {id: project.id}) }}" class="block px-3 py-1 text-sm leading-6 text-gray-900 hover:bg-gray-50">View</a>
+                        <a href="{{ path('app_project_edit', {id: project.id}) }}" class="block px-3 py-1 text-sm leading-6 text-gray-900 hover:bg-gray-50">Edit</a>
+                    </div>
                 </div>
             </div>
         </div>

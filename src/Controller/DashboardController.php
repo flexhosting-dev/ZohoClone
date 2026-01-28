@@ -73,6 +73,7 @@ class DashboardController extends AbstractController
             'recentActivities' => $recentActivities,
             'upcomingTasks' => array_slice($upcomingTasks, 0, 5),
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);
     }
 }

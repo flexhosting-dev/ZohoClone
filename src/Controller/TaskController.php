@@ -62,6 +62,7 @@ class TaskController extends AbstractController
             'tasks' => $tasks,
             'tasksByStatus' => $tasksByStatus,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);
     }
 
@@ -123,6 +124,7 @@ class TaskController extends AbstractController
             'milestone' => $defaultMilestone,
             'form' => $form,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);
     }
 
@@ -175,6 +177,7 @@ class TaskController extends AbstractController
             'milestone' => $milestone,
             'form' => $form,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);
     }
 
@@ -247,6 +250,7 @@ class TaskController extends AbstractController
             'project' => $project,
             'form' => $form,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);
     }
 

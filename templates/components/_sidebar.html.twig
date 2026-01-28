@@ -51,6 +51,38 @@
                     </ul>
                 </li>
 
+                <li id="favourite-projects-section" class="{{ favourite_projects is not defined or favourite_projects|length == 0 ? 'hidden' : '' }}">
+                    <div class="text-xs font-semibold leading-6 text-white/50 uppercase tracking-wider flex items-center gap-1">
+                        <svg class="h-3 w-3 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        Favourites
+                    </div>
+                    <ul role="list" class="-mx-2 mt-2 space-y-1" id="favourite-projects-list">
+                        {% for project in favourite_projects|default([]) %}
+                        <li class="favourite-project-item group/item" data-project-id="{{ project.id }}" data-project-name="{{ project.name }}">
+                            <div class="flex items-center gap-x-1">
+                                <a href="{{ path('app_project_show', {id: project.id}) }}"
+                                   class="text-white/80 hover:bg-white/10 hover:text-white flex-1 flex gap-x-3 rounded-lg p-2.5 text-sm font-semibold leading-6 transition-all">
+                                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-yellow-500/20 text-[0.625rem] font-medium text-yellow-300 group-hover/item:bg-yellow-500/30">
+                                        {{ project.name|slice(0, 1)|upper }}
+                                    </span>
+                                    <span class="truncate">{{ project.name }}</span>
+                                </a>
+                                <button type="button"
+                                        onclick="removeFavourite('{{ project.id }}', this)"
+                                        class="opacity-0 group-hover/item:opacity-100 p-1.5 rounded-md text-white/50 hover:text-white hover:bg-white/10 transition-all"
+                                        title="Remove from favourites">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+
                 {% if recent_projects is defined and recent_projects|length > 0 %}
                 <li>
                     <div class="text-xs font-semibold leading-6 text-white/50 uppercase tracking-wider">Recent Projects</div>
@@ -160,10 +192,42 @@
                     </ul>
                 </li>
 
+                <li id="favourite-projects-section-classic" class="{{ favourite_projects is not defined or favourite_projects|length == 0 ? 'hidden' : '' }}">
+                    <div class="text-xs font-semibold leading-6 text-gray-400 flex items-center gap-1">
+                        <svg class="h-3 w-3 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        Favourites
+                    </div>
+                    <ul role="list" class="-mx-2 mt-2 space-y-1" id="favourite-projects-list-classic">
+                        {% for project in favourite_projects|default([]) %}
+                        <li class="favourite-project-item group/item" data-project-id="{{ project.id }}" data-project-name="{{ project.name }}">
+                            <div class="flex items-center gap-x-1">
+                                <a href="{{ path('app_project_show', {id: project.id}) }}"
+                                   class="text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 flex-1 flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-yellow-300 bg-yellow-50 text-[0.625rem] font-medium text-yellow-600 group-hover/item:border-yellow-400 group-hover/item:bg-yellow-100">
+                                        {{ project.name|slice(0, 1)|upper }}
+                                    </span>
+                                    <span class="truncate">{{ project.name }}</span>
+                                </a>
+                                <button type="button"
+                                        onclick="removeFavourite('{{ project.id }}', this)"
+                                        class="opacity-0 group-hover/item:opacity-100 p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+                                        title="Remove from favourites">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+
                 {% if recent_projects is defined and recent_projects|length > 0 %}
                 <li>
                     <div class="text-xs font-semibold leading-6 text-gray-400">Recent Projects</div>
-                    <ul role="list" class="-mx-2 mt-2 space-y-1" id="recent-projects-list">
+                    <ul role="list" class="-mx-2 mt-2 space-y-1" id="recent-projects-list-classic">
                         {% for project in recent_projects %}
                         <li class="recent-project-item group/item" data-project-id="{{ project.id }}">
                             <div class="flex items-center gap-x-1">

@@ -53,6 +53,7 @@ class ProfileController extends AbstractController
             'page_title' => 'Profile',
             'form' => $form,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);
     }
 
