@@ -72,15 +72,45 @@ class TaskController extends AbstractController
             'completed' => [],
         ];
 
+        // Group tasks by priority
+        $tasksByPriority = [
+            'none' => [],
+            'low' => [],
+            'medium' => [],
+            'high' => [],
+        ];
+
+        // Group tasks by milestone
+        $tasksByMilestone = [];
+        $milestoneMap = [];
+
         foreach ($tasks as $task) {
             $status = $task->getStatus()->value;
             $tasksByStatus[$status][] = $task;
+
+            $priority = $task->getPriority()->value;
+            $tasksByPriority[$priority][] = $task;
+
+            $milestone = $task->getMilestone();
+            if ($milestone) {
+                $msId = $milestone->getId()->toString();
+                if (!isset($tasksByMilestone[$msId])) {
+                    $tasksByMilestone[$msId] = [];
+                    $milestoneMap[$msId] = $milestone;
+                }
+                $tasksByMilestone[$msId][] = $task;
+            }
         }
+
+        $milestones = array_values($milestoneMap);
 
         return $this->render('task/index.html.twig', [
             'page_title' => 'My Tasks',
             'tasks' => $tasks,
             'tasksByStatus' => $tasksByStatus,
+            'tasksByPriority' => $tasksByPriority,
+            'tasksByMilestone' => $tasksByMilestone,
+            'milestones' => $milestones,
             'filter' => $filter,
             'userProjects' => $userProjects,
             'projectMembers' => $projectMembers,
@@ -125,15 +155,45 @@ class TaskController extends AbstractController
             'completed' => [],
         ];
 
+        // Group tasks by priority
+        $tasksByPriority = [
+            'none' => [],
+            'low' => [],
+            'medium' => [],
+            'high' => [],
+        ];
+
+        // Group tasks by milestone
+        $tasksByMilestone = [];
+        $milestoneMap = [];
+
         foreach ($tasks as $task) {
             $status = $task->getStatus()->value;
             $tasksByStatus[$status][] = $task;
+
+            $priority = $task->getPriority()->value;
+            $tasksByPriority[$priority][] = $task;
+
+            $milestone = $task->getMilestone();
+            if ($milestone) {
+                $msId = $milestone->getId()->toString();
+                if (!isset($tasksByMilestone[$msId])) {
+                    $tasksByMilestone[$msId] = [];
+                    $milestoneMap[$msId] = $milestone;
+                }
+                $tasksByMilestone[$msId][] = $task;
+            }
         }
+
+        $milestones = array_values($milestoneMap);
 
         return $this->render('task/all_tasks.html.twig', [
             'page_title' => 'All Tasks',
             'tasks' => $tasks,
             'tasksByStatus' => $tasksByStatus,
+            'tasksByPriority' => $tasksByPriority,
+            'tasksByMilestone' => $tasksByMilestone,
+            'milestones' => $milestones,
             'filter' => $filter,
             'userProjects' => $userProjects,
             'projectMembers' => $projectMembers,

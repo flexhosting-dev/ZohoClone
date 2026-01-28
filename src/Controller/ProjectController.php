@@ -127,9 +127,34 @@ class ProjectController extends AbstractController
             'in_review' => [],
             'completed' => [],
         ];
+
+        // Group tasks by priority
+        $tasksByPriority = [
+            'none' => [],
+            'low' => [],
+            'medium' => [],
+            'high' => [],
+        ];
+
+        // Group tasks by milestone
+        $tasksByMilestone = [];
+        // Pre-populate with all project milestones so empty ones show as columns
+        foreach ($project->getMilestones() as $ms) {
+            $tasksByMilestone[$ms->getId()->toString()] = [];
+        }
+
         foreach ($tasks as $task) {
             $status = $task->getStatus()->value;
             $tasksByStatus[$status][] = $task;
+
+            $priority = $task->getPriority()->value;
+            $tasksByPriority[$priority][] = $task;
+
+            $milestone = $task->getMilestone();
+            if ($milestone) {
+                $msId = $milestone->getId()->toString();
+                $tasksByMilestone[$msId][] = $task;
+            }
         }
 
         $projectRoles = $this->roleRepository->findProjectRoles();
@@ -139,6 +164,9 @@ class ProjectController extends AbstractController
             'project' => $project,
             'tasks' => $tasks,
             'tasksByStatus' => $tasksByStatus,
+            'tasksByPriority' => $tasksByPriority,
+            'tasksByMilestone' => $tasksByMilestone,
+            'milestones' => $project->getMilestones(),
             'filter' => $filter,
             'projectMembers' => $projectMembers,
             'projectRoles' => $projectRoles,
