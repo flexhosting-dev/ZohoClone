@@ -42,7 +42,7 @@ class ProjectController extends AbstractController
         return $this->render('project/index.html.twig', [
             'page_title' => 'Projects',
             'projects' => $projects,
-            'recent_projects' => array_slice($projects, 0, 5),
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
         ]);
     }
 
@@ -82,12 +82,10 @@ class ProjectController extends AbstractController
             return $this->redirectToRoute('app_project_show', ['id' => $project->getId()]);
         }
 
-        $recentProjects = $this->projectRepository->findByUser($user);
-
         return $this->render('project/new.html.twig', [
             'page_title' => 'New Project',
             'form' => $form,
-            'recent_projects' => array_slice($recentProjects, 0, 5),
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
         ]);
     }
 
@@ -97,7 +95,6 @@ class ProjectController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $recentProjects = $this->projectRepository->findByUser($user);
         $tasks = $this->taskRepository->findByProject($project);
         $projectRoles = $this->roleRepository->findProjectRoles();
 
@@ -106,7 +103,7 @@ class ProjectController extends AbstractController
             'project' => $project,
             'tasks' => $tasks,
             'projectRoles' => $projectRoles,
-            'recent_projects' => array_slice($recentProjects, 0, 5),
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
         ]);
     }
 
@@ -129,13 +126,11 @@ class ProjectController extends AbstractController
             return $this->redirectToRoute('app_project_show', ['id' => $project->getId()]);
         }
 
-        $recentProjects = $this->projectRepository->findByUser($user);
-
         return $this->render('project/edit.html.twig', [
             'page_title' => 'Edit ' . $project->getName(),
             'project' => $project,
             'form' => $form,
-            'recent_projects' => array_slice($recentProjects, 0, 5),
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
         ]);
     }
 
@@ -191,5 +186,47 @@ class ProjectController extends AbstractController
             'hasMore' => $hasMore,
             'page' => $page,
         ]);
+    }
+
+    #[Route('/{id}/hide-from-recent', name: 'app_project_hide_recent', methods: ['POST'])]
+    public function hideFromRecent(Request $request, Project $project): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $user->hideRecentProject((string) $project->getId());
+        $this->entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
+
+    #[Route('/{id}/members', name: 'app_project_members', methods: ['GET'])]
+    #[IsGranted('PROJECT_VIEW', subject: 'project')]
+    public function members(Project $project): JsonResponse
+    {
+        $members = [];
+
+        // Add project owner
+        $owner = $project->getOwner();
+        $members[] = [
+            'id' => (string) $owner->getId(),
+            'fullName' => $owner->getFullName(),
+            'initials' => $owner->getInitials(),
+        ];
+
+        // Add all project members
+        foreach ($project->getMembers() as $member) {
+            $memberUser = $member->getUser();
+            // Avoid duplicate if owner is also a member
+            if (!$owner->getId()->equals($memberUser->getId())) {
+                $members[] = [
+                    'id' => (string) $memberUser->getId(),
+                    'fullName' => $memberUser->getFullName(),
+                    'initials' => $memberUser->getInitials(),
+                ];
+            }
+        }
+
+        return $this->json(['members' => $members]);
     }
 }

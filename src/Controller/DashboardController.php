@@ -60,8 +60,6 @@ class DashboardController extends AbstractController
             return $dueDate >= $now && $dueDate <= $nextWeek;
         });
 
-        $recentProjects = array_slice($projects, 0, 5);
-
         return $this->render('dashboard/index.html.twig', [
             'page_title' => 'Dashboard',
             'stats' => [
@@ -74,7 +72,7 @@ class DashboardController extends AbstractController
             'tasksByStatus' => $tasksByStatus,
             'recentActivities' => $recentActivities,
             'upcomingTasks' => array_slice($upcomingTasks, 0, 5),
-            'recent_projects' => $recentProjects,
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
         ]);
     }
 }

@@ -37,4 +37,21 @@ class ProjectRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilderForUser($user)->getQuery()->getResult();
     }
+
+    /**
+     * Get recent projects for sidebar, filtering out hidden ones.
+     *
+     * @return Project[]
+     */
+    public function findRecentForUser(User $user, int $limit = 5): array
+    {
+        $projects = $this->findByUser($user);
+        $hiddenIds = $user->getHiddenRecentProjectIds();
+
+        $filtered = array_filter($projects, function (Project $project) use ($hiddenIds) {
+            return !in_array((string) $project->getId(), $hiddenIds, true);
+        });
+
+        return array_slice(array_values($filtered), 0, $limit);
+    }
 }

@@ -67,7 +67,7 @@ class MilestoneController extends AbstractController
             'page_title' => 'New Milestone',
             'project' => $project,
             'form' => $form,
-            'recent_projects' => array_slice($recentProjects, 0, 5),
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
         ]);
     }
 
@@ -102,7 +102,7 @@ class MilestoneController extends AbstractController
             'project' => $project,
             'milestone' => $milestone,
             'form' => $form,
-            'recent_projects' => array_slice($recentProjects, 0, 5),
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
         ]);
     }
 

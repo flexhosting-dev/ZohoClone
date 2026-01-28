@@ -63,6 +63,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $department = null;
 
+    #[ORM\Column(type: 'json')]
+    private array $hiddenRecentProjectIds = [];
+
+    #[ORM\Column(length: 50, options: ['default' => 'gradient'])]
+    private string $uiTheme = 'gradient';
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -313,5 +319,49 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getInitials(): string
     {
         return strtoupper(substr($this->firstName, 0, 1) . substr($this->lastName, 0, 1));
+    }
+
+    public function getHiddenRecentProjectIds(): array
+    {
+        return $this->hiddenRecentProjectIds;
+    }
+
+    public function setHiddenRecentProjectIds(array $hiddenRecentProjectIds): static
+    {
+        $this->hiddenRecentProjectIds = $hiddenRecentProjectIds;
+        return $this;
+    }
+
+    public function hideRecentProject(string $projectId): static
+    {
+        if (!in_array($projectId, $this->hiddenRecentProjectIds, true)) {
+            $this->hiddenRecentProjectIds[] = $projectId;
+        }
+        return $this;
+    }
+
+    public function unhideRecentProject(string $projectId): static
+    {
+        $this->hiddenRecentProjectIds = array_values(array_filter(
+            $this->hiddenRecentProjectIds,
+            fn($id) => $id !== $projectId
+        ));
+        return $this;
+    }
+
+    public function isRecentProjectHidden(string $projectId): bool
+    {
+        return in_array($projectId, $this->hiddenRecentProjectIds, true);
+    }
+
+    public function getUiTheme(): string
+    {
+        return $this->uiTheme;
+    }
+
+    public function setUiTheme(string $uiTheme): static
+    {
+        $this->uiTheme = $uiTheme;
+        return $this;
     }
 }

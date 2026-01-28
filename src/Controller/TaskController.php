@@ -61,7 +61,7 @@ class TaskController extends AbstractController
             'page_title' => 'My Tasks',
             'tasks' => $tasks,
             'tasksByStatus' => $tasksByStatus,
-            'recent_projects' => array_slice($recentProjects, 0, 5),
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
         ]);
     }
 
@@ -122,7 +122,7 @@ class TaskController extends AbstractController
             'project' => $project,
             'milestone' => $defaultMilestone,
             'form' => $form,
-            'recent_projects' => array_slice($recentProjects, 0, 5),
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
         ]);
     }
 
@@ -174,7 +174,7 @@ class TaskController extends AbstractController
             'project' => $project,
             'milestone' => $milestone,
             'form' => $form,
-            'recent_projects' => array_slice($recentProjects, 0, 5),
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
         ]);
     }
 
@@ -193,7 +193,7 @@ class TaskController extends AbstractController
             'page_title' => $task->getTitle(),
             'task' => $task,
             'project' => $project,
-            'recent_projects' => array_slice($recentProjects, 0, 5),
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
             'canEdit' => $canEdit,
         ]);
     }
@@ -246,7 +246,7 @@ class TaskController extends AbstractController
             'task' => $task,
             'project' => $project,
             'form' => $form,
-            'recent_projects' => array_slice($recentProjects, 0, 5),
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
         ]);
     }
 

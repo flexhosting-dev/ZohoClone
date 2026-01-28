@@ -49,12 +49,10 @@ class ProfileController extends AbstractController
             return $this->redirectToRoute('app_profile');
         }
 
-        $recentProjects = $this->projectRepository->findByUser($user);
-
         return $this->render('profile/index.html.twig', [
             'page_title' => 'Profile',
             'form' => $form,
-            'recent_projects' => array_slice($recentProjects, 0, 5),
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
         ]);
     }
 
@@ -257,6 +255,27 @@ class ProfileController extends AbstractController
 
         $this->addFlash('success', 'Google account disconnected.');
         return $this->redirectToRoute('app_profile');
+    }
+
+    #[Route('/theme', name: 'app_profile_theme', methods: ['POST'])]
+    public function updateTheme(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $data = json_decode($request->getContent(), true);
+        $theme = $data['theme'] ?? null;
+
+        $allowedThemes = ['gradient', 'classic'];
+
+        if (!$theme || !in_array($theme, $allowedThemes, true)) {
+            return new JsonResponse(['success' => false, 'error' => 'Invalid theme'], 400);
+        }
+
+        $user->setUiTheme($theme);
+        $this->entityManager->flush();
+
+        return new JsonResponse(['success' => true, 'theme' => $theme]);
     }
 
     private function validateField(string $field, string $value): ?string
