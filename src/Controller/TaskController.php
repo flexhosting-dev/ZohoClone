@@ -780,12 +780,15 @@ class TaskController extends AbstractController
         $this->entityManager->flush();
 
         // Return updated assignees list
+        $basePath = $request->getBasePath();
         $assignees = [];
         foreach ($task->getAssignees() as $assignee) {
+            $user = $assignee->getUser();
             $assignees[] = [
-                'id' => $assignee->getUser()->getId()->toString(),
-                'fullName' => $assignee->getUser()->getFullName(),
-                'initials' => strtoupper(substr($assignee->getUser()->getFirstName(), 0, 1) . substr($assignee->getUser()->getLastName(), 0, 1)),
+                'id' => $user->getId()->toString(),
+                'fullName' => $user->getFullName(),
+                'initials' => strtoupper(substr($user->getFirstName(), 0, 1) . substr($user->getLastName(), 0, 1)),
+                'avatar' => $user->getAvatar() ? $basePath . '/uploads/avatars/' . $user->getAvatar() : null,
             ];
         }
 

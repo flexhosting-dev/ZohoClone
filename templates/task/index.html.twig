@@ -133,7 +133,7 @@
                     <div x-show="open" x-transition class="absolute left-0 mt-2 w-56 max-h-64 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                         <div class="p-2 space-y-1">
                             {% for project in userProjects %}
-                                {% set projectIdStr = project.id.toRfc4122() %}
+                                {% set projectIdStr = '' ~ project.id %}
                                 <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
                                     <input type="checkbox" name="project_{{ projectIdStr }}" value="{{ projectIdStr }}"
                                            {% if projectIdStr in filter.projectIds %}checked{% endif %}

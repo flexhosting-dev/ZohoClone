@@ -143,9 +143,10 @@ class ProfileController extends AbstractController
         $user->setAvatar($filename);
         $this->entityManager->flush();
 
+        $basePath = $request->getBasePath();
         return new JsonResponse([
             'success' => true,
-            'avatar' => '/uploads/avatars/' . $filename,
+            'avatar' => $basePath . '/uploads/avatars/' . $filename,
             'message' => 'Avatar updated successfully',
         ]);
     }

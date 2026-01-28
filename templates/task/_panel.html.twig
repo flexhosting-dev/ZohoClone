@@ -147,11 +147,17 @@
             <div class="assignees-container" data-task-id="{{ task.id }}" data-project-id="{{ project.id }}">
                 <div class="assignees-list flex flex-wrap gap-2">
                     {% for assignee in task.assignees %}
-                        <span class="assignee-chip inline-flex items-center rounded-full bg-gray-100 py-1 pl-2 pr-1 text-sm font-medium text-gray-800" data-user-id="{{ assignee.user.id }}">
-                            <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 mr-2">
-                                <span class="text-xs font-medium text-primary-700">
-                                    {{ assignee.user.firstName|slice(0, 1)|upper }}{{ assignee.user.lastName|slice(0, 1)|upper }}
-                                </span>
+                        <span class="assignee-chip inline-flex items-center rounded-full bg-gray-100 py-1 pl-2 pr-1 text-sm font-medium text-gray-800" data-user-id="{{ assignee.user.id }}" data-user-avatar="{{ assignee.user.avatar ? app.request.basePath ~ '/uploads/avatars/' ~ assignee.user.avatar : '' }}">
+                            <span class="inline-flex h-6 w-6 items-center justify-center rounded-full overflow-hidden mr-2">
+                                {% if assignee.user.avatar %}
+                                    <img src="{{ app.request.basePath }}/uploads/avatars/{{ assignee.user.avatar }}" alt="{{ assignee.user.fullName }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    <span class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+                                        <span class="text-xs font-medium text-white">
+                                            {{ assignee.user.firstName|slice(0, 1)|upper }}{{ assignee.user.lastName|slice(0, 1)|upper }}
+                                        </span>
+                                    </span>
+                                {% endif %}
                             </span>
                             {{ assignee.user.fullName }}
                             <button type="button"
@@ -188,10 +194,16 @@
             <div class="flex flex-wrap gap-2">
                 {% for assignee in task.assignees %}
                     <span class="inline-flex items-center rounded-full bg-gray-100 py-1 pl-2 pr-3 text-sm font-medium text-gray-800">
-                        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 mr-2">
-                            <span class="text-xs font-medium text-primary-700">
-                                {{ assignee.user.firstName|slice(0, 1)|upper }}{{ assignee.user.lastName|slice(0, 1)|upper }}
-                            </span>
+                        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full overflow-hidden mr-2">
+                            {% if assignee.user.avatar %}
+                                <img src="{{ app.request.basePath }}/uploads/avatars/{{ assignee.user.avatar }}" alt="{{ assignee.user.fullName }}" class="w-full h-full object-cover">
+                            {% else %}
+                                <span class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+                                    <span class="text-xs font-medium text-white">
+                                        {{ assignee.user.firstName|slice(0, 1)|upper }}{{ assignee.user.lastName|slice(0, 1)|upper }}
+                                    </span>
+                                </span>
+                            {% endif %}
                         </span>
                         {{ assignee.user.fullName }}
                     </span>

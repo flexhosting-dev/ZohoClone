@@ -20,6 +20,10 @@ export default {
             type: String,
             default: ''
         },
+        currentUserAvatar: {
+            type: String,
+            default: ''
+        },
         basePath: {
             type: String,
             default: ''
@@ -89,6 +93,7 @@ export default {
                         content: data.comment.content,
                         authorName: data.comment.authorName,
                         authorInitials: data.comment.authorInitials,
+                        authorAvatar: data.comment.authorAvatar || props.currentUserAvatar,
                         authorId: props.currentUserId,
                         createdAt: data.comment.createdAt
                     });
@@ -154,6 +159,8 @@ export default {
             canDelete,
             canAddComment,
             canEdit: props.canEdit,
+            currentUserAvatar: props.currentUserAvatar,
+            currentUserInitials: props.currentUserInitials,
             addComment,
             deleteComment,
             onTextareaInput,
@@ -167,9 +174,10 @@ export default {
             <div v-if="canEdit" class="add-comment-form mb-4">
                 <div class="flex gap-3">
                     <div class="flex-shrink-0">
-                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary-100">
-                            <span class="text-sm font-medium text-primary-700">
-                                {{ currentUserInitials }}
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full overflow-hidden">
+                            <img v-if="currentUserAvatar" :src="currentUserAvatar" alt="Your avatar" class="w-full h-full object-cover">
+                            <span v-else class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+                                <span class="text-sm font-medium text-white">{{ currentUserInitials }}</span>
                             </span>
                         </span>
                     </div>
@@ -206,9 +214,10 @@ export default {
                 >
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center">
-                            <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 mr-2">
-                                <span class="text-xs font-medium text-primary-700">
-                                    {{ comment.authorInitials }}
+                            <span class="inline-flex h-6 w-6 items-center justify-center rounded-full overflow-hidden mr-2">
+                                <img v-if="comment.authorAvatar" :src="comment.authorAvatar" :alt="comment.authorName" class="w-full h-full object-cover">
+                                <span v-else class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+                                    <span class="text-xs font-medium text-white">{{ comment.authorInitials }}</span>
                                 </span>
                             </span>
                             <span class="text-sm font-medium text-gray-900">{{ comment.authorName }}</span>

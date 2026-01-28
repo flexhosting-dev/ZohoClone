@@ -10,6 +10,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Cropper.js for image cropping -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -304,6 +307,16 @@
         @keyframes toastr-progress {
             from { width: 100%; }
             to { width: 0%; }
+        }
+
+        /* Cropper circular mask */
+        .cropper-view-box,
+        .cropper-face {
+            border-radius: 50%;
+        }
+        .cropper-view-box {
+            outline: 0;
+            box-shadow: 0 0 0 1px #39f, 0 0 0 9999px rgba(0,0,0,0.5);
         }
     </style>
 

@@ -5,20 +5,23 @@
    The Vue component will auto-mount on elements with data-vue-component="CommentsEditor"
 #}
 {% set canEdit = canEdit|default(true) %}
+{% set basePath = app.request.basePath %}
 <div
     data-vue-component="CommentsEditor"
     data-vue-task-id="{{ task.id }}"
     data-vue-current-user-id="{{ app.user.id }}"
     data-vue-current-user-initials="{{ app.user.firstName|slice(0, 1)|upper }}"
+    data-vue-current-user-avatar="{{ app.user.avatar ? basePath ~ '/uploads/avatars/' ~ app.user.avatar : '' }}"
     data-vue-initial-comments='{{ task.comments|map(c => {
         id: c.id ~ '',
         content: c.content,
         authorName: c.author.fullName,
         authorInitials: c.author.firstName|slice(0, 1)|upper,
+        authorAvatar: c.author.avatar ? basePath ~ '/uploads/avatars/' ~ c.author.avatar : '',
         authorId: c.author.id ~ '',
         createdAt: c.createdAt|date('M d, H:i')
     })|json_encode|e('html_attr') }}'
-    data-vue-base-path="{{ app.request.basePath }}"
+    data-vue-base-path="{{ basePath }}"
     data-vue-can-edit="{{ canEdit ? 'true' : 'false' }}"
 >
     {# Fallback content shown before Vue mounts #}
@@ -27,10 +30,16 @@
             {% for comment in task.comments|reverse %}
                 <div class="bg-gray-50 rounded-lg p-3">
                     <div class="flex items-center mb-2">
-                        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 mr-2">
-                            <span class="text-xs font-medium text-primary-700">
-                                {{ comment.author.firstName|slice(0, 1)|upper }}
-                            </span>
+                        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full overflow-hidden mr-2">
+                            {% if comment.author.avatar %}
+                                <img src="{{ app.request.basePath }}/uploads/avatars/{{ comment.author.avatar }}" alt="{{ comment.author.fullName }}" class="w-full h-full object-cover">
+                            {% else %}
+                                <span class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+                                    <span class="text-xs font-medium text-white">
+                                        {{ comment.author.firstName|slice(0, 1)|upper }}
+                                    </span>
+                                </span>
+                            {% endif %}
                         </span>
                         <span class="text-sm font-medium text-gray-900">{{ comment.author.fullName }}</span>
                         <span class="ml-2 text-xs text-gray-500">{{ comment.createdAt|date('M d, H:i') }}</span>

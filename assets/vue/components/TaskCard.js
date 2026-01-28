@@ -109,6 +109,11 @@ export default {
             return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
         };
 
+        // Get assignee avatar URL
+        const getAvatar = (assignee) => {
+            return assignee.user?.avatar || assignee.avatar || null;
+        };
+
         return {
             isDragging,
             priorityClasses,
@@ -121,7 +126,8 @@ export default {
             handleClick,
             handleDragStart,
             handleDragEnd,
-            getInitials
+            getInitials,
+            getAvatar
         };
     },
 
@@ -202,11 +208,12 @@ export default {
                     <span
                         v-for="assignee in displayedAssignees"
                         :key="assignee.id || assignee.user?.id"
-                        class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 ring-2 ring-white"
+                        class="inline-flex h-6 w-6 items-center justify-center rounded-full overflow-hidden ring-2 ring-white"
                         :title="assignee.user?.fullName || assignee.fullName"
                     >
-                        <span class="text-xs font-medium text-primary-700">
-                            {{ getInitials(assignee) }}
+                        <img v-if="getAvatar(assignee)" :src="getAvatar(assignee)" :alt="assignee.user?.fullName || assignee.fullName" class="w-full h-full object-cover">
+                        <span v-else class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+                            <span class="text-xs font-medium text-white">{{ getInitials(assignee) }}</span>
                         </span>
                     </span>
                     <span

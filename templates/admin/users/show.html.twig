@@ -17,8 +17,14 @@
     <div class="bg-white shadow rounded-lg">
         <div class="px-6 py-4 border-b border-gray-200">
             <div class="flex items-center">
-                <div class="h-16 w-16 rounded-full bg-primary-100 flex items-center justify-center">
-                    <span class="text-xl font-medium text-primary-700">{{ user.firstName|first }}{{ user.lastName|first }}</span>
+                <div class="h-16 w-16 rounded-full overflow-hidden flex items-center justify-center">
+                    {% if user.avatar %}
+                        <img src="{{ app.request.basePath }}/uploads/avatars/{{ user.avatar }}" alt="{{ user.fullName }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <span class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+                            <span class="text-xl font-medium text-white">{{ user.firstName|first }}{{ user.lastName|first }}</span>
+                        </span>
+                    {% endif %}
                 </div>
                 <div class="ml-4">
                     <h1 class="text-xl font-semibold text-gray-900">{{ user.fullName }}</h1>

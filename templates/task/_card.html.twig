@@ -59,10 +59,16 @@
         {% if task.assignees|length > 0 %}
             <div class="flex -space-x-1">
                 {% for assignee in task.assignees|slice(0, 3) %}
-                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 ring-2 ring-white">
-                        <span class="text-xs font-medium text-primary-700">
-                            {{ assignee.user.firstName|slice(0, 1)|upper }}
-                        </span>
+                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full overflow-hidden ring-2 ring-white" title="{{ assignee.user.fullName }}">
+                        {% if assignee.user.avatar %}
+                            <img src="{{ app.request.basePath }}/uploads/avatars/{{ assignee.user.avatar }}" alt="{{ assignee.user.fullName }}" class="w-full h-full object-cover">
+                        {% else %}
+                            <span class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+                                <span class="text-xs font-medium text-white">
+                                    {{ assignee.user.firstName|slice(0, 1)|upper }}
+                                </span>
+                            </span>
+                        {% endif %}
                     </span>
                 {% endfor %}
                 {% if task.assignees|length > 3 %}

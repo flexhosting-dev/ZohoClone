@@ -52,8 +52,14 @@
                         <td class="px-4 sm:px-6 py-4">
                             <div class="flex items-center">
                                 <div class="h-10 w-10 flex-shrink-0">
-                                    <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                                        <span class="text-sm font-medium text-primary-700">{{ user.firstName|first }}{{ user.lastName|first }}</span>
+                                    <div class="h-10 w-10 rounded-full overflow-hidden flex items-center justify-center">
+                                        {% if user.avatar %}
+                                            <img src="{{ app.request.basePath }}/uploads/avatars/{{ user.avatar }}" alt="{{ user.fullName }}" class="w-full h-full object-cover">
+                                        {% else %}
+                                            <span class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+                                                <span class="text-sm font-medium text-white">{{ user.firstName|first }}{{ user.lastName|first }}</span>
+                                            </span>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 <div class="ml-3 sm:ml-4 min-w-0">

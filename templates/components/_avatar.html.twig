@@ -1,0 +1,39 @@
+{#
+    Avatar Component
+    Usage: {% include 'components/_avatar.html.twig' with {user: someUser, size: 'md', class: 'extra-classes'} %}
+
+    Parameters:
+    - user: User entity (required)
+    - size: 'xs' (6), 'sm' (8), 'md' (10), 'lg' (12), 'xl' (16), '2xl' (24) - default 'md'
+    - class: Additional CSS classes (optional)
+    - ring: Whether to show ring (optional, default false)
+    - ringColor: Ring color class (optional, default 'ring-white')
+#}
+
+{% set sizes = {
+    'xs': {'container': 'h-6 w-6', 'text': 'text-xs'},
+    'sm': {'container': 'h-8 w-8', 'text': 'text-sm'},
+    'md': {'container': 'h-10 w-10', 'text': 'text-sm'},
+    'lg': {'container': 'h-12 w-12', 'text': 'text-base'},
+    'xl': {'container': 'h-16 w-16', 'text': 'text-xl'},
+    '2xl': {'container': 'h-24 w-24', 'text': 'text-3xl'}
+} %}
+
+{% set sizeConfig = sizes[size|default('md')] %}
+{% set ringClass = ring|default(false) ? 'ring-2 ' ~ (ringColor|default('ring-white')) : '' %}
+
+<span class="inline-flex items-center justify-center rounded-full overflow-hidden {{ sizeConfig.container }} {{ ringClass }} {{ class|default('') }}"
+      data-avatar-display
+      data-user-id="{{ user.id }}">
+    {% if user.avatar %}
+        <img src="{{ app.request.basePath }}/uploads/avatars/{{ user.avatar }}"
+             alt="{{ user.fullName }}"
+             class="w-full h-full object-cover">
+    {% else %}
+        <span class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+            <span class="{{ sizeConfig.text }} font-medium text-white">
+                {{ user.firstName|slice(0, 1)|upper }}{{ user.lastName|slice(0, 1)|upper }}
+            </span>
+        </span>
+    {% endif %}
+</span>

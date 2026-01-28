@@ -16,6 +16,9 @@
 {# Sort by position #}
 {% set allTasks = allTasks|sort((a, b) => a.position <=> b.position) %}
 
+{# Store basePath for use in map functions #}
+{% set basePath = app.request.basePath %}
+
 <div
     data-vue-component="KanbanBoard"
     data-vue-project-id="{{ project.id }}"
@@ -37,7 +40,8 @@
                 id: a.user.id ~ '',
                 firstName: a.user.firstName,
                 lastName: a.user.lastName,
-                fullName: a.user.fullName
+                fullName: a.user.fullName,
+                avatar: a.user.avatar ? basePath ~ '/uploads/avatars/' ~ a.user.avatar : null
             }
         }),
         tags: task.tags|map(t => {

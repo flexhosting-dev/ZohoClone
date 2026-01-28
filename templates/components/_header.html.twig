@@ -33,10 +33,14 @@
             <div class="relative" data-controller="dropdown">
                 <button type="button" data-action="click->dropdown#toggle" class="-m-1.5 flex items-center p-1.5 group">
                     <span class="sr-only">Open user menu</span>
-                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/40 backdrop-blur-sm group-hover:ring-white/60 transition-all">
-                        <span class="text-sm font-semibold leading-none text-white">
-                            {{ app.user.firstName|slice(0, 1)|upper }}{{ app.user.lastName|slice(0, 1)|upper }}
-                        </span>
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/40 backdrop-blur-sm group-hover:ring-white/60 transition-all overflow-hidden" data-avatar-display data-avatar-size="9">
+                        {% if app.user.avatar %}
+                            <img src="{{ app.request.basePath }}/uploads/avatars/{{ app.user.avatar }}" alt="{{ app.user.fullName }}" class="w-full h-full object-cover rounded-full">
+                        {% else %}
+                            <span class="text-sm font-semibold leading-none text-white">
+                                {{ app.user.firstName|slice(0, 1)|upper }}{{ app.user.lastName|slice(0, 1)|upper }}
+                            </span>
+                        {% endif %}
                     </span>
                     <span class="hidden lg:flex lg:items-center">
                         <span class="ml-4 text-sm font-semibold leading-6 text-white drop-shadow-sm" aria-hidden="true">
@@ -89,10 +93,14 @@
             <div class="relative" data-controller="dropdown">
                 <button type="button" data-action="click->dropdown#toggle" class="-m-1.5 flex items-center p-1.5">
                     <span class="sr-only">Open user menu</span>
-                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary-500">
-                        <span class="text-sm font-medium leading-none text-white">
-                            {{ app.user.firstName|slice(0, 1)|upper }}{{ app.user.lastName|slice(0, 1)|upper }}
-                        </span>
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary-500 overflow-hidden" data-avatar-display data-avatar-size="8">
+                        {% if app.user.avatar %}
+                            <img src="{{ app.request.basePath }}/uploads/avatars/{{ app.user.avatar }}" alt="{{ app.user.fullName }}" class="w-full h-full object-cover rounded-full">
+                        {% else %}
+                            <span class="text-sm font-medium leading-none text-white">
+                                {{ app.user.firstName|slice(0, 1)|upper }}{{ app.user.lastName|slice(0, 1)|upper }}
+                            </span>
+                        {% endif %}
                     </span>
                     <span class="hidden lg:flex lg:items-center">
                         <span class="ml-4 text-sm font-semibold leading-6 text-gray-900" aria-hidden="true">

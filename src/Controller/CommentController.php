@@ -66,13 +66,16 @@ class CommentController extends AbstractController
 
             $this->entityManager->flush();
 
+            $author = $comment->getAuthor();
+            $basePath = $request->getBasePath();
             return $this->json([
                 'success' => true,
                 'comment' => [
                     'id' => $comment->getId()->toString(),
                     'content' => $comment->getContent(),
-                    'authorName' => $comment->getAuthor()->getFullName(),
-                    'authorInitials' => strtoupper(substr($comment->getAuthor()->getFirstName(), 0, 1)),
+                    'authorName' => $author->getFullName(),
+                    'authorInitials' => strtoupper(substr($author->getFirstName(), 0, 1)),
+                    'authorAvatar' => $author->getAvatar() ? $basePath . '/uploads/avatars/' . $author->getAvatar() : '',
                     'createdAt' => $comment->getCreatedAt()->format('M d, H:i'),
                 ],
             ]);

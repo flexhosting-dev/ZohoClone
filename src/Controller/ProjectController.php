@@ -174,6 +174,7 @@ class ProjectController extends AbstractController
             array_pop($activities); // Remove the extra item
         }
 
+        $basePath = $request->getBasePath();
         $data = array_map(fn($activity) => [
             'id' => $activity->getId(),
             'description' => $activity->getDescription(),
@@ -184,6 +185,7 @@ class ProjectController extends AbstractController
                     substr($activity->getUser()->getLastName(), 0, 1)
                 ),
                 'name' => $activity->getUser()->getFirstName() . ' ' . $activity->getUser()->getLastName(),
+                'avatar' => $activity->getUser()->getAvatar() ? $basePath . '/uploads/avatars/' . $activity->getUser()->getAvatar() : null,
             ],
         ], $activities);
 

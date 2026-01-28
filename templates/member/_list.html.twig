@@ -33,11 +33,7 @@
             <li class="px-4 py-4 sm:px-6">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-100">
-                            <span class="text-sm font-medium text-primary-700">
-                                {{ project.owner.firstName|slice(0, 1)|upper }}{{ project.owner.lastName|slice(0, 1)|upper }}
-                            </span>
-                        </span>
+                        {% include 'components/_avatar.html.twig' with {user: project.owner, size: 'md'} %}
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-900">{{ project.owner.fullName }}</p>
                             <p class="text-sm text-gray-500">{{ project.owner.email }}</p>
@@ -55,11 +51,7 @@
                     <li class="px-4 py-4 sm:px-6">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
-                                <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-                                    <span class="text-sm font-medium text-gray-600">
-                                        {{ member.user.firstName|slice(0, 1)|upper }}{{ member.user.lastName|slice(0, 1)|upper }}
-                                    </span>
-                                </span>
+                                {% include 'components/_avatar.html.twig' with {user: member.user, size: 'md'} %}
                                 <div class="ml-4">
                                     <p class="text-sm font-medium text-gray-900">{{ member.user.fullName }}</p>
                                     <p class="text-sm text-gray-500">{{ member.user.email }}</p>
