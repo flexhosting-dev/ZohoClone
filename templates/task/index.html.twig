@@ -146,6 +146,44 @@
                 </div>
                 {% endif %}
 
+                {# Assignee Filter #}
+                {% if projectMembers|length > 1 %}
+                <div class="relative" x-data="{ open: false }">
+                    <button type="button" @click="open = !open" @click.away="open = false"
+                            class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <span>Assignee</span>
+                        {% if filter.assigneeIds|length > 0 %}
+                            <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.assigneeIds|length }}</span>
+                        {% endif %}
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="open" x-transition class="absolute left-0 mt-2 w-64 max-h-64 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        <div class="p-2 space-y-1">
+                            {% for member in projectMembers %}
+                                {% set memberIdStr = '' ~ member.id %}
+                                <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                                    <input type="checkbox" name="assignee_{{ memberIdStr }}" value="{{ memberIdStr }}"
+                                           {% if memberIdStr in filter.assigneeIds %}checked{% endif %}
+                                           class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full overflow-hidden flex-shrink-0">
+                                        {% if member.avatar %}
+                                            <img src="{{ app.request.basePath }}/uploads/avatars/{{ member.avatar }}" alt="{{ member.fullName }}" class="w-full h-full object-cover">
+                                        {% else %}
+                                            <span class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+                                                <span class="text-xs font-medium text-white">{{ member.firstName|slice(0,1)|upper }}</span>
+                                            </span>
+                                        {% endif %}
+                                    </span>
+                                    <span class="text-sm text-gray-700 truncate">{{ member.fullName }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 {# Apply Button #}
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,6 +226,17 @@
                     <span class="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
                         {{ dueLabels[filter.dueFilter] ?? filter.dueFilter }}
                     </span>
+                {% endif %}
+                {% if filter.assigneeIds|length > 0 %}
+                    {% for assigneeId in filter.assigneeIds %}
+                        {% for member in projectMembers %}
+                            {% if ('' ~ member.id) == assigneeId %}
+                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                                    {{ member.fullName }}
+                                </span>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
                 {% endif %}
                 {% if filter.search %}
                     <span class="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
@@ -235,6 +284,15 @@
             });
             if (projects.length > 0) {
                 params.set('project', projects.join(','));
+            }
+
+            // Collect assignee checkboxes
+            const assignees = [];
+            form.querySelectorAll('input[name^="assignee_"]:checked').forEach(cb => {
+                assignees.push(cb.value);
+            });
+            if (assignees.length > 0) {
+                params.set('assignee', assignees.join(','));
             }
 
             // Due date

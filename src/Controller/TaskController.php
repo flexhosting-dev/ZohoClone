@@ -48,6 +48,22 @@ class TaskController extends AbstractController
         // Get all user's projects for the filter dropdown
         $userProjects = $this->projectRepository->findByUser($user);
 
+        // Get all unique users who are members of user's projects for assignee filter
+        $projectMembers = [];
+        $seenUserIds = [];
+        foreach ($userProjects as $project) {
+            foreach ($project->getMembers() as $member) {
+                $memberUser = $member->getUser();
+                $userId = $memberUser->getId()->toString();
+                if (!isset($seenUserIds[$userId])) {
+                    $seenUserIds[$userId] = true;
+                    $projectMembers[] = $memberUser;
+                }
+            }
+        }
+        // Sort by name
+        usort($projectMembers, fn($a, $b) => $a->getFullName() <=> $b->getFullName());
+
         // Group tasks by status
         $tasksByStatus = [
             'todo' => [],
@@ -67,6 +83,7 @@ class TaskController extends AbstractController
             'tasksByStatus' => $tasksByStatus,
             'filter' => $filter,
             'userProjects' => $userProjects,
+            'projectMembers' => $projectMembers,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
             'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);
