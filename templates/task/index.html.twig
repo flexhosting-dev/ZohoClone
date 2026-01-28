@@ -12,6 +12,250 @@
         </div>
     </div>
 
+    {# Filter Bar #}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <form method="GET" action="{{ path('app_task_my_tasks') }}" id="task-filter-form" class="space-y-4">
+            {# Search and main filters row #}
+            <div class="flex flex-wrap items-center gap-3">
+                {# Search #}
+                <div class="flex-1 min-w-[200px] max-w-md">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                        <input type="text" name="search" value="{{ filter.search }}" placeholder="Search tasks..."
+                               class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                </div>
+
+                {# Status Filter #}
+                <div class="relative" x-data="{ open: false }">
+                    <button type="button" @click="open = !open" @click.away="open = false"
+                            class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <span>Status</span>
+                        {% if filter.statuses|length > 0 %}
+                            <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.statuses|length }}</span>
+                        {% endif %}
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="open" x-transition class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        <div class="p-2 space-y-1">
+                            {% for status in ['todo', 'in_progress', 'in_review', 'completed'] %}
+                                {% set statusLabels = {'todo': 'To Do', 'in_progress': 'In Progress', 'in_review': 'In Review', 'completed': 'Completed'} %}
+                                <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                                    <input type="checkbox" name="status_{{ status }}" value="{{ status }}"
+                                           {% if status in filter.statuses|map(s => s.value) %}checked{% endif %}
+                                           class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                                    <span class="text-sm text-gray-700">{{ statusLabels[status] }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                {# Priority Filter #}
+                <div class="relative" x-data="{ open: false }">
+                    <button type="button" @click="open = !open" @click.away="open = false"
+                            class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <span>Priority</span>
+                        {% if filter.priorities|length > 0 %}
+                            <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.priorities|length }}</span>
+                        {% endif %}
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="open" x-transition class="absolute left-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        <div class="p-2 space-y-1">
+                            {% for priority in ['high', 'medium', 'low', 'none'] %}
+                                {% set priorityLabels = {'none': 'None', 'low': 'Low', 'medium': 'Medium', 'high': 'High'} %}
+                                <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                                    <input type="checkbox" name="priority_{{ priority }}" value="{{ priority }}"
+                                           {% if priority in filter.priorities|map(p => p.value) %}checked{% endif %}
+                                           class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                                    <span class="text-sm text-gray-700">{{ priorityLabels[priority] }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                {# Due Date Filter #}
+                <div class="relative" x-data="{ open: false }">
+                    <button type="button" @click="open = !open" @click.away="open = false"
+                            class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <span>Due Date</span>
+                        {% if filter.dueFilter %}
+                            <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">1</span>
+                        {% endif %}
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="open" x-transition class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        <div class="p-2 space-y-1">
+                            {% for dueOption in [
+                                {'value': '', 'label': 'Any date'},
+                                {'value': 'overdue', 'label': 'Overdue'},
+                                {'value': 'today', 'label': 'Due today'},
+                                {'value': 'this_week', 'label': 'This week'},
+                                {'value': 'next_week', 'label': 'Next week'},
+                                {'value': 'no_date', 'label': 'No due date'}
+                            ] %}
+                                <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                                    <input type="radio" name="due" value="{{ dueOption.value }}"
+                                           {% if filter.dueFilter == dueOption.value or (filter.dueFilter is null and dueOption.value == '') %}checked{% endif %}
+                                           class="border-gray-300 text-primary-600 focus:ring-primary-500">
+                                    <span class="text-sm text-gray-700">{{ dueOption.label }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                {# Project Filter #}
+                {% if userProjects|length > 1 %}
+                <div class="relative" x-data="{ open: false }">
+                    <button type="button" @click="open = !open" @click.away="open = false"
+                            class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <span>Project</span>
+                        {% if filter.projectIds|length > 0 %}
+                            <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.projectIds|length }}</span>
+                        {% endif %}
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="open" x-transition class="absolute left-0 mt-2 w-56 max-h-64 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        <div class="p-2 space-y-1">
+                            {% for project in userProjects %}
+                                {% set projectIdStr = project.id.toRfc4122() %}
+                                <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                                    <input type="checkbox" name="project_{{ projectIdStr }}" value="{{ projectIdStr }}"
+                                           {% if projectIdStr in filter.projectIds %}checked{% endif %}
+                                           class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                                    <span class="text-sm text-gray-700 truncate">{{ project.name }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Apply Button #}
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                    Apply
+                </button>
+
+                {# Clear Filters #}
+                {% if filter.hasActiveFilters %}
+                <a href="{{ path('app_task_my_tasks') }}" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    Clear filters
+                </a>
+                {% endif %}
+            </div>
+
+            {# Active Filters Display #}
+            {% if filter.hasActiveFilters %}
+            <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
+                <span class="text-xs text-gray-500">Active filters:</span>
+                {% if filter.statuses|length > 0 %}
+                    {% for status in filter.statuses %}
+                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                            {{ status.label }}
+                        </span>
+                    {% endfor %}
+                {% endif %}
+                {% if filter.priorities|length > 0 %}
+                    {% for priority in filter.priorities %}
+                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                            {{ priority.label }}
+                        </span>
+                    {% endfor %}
+                {% endif %}
+                {% if filter.dueFilter %}
+                    {% set dueLabels = {'overdue': 'Overdue', 'today': 'Due today', 'this_week': 'This week', 'next_week': 'Next week', 'no_date': 'No due date', 'custom': 'Custom date'} %}
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
+                        {{ dueLabels[filter.dueFilter] ?? filter.dueFilter }}
+                    </span>
+                {% endif %}
+                {% if filter.search %}
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                        "{{ filter.search }}"
+                    </span>
+                {% endif %}
+                <span class="text-xs text-gray-500 ml-2">{{ tasks|length }} task{{ tasks|length != 1 ? 's' : '' }} found</span>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('task-filter-form');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+
+            // Collect status checkboxes
+            const statuses = [];
+            form.querySelectorAll('input[name^="status_"]:checked').forEach(cb => {
+                statuses.push(cb.value);
+            });
+            if (statuses.length > 0) {
+                params.set('status', statuses.join(','));
+            }
+
+            // Collect priority checkboxes
+            const priorities = [];
+            form.querySelectorAll('input[name^="priority_"]:checked').forEach(cb => {
+                priorities.push(cb.value);
+            });
+            if (priorities.length > 0) {
+                params.set('priority', priorities.join(','));
+            }
+
+            // Collect project checkboxes
+            const projects = [];
+            form.querySelectorAll('input[name^="project_"]:checked').forEach(cb => {
+                projects.push(cb.value);
+            });
+            if (projects.length > 0) {
+                params.set('project', projects.join(','));
+            }
+
+            // Due date
+            const dueRadio = form.querySelector('input[name="due"]:checked');
+            if (dueRadio && dueRadio.value) {
+                params.set('due', dueRadio.value);
+            }
+
+            // Search
+            const search = form.querySelector('input[name="search"]').value.trim();
+            if (search) {
+                params.set('search', search);
+            }
+
+            // Redirect with params
+            const queryString = params.toString();
+            window.location.href = '{{ path('app_task_my_tasks') }}' + (queryString ? '?' + queryString : '');
+        });
+    });
+    </script>
+
     {% if tasks|length > 0 %}
         {# Kanban Board #}
         <div id="kanban-board" data-status-url-template="{{ path('app_task_update_status', {id: '__TASK_ID__'}) }}" data-reorder-url="{{ path('app_task_reorder') }}" class="kanban-grid">

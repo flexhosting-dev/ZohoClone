@@ -1,9 +1,11 @@
+/* stimulusFetch: 'eager' */
 import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
-    static targets = ['menu'];
+    static targets = ['menu', 'button'];
 
-    toggle() {
+    toggle(event) {
+        event.stopPropagation();
         this.menuTarget.classList.toggle('hidden');
     }
 

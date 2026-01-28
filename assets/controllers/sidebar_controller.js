@@ -1,3 +1,4 @@
+/* stimulusFetch: 'eager' */
 import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
@@ -5,11 +6,12 @@ export default class extends Controller {
 
     connect() {
         // Close sidebar when clicking outside
-        document.addEventListener('click', this.handleOutsideClick.bind(this));
+        this.boundHandleOutsideClick = this.handleOutsideClick.bind(this);
+        document.addEventListener('click', this.boundHandleOutsideClick);
     }
 
     disconnect() {
-        document.removeEventListener('click', this.handleOutsideClick.bind(this));
+        document.removeEventListener('click', this.boundHandleOutsideClick);
     }
 
     toggle(event) {

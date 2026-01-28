@@ -427,53 +427,73 @@
 {% block javascripts %}
 {{ parent() }}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+function initProfilePage() {
+    const themeOptions = document.getElementById('theme-options');
+    if (!themeOptions || themeOptions.dataset.initialized) return;
+    themeOptions.dataset.initialized = 'true';
+
     // Theme selection
-    document.querySelectorAll('.theme-option').forEach(function(option) {
-        option.addEventListener('click', async function() {
-            const theme = this.dataset.theme;
-            const radio = this.querySelector('input[type="radio"]');
+    let themeSaving = false;
+    async function selectTheme(theme) {
+        if (themeSaving) return;
 
-            // Update UI immediately
-            document.querySelectorAll('.theme-option').forEach(opt => {
-                const border = opt.querySelector('.border-2');
-                const check = opt.querySelector('.theme-check');
-                if (opt.dataset.theme === theme) {
-                    border.classList.remove('border-gray-200', 'hover:border-gray-300');
-                    border.classList.add('border-primary-500', 'ring-2', 'ring-primary-200');
-                    check.classList.remove('hidden');
-                    check.classList.add('flex');
-                } else {
-                    border.classList.add('border-gray-200', 'hover:border-gray-300');
-                    border.classList.remove('border-primary-500', 'ring-2', 'ring-primary-200');
-                    check.classList.add('hidden');
-                    check.classList.remove('flex');
-                }
-            });
-            radio.checked = true;
+        // Check if already selected
+        const currentTheme = document.querySelector('.theme-option input[type="radio"]:checked')?.value;
+        if (currentTheme === theme) return;
 
-            // Save to server
-            try {
-                const response = await fetch('{{ path("app_profile_theme") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ theme: theme })
-                });
+        themeSaving = true;
 
-                const data = await response.json();
-
-                if (data.success) {
-                    showToast('Theme updated! Refresh to see changes.', 'success');
-                    // Reload after a short delay to apply the theme
-                    setTimeout(() => window.location.reload(), 1000);
-                } else {
-                    showToast(data.error || 'Failed to save theme', 'error');
-                }
-            } catch (error) {
-                showToast('Network error. Please try again.', 'error');
+        // Update UI immediately
+        document.querySelectorAll('.theme-option').forEach(opt => {
+            const border = opt.querySelector('.border-2');
+            const check = opt.querySelector('.theme-check');
+            const radio = opt.querySelector('input[type="radio"]');
+            if (opt.dataset.theme === theme) {
+                border.classList.remove('border-gray-200', 'hover:border-gray-300');
+                border.classList.add('border-primary-500', 'ring-2', 'ring-primary-200');
+                check.classList.remove('hidden');
+                check.classList.add('flex');
+                radio.checked = true;
+            } else {
+                border.classList.add('border-gray-200', 'hover:border-gray-300');
+                border.classList.remove('border-primary-500', 'ring-2', 'ring-primary-200');
+                check.classList.add('hidden');
+                check.classList.remove('flex');
+                radio.checked = false;
             }
+        });
+
+        // Save to server
+        try {
+            const response = await fetch('{{ path("app_profile_theme") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ theme: theme })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showToast('Applying theme...', 'success');
+                // Reload to apply the theme
+                window.location.reload();
+            } else {
+                showToast(data.error || 'Failed to save theme', 'error');
+                themeSaving = false;
+            }
+        } catch (error) {
+            console.error('Theme update error:', error);
+            showToast('Network error. Please try again.', 'error');
+            themeSaving = false;
+        }
+    }
+
+    document.querySelectorAll('.theme-option').forEach(function(option) {
+        option.addEventListener('click', function(e) {
+            e.preventDefault();
+            selectTheme(this.dataset.theme);
         });
     });
 
@@ -674,7 +694,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (removeAvatarBtn) {
         removeAvatarBtn.addEventListener('click', removeAvatar);
     }
-});
+}
+
+// Initialize on both DOMContentLoaded and Turbo navigation
+document.addEventListener('DOMContentLoaded', initProfilePage);
+document.addEventListener('turbo:load', initProfilePage);
 
 async function removeAvatar() {
     if (!confirm('Are you sure you want to remove your profile photo?')) return;

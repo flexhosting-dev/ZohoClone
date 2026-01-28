@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\DTO\TaskFilterDTO;
 use App\Entity\Milestone;
 use App\Entity\Task;
 use App\Entity\User;
@@ -36,13 +37,16 @@ class TaskController extends AbstractController
     }
 
     #[Route('/my-tasks', name: 'app_task_my_tasks', methods: ['GET'])]
-    public function myTasks(): Response
+    public function myTasks(Request $request): Response
     {
         /** @var User $user */
         $user = $this->getUser();
 
-        $tasks = $this->taskRepository->findUserTasks($user);
-        $recentProjects = $this->projectRepository->findByUser($user);
+        $filter = TaskFilterDTO::fromRequest($request);
+        $tasks = $this->taskRepository->findUserTasksFiltered($user, $filter);
+
+        // Get all user's projects for the filter dropdown
+        $userProjects = $this->projectRepository->findByUser($user);
 
         // Group tasks by status
         $tasksByStatus = [
@@ -61,6 +65,8 @@ class TaskController extends AbstractController
             'page_title' => 'My Tasks',
             'tasks' => $tasks,
             'tasksByStatus' => $tasksByStatus,
+            'filter' => $filter,
+            'userProjects' => $userProjects,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
             'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);

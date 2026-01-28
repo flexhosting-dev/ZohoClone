@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\DTO\TaskFilterDTO;
 use App\Entity\Milestone;
 use App\Entity\Project;
 use App\Entity\Task;
@@ -134,5 +135,119 @@ class TaskRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
 
         return (int) ($result ?? 0);
+    }
+
+    public function applyFilter(QueryBuilder $qb, TaskFilterDTO $filter): QueryBuilder
+    {
+        // Filter by statuses
+        if (!empty($filter->statuses)) {
+            $qb->andWhere('t.status IN (:statuses)')
+                ->setParameter('statuses', $filter->statuses);
+        }
+
+        // Filter by priorities
+        if (!empty($filter->priorities)) {
+            $qb->andWhere('t.priority IN (:priorities)')
+                ->setParameter('priorities', $filter->priorities);
+        }
+
+        // Filter by assignees
+        if (!empty($filter->assigneeIds)) {
+            if (!in_array('a', $qb->getAllAliases())) {
+                $qb->join('t.assignees', 'a');
+            }
+            $qb->andWhere('a.user IN (:assigneeIds)')
+                ->setParameter('assigneeIds', $filter->assigneeIds);
+        }
+
+        // Filter by milestones
+        if (!empty($filter->milestoneIds)) {
+            $qb->andWhere('t.milestone IN (:milestoneIds)')
+                ->setParameter('milestoneIds', $filter->milestoneIds);
+        }
+
+        // Filter by projects
+        if (!empty($filter->projectIds)) {
+            if (!in_array('m', $qb->getAllAliases())) {
+                $qb->join('t.milestone', 'm');
+            }
+            $qb->andWhere('m.project IN (:projectIds)')
+                ->setParameter('projectIds', $filter->projectIds);
+        }
+
+        // Filter by due date
+        if ($filter->dueFilter !== null) {
+            $today = new \DateTimeImmutable('today');
+
+            switch ($filter->dueFilter) {
+                case 'overdue':
+                    $qb->andWhere('t.dueDate < :today')
+                        ->andWhere('t.status != :completedStatus')
+                        ->setParameter('today', $today)
+                        ->setParameter('completedStatus', TaskStatus::COMPLETED);
+                    break;
+
+                case 'today':
+                    $tomorrow = $today->modify('+1 day');
+                    $qb->andWhere('t.dueDate >= :today')
+                        ->andWhere('t.dueDate < :tomorrow')
+                        ->setParameter('today', $today)
+                        ->setParameter('tomorrow', $tomorrow);
+                    break;
+
+                case 'this_week':
+                    $endOfWeek = $today->modify('sunday this week')->setTime(23, 59, 59);
+                    $qb->andWhere('t.dueDate >= :today')
+                        ->andWhere('t.dueDate <= :endOfWeek')
+                        ->setParameter('today', $today)
+                        ->setParameter('endOfWeek', $endOfWeek);
+                    break;
+
+                case 'next_week':
+                    $startNextWeek = $today->modify('monday next week');
+                    $endNextWeek = $startNextWeek->modify('sunday this week')->setTime(23, 59, 59);
+                    $qb->andWhere('t.dueDate >= :startNextWeek')
+                        ->andWhere('t.dueDate <= :endNextWeek')
+                        ->setParameter('startNextWeek', $startNextWeek)
+                        ->setParameter('endNextWeek', $endNextWeek);
+                    break;
+
+                case 'no_date':
+                    $qb->andWhere('t.dueDate IS NULL');
+                    break;
+
+                case 'custom':
+                    if ($filter->dueDateFrom) {
+                        $from = new \DateTimeImmutable($filter->dueDateFrom);
+                        $qb->andWhere('t.dueDate >= :dueDateFrom')
+                            ->setParameter('dueDateFrom', $from);
+                    }
+                    if ($filter->dueDateTo) {
+                        $to = new \DateTimeImmutable($filter->dueDateTo);
+                        $qb->andWhere('t.dueDate <= :dueDateTo')
+                            ->setParameter('dueDateTo', $to->setTime(23, 59, 59));
+                    }
+                    break;
+            }
+        }
+
+        // Search in title and description
+        if ($filter->search !== null && $filter->search !== '') {
+            $qb->andWhere('(t.title LIKE :search OR t.description LIKE :search)')
+                ->setParameter('search', '%' . $filter->search . '%');
+        }
+
+        return $qb;
+    }
+
+    /**
+     * @return Task[]
+     */
+    public function findUserTasksFiltered(User $user, TaskFilterDTO $filter): array
+    {
+        $qb = $this->createQueryBuilderForUserTasks($user);
+        $this->applyFilter($qb, $filter);
+
+        return $qb->getQuery()->getResult();
     }
 }
