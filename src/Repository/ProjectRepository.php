@@ -43,16 +43,24 @@ class ProjectRepository extends ServiceEntityRepository
      *
      * @return Project[]
      */
-    public function findRecentForUser(User $user, int $limit = 5): array
+    public function findRecentForUser(User $user, int $limit = 4): array
     {
-        $projects = $this->findByUser($user);
-        $hiddenIds = $user->getHiddenRecentProjectIds();
+        $recentIds = $user->getRecentProjectIds();
 
-        $filtered = array_filter($projects, function (Project $project) use ($hiddenIds) {
-            return !in_array((string) $project->getId(), $hiddenIds, true);
-        });
+        if (empty($recentIds)) {
+            return [];
+        }
 
-        return array_slice(array_values($filtered), 0, $limit);
+        $recentIds = array_slice($recentIds, 0, $limit);
+        $projects = $this->findBy(['id' => $recentIds]);
+
+        // Sort by the order in recentIds
+        $idOrder = array_flip($recentIds);
+        usort($projects, fn(Project $a, Project $b) =>
+            ($idOrder[(string) $a->getId()] ?? 999) <=> ($idOrder[(string) $b->getId()] ?? 999)
+        );
+
+        return $projects;
     }
 
     /**

@@ -69,6 +69,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json')]
     private array $favouriteProjectIds = [];
 
+    #[ORM\Column(type: 'json')]
+    private array $recentProjectIds = [];
+
     #[ORM\Column(length: 50, options: ['default' => 'gradient'])]
     private string $uiTheme = 'gradient';
 
@@ -337,9 +340,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function hideRecentProject(string $projectId): static
     {
-        if (!in_array($projectId, $this->hiddenRecentProjectIds, true)) {
-            $this->hiddenRecentProjectIds[] = $projectId;
-        }
+        // Remove from recent projects list directly
+        $this->removeRecentProject($projectId);
         return $this;
     }
 
@@ -355,6 +357,47 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function isRecentProjectHidden(string $projectId): bool
     {
         return in_array($projectId, $this->hiddenRecentProjectIds, true);
+    }
+
+    public function getRecentProjectIds(): array
+    {
+        return $this->recentProjectIds;
+    }
+
+    public function setRecentProjectIds(array $recentProjectIds): static
+    {
+        $this->recentProjectIds = $recentProjectIds;
+        return $this;
+    }
+
+    /**
+     * Record a project visit. Moves the project to the front of the list,
+     * keeping at most 4 entries.
+     */
+    public function recordProjectVisit(string $projectId): static
+    {
+        // Remove if already in list
+        $this->recentProjectIds = array_values(array_filter(
+            $this->recentProjectIds,
+            fn($id) => $id !== $projectId
+        ));
+        // Add to front
+        array_unshift($this->recentProjectIds, $projectId);
+        // Keep max 4
+        $this->recentProjectIds = array_slice($this->recentProjectIds, 0, 4);
+        return $this;
+    }
+
+    /**
+     * Remove a project from the recent projects list.
+     */
+    public function removeRecentProject(string $projectId): static
+    {
+        $this->recentProjectIds = array_values(array_filter(
+            $this->recentProjectIds,
+            fn($id) => $id !== $projectId
+        ));
+        return $this;
     }
 
     public function getUiTheme(): string

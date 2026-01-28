@@ -103,13 +103,21 @@
         </table>
     {% else %}
         <div class="px-4 py-12">
-            {% include 'components/_empty_state.html.twig' with {
-                icon: 'task',
-                title: 'No tasks yet',
-                description: 'Get started by creating a milestone and adding tasks to it.',
-                action_url: path('app_milestone_new', {projectId: project.id}),
-                action_label: 'New Milestone'
-            } %}
+            {% if project is defined and project %}
+                {% include 'components/_empty_state.html.twig' with {
+                    icon: 'task',
+                    title: 'No tasks yet',
+                    description: 'Get started by creating a milestone and adding tasks to it.',
+                    action_url: path('app_milestone_new', {projectId: project.id}),
+                    action_label: 'New Milestone'
+                } %}
+            {% else %}
+                {% include 'components/_empty_state.html.twig' with {
+                    icon: 'task',
+                    title: 'No tasks found',
+                    description: 'No tasks match your current filters.'
+                } %}
+            {% endif %}
         </div>
     {% endif %}
 </div>

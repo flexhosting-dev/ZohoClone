@@ -144,51 +144,20 @@
 
         {# Tasks Panel (Second) #}
         <div id="panel-1" class="tab-panel hidden pt-4">
-            {# List/Kanban Toggle + Add Task Button #}
-            <div class="mb-4 flex items-center justify-between">
-                <div class="inline-flex rounded-lg bg-gray-100 p-1">
-                    <button type="button" onclick="showView(0)" id="view-btn-0"
-                            class="view-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-white text-primary-600 shadow-sm">
-                        <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-                        </svg>
-                        List
-                    </button>
-                    <button type="button" onclick="showView(1)" id="view-btn-1"
-                            class="view-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">
-                        <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z" />
-                        </svg>
-                        Kanban
-                    </button>
-                </div>
-{% if project.milestones|length > 0 %}
-                <button type="button"
-                        onclick="openTaskCreatePanel('{{ project.id }}')"
-                        class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
-                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-                    </svg>
-                    Add Task
-                </button>
-                {% else %}
-                <a href="{{ path('app_milestone_new', {projectId: project.id}) }}"
-                   class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
-                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-                    </svg>
-                    Add Milestone First
-                </a>
-                {% endif %}
-            </div>
-
-            {# Task Views #}
-            <div id="view-panel-0" class="view-panel">
-                {% include 'task/_list.html.twig' with {project: project, tasks: tasks} %}
-            </div>
-            <div id="view-panel-1" class="view-panel hidden">
-                {% include 'task/_kanban_vue.html.twig' with {project: project} %}
-            </div>
+            {% include 'task/_task_page.html.twig' with {
+                formAction: 'app_project_show',
+                formActionParams: {id: project.id},
+                tasks: tasks,
+                tasksByStatus: tasksByStatus,
+                filter: filter,
+                userProjects: [],
+                projectMembers: projectMembers,
+                showProjectFilter: false,
+                storageKey: 'project_' ~ project.id ~ '_view',
+                showHeader: false,
+                showAddButton: true,
+                project: project
+            } %}
         </div>
 
         {# Members Panel (Third) #}
@@ -259,7 +228,7 @@
 <script>
 window.PROJECT_ID = '{{ project.id }}';
 window.STORAGE_KEY_TAB = `project_${PROJECT_ID}_tab`;
-window.STORAGE_KEY_VIEW = `project_${PROJECT_ID}_view`;
+// Note: view toggle is handled by _task_page.html.twig with its own storage key
 window.STORAGE_KEY_LAST_PROJECT = 'workflow_last_project';
 
 // Feed lazy loading state
@@ -345,33 +314,6 @@ document.addEventListener('click', function(e) {
         dropdown.classList.add('hidden');
     }
 });
-
-function showView(index, save = true) {
-    // Update view buttons
-    document.querySelectorAll('.view-btn').forEach((btn, i) => {
-        if (i === index) {
-            btn.classList.remove('text-gray-600', 'hover:text-gray-900');
-            btn.classList.add('bg-white', 'text-primary-600', 'shadow-sm');
-        } else {
-            btn.classList.remove('bg-white', 'text-primary-600', 'shadow-sm');
-            btn.classList.add('text-gray-600', 'hover:text-gray-900');
-        }
-    });
-
-    // Update view panels
-    document.querySelectorAll('.view-panel').forEach((panel, i) => {
-        if (i === index) {
-            panel.classList.remove('hidden');
-        } else {
-            panel.classList.add('hidden');
-        }
-    });
-
-    // Save to localStorage
-    if (save) {
-        localStorage.setItem(STORAGE_KEY_VIEW, index);
-    }
-}
 
 // Feed lazy loading and infinite scroll
 async function loadFeed(append = false) {
@@ -491,12 +433,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const savedTab = localStorage.getItem(STORAGE_KEY_TAB);
     if (savedTab !== null) {
         showTab(parseInt(savedTab), false);
-    }
-
-    // Restore view (for Tasks tab)
-    const savedView = localStorage.getItem(STORAGE_KEY_VIEW);
-    if (savedView !== null) {
-        showView(parseInt(savedView), false);
     }
 
     // Setup feed infinite scroll

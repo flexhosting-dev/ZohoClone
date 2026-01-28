@@ -250,4 +250,76 @@ class TaskRepository extends ServiceEntityRepository
 
         return $qb->getQuery()->getResult();
     }
+
+    /**
+     * Find all tasks from the given projects with filters applied.
+     *
+     * @param Project[] $projects
+     * @return Task[]
+     */
+    public function findProjectTasksFiltered(array $projects, TaskFilterDTO $filter): array
+    {
+        if (empty($projects)) {
+            return [];
+        }
+
+        $qb = $this->createQueryBuilder('t')
+            ->join('t.milestone', 'm')
+            ->where('m.project IN (:projects)')
+            ->setParameter('projects', $projects)
+            ->orderBy('t.dueDate', 'ASC')
+            ->addOrderBy('t.priority', 'DESC');
+
+        $this->applyFilter($qb, $filter);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Find all tasks accessible to the user (for All Tasks page).
+     * For admins: all tasks in the system
+     * For regular users: all tasks from projects they are members of
+     *
+     * @return Task[]
+     */
+    public function findAllTasksFiltered(User $user, TaskFilterDTO $filter, bool $isAdmin = false): array
+    {
+        if ($isAdmin) {
+            // Admin can see all tasks
+            $qb = $this->createQueryBuilder('t')
+                ->join('t.milestone', 'm')
+                ->orderBy('t.dueDate', 'ASC')
+                ->addOrderBy('t.priority', 'DESC');
+        } else {
+            // Regular user sees tasks from projects they are members of, own, or are public
+            // Use a subquery to find accessible project IDs to avoid join-based duplication
+            $projectRepo = $this->getEntityManager()->getRepository(Project::class);
+            $accessibleProjects = $projectRepo->createQueryBuilder('ap')
+                ->select('ap.id')
+                ->leftJoin('ap.members', 'apm')
+                ->where('ap.owner = :user')
+                ->orWhere('apm.user = :user')
+                ->orWhere('ap.isPublic = true')
+                ->setParameter('user', $user)
+                ->distinct()
+                ->getQuery()
+                ->getSingleColumnResult();
+
+            if (empty($accessibleProjects)) {
+                return [];
+            }
+
+            $qb = $this->createQueryBuilder('t')
+                ->join('t.milestone', 'm')
+                ->join('m.project', 'p')
+                ->where('p.id IN (:accessibleProjects)')
+                ->setParameter('accessibleProjects', $accessibleProjects)
+                ->orderBy('t.dueDate', 'ASC')
+                ->addOrderBy('t.priority', 'DESC');
+        }
+
+        $this->applyFilter($qb, $filter);
+
+        return $qb->getQuery()->getResult();
+    }
 }

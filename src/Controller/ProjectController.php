@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\DTO\TaskFilterDTO;
 use App\Entity\Project;
 use App\Entity\ProjectMember;
 use App\Entity\User;
@@ -93,17 +94,53 @@ class ProjectController extends AbstractController
 
     #[Route('/{id}', name: 'app_project_show', methods: ['GET'])]
     #[IsGranted('PROJECT_VIEW', subject: 'project')]
-    public function show(Project $project): Response
+    public function show(Request $request, Project $project): Response
     {
         /** @var User $user */
         $user = $this->getUser();
-        $tasks = $this->taskRepository->findByProject($project);
+
+        // Record project visit for recent projects sidebar
+        $user->recordProjectVisit((string) $project->getId());
+        $this->entityManager->flush();
+
+        // Apply filters to tasks
+        $filter = TaskFilterDTO::fromRequest($request);
+        $tasks = $this->taskRepository->findProjectTasksFiltered([$project], $filter);
+
+        // Get project members for assignee filter
+        $projectMembers = [];
+        $seenUserIds = [];
+        foreach ($project->getMembers() as $member) {
+            $memberUser = $member->getUser();
+            $userId = $memberUser->getId()->toString();
+            if (!isset($seenUserIds[$userId])) {
+                $seenUserIds[$userId] = true;
+                $projectMembers[] = $memberUser;
+            }
+        }
+        usort($projectMembers, fn($a, $b) => $a->getFullName() <=> $b->getFullName());
+
+        // Group tasks by status for kanban
+        $tasksByStatus = [
+            'todo' => [],
+            'in_progress' => [],
+            'in_review' => [],
+            'completed' => [],
+        ];
+        foreach ($tasks as $task) {
+            $status = $task->getStatus()->value;
+            $tasksByStatus[$status][] = $task;
+        }
+
         $projectRoles = $this->roleRepository->findProjectRoles();
 
         return $this->render('project/show.html.twig', [
             'page_title' => $project->getName(),
             'project' => $project,
             'tasks' => $tasks,
+            'tasksByStatus' => $tasksByStatus,
+            'filter' => $filter,
+            'projectMembers' => $projectMembers,
             'projectRoles' => $projectRoles,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
             'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),

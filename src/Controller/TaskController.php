@@ -89,6 +89,60 @@ class TaskController extends AbstractController
         ]);
     }
 
+    #[Route('/all-tasks', name: 'app_task_all_tasks', methods: ['GET'])]
+    public function allTasks(Request $request): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $isAdmin = $user->isPortalAdmin();
+        $userProjects = $this->projectRepository->findByUser($user);
+
+        $filter = TaskFilterDTO::fromRequest($request);
+        $tasks = $this->taskRepository->findAllTasksFiltered($user, $filter, $isAdmin);
+
+        // Get all unique users who are members of user's projects for assignee filter
+        $projectMembers = [];
+        $seenUserIds = [];
+        foreach ($userProjects as $project) {
+            foreach ($project->getMembers() as $member) {
+                $memberUser = $member->getUser();
+                $userId = $memberUser->getId()->toString();
+                if (!isset($seenUserIds[$userId])) {
+                    $seenUserIds[$userId] = true;
+                    $projectMembers[] = $memberUser;
+                }
+            }
+        }
+        // Sort by name
+        usort($projectMembers, fn($a, $b) => $a->getFullName() <=> $b->getFullName());
+
+        // Group tasks by status
+        $tasksByStatus = [
+            'todo' => [],
+            'in_progress' => [],
+            'in_review' => [],
+            'completed' => [],
+        ];
+
+        foreach ($tasks as $task) {
+            $status = $task->getStatus()->value;
+            $tasksByStatus[$status][] = $task;
+        }
+
+        return $this->render('task/all_tasks.html.twig', [
+            'page_title' => 'All Tasks',
+            'tasks' => $tasks,
+            'tasksByStatus' => $tasksByStatus,
+            'filter' => $filter,
+            'userProjects' => $userProjects,
+            'projectMembers' => $projectMembers,
+            'isAdmin' => $isAdmin,
+            'recent_projects' => $this->projectRepository->findRecentForUser($user),
+            'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
+        ]);
+    }
+
     #[Route('/projects/{projectId}/tasks/new', name: 'app_task_new_for_project', methods: ['GET', 'POST'])]
     public function newForProject(Request $request, string $projectId): Response
     {
