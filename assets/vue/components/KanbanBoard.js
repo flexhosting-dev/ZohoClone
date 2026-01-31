@@ -49,6 +49,7 @@ export default {
         const dragOverColumn = ref(null);
         const dropIndex = ref(null);
         const isUpdating = ref(false);
+        const loadingTaskIds = ref(new Set());
 
         const basePath = props.basePath || window.BASE_PATH || '';
 
@@ -265,8 +266,17 @@ export default {
 
             if (oldValue === newValue) {
                 reorderInColumn(task, newValue, targetIdx);
-                await persistColumnOrder(newValue);
                 draggedTask.value = null;
+                const next = new Set(loadingTaskIds.value);
+                next.add(task.id);
+                loadingTaskIds.value = next;
+                try {
+                    await persistColumnOrder(newValue);
+                } finally {
+                    const after = new Set(loadingTaskIds.value);
+                    after.delete(task.id);
+                    loadingTaskIds.value = after;
+                }
                 return;
             }
 
@@ -274,6 +284,9 @@ export default {
             updateTaskValue(task, newValue);
             reorderInColumn(task, newValue, targetIdx);
             isUpdating.value = true;
+            const nextLoading = new Set(loadingTaskIds.value);
+            nextLoading.add(task.id);
+            loadingTaskIds.value = nextLoading;
 
             try {
                 const url = getUpdateUrl(task.id);
@@ -292,6 +305,9 @@ export default {
                 if (typeof Toastr !== 'undefined') Toastr.error('Update Failed', 'Could not update task.');
             } finally {
                 isUpdating.value = false;
+                const afterLoading = new Set(loadingTaskIds.value);
+                afterLoading.delete(task.id);
+                loadingTaskIds.value = afterLoading;
                 draggedTask.value = null;
             }
         };
@@ -340,13 +356,15 @@ export default {
             document.removeEventListener('task-assignees-updated', handleAssigneesUpdate);
         });
 
+        const isTaskLoading = (taskId) => loadingTaskIds.value.has(taskId);
+
         return {
             tasks, currentMode, columns, tasksByColumn, hasMilestones,
             draggedTask, dragOverColumn, dropIndex, isUpdating,
             isCollapsed, toggleCollapse, setMode,
             handleDragStart, handleDragEnd, handleColumnDragOver,
             handleColumnDragLeave, handleColumnDrop, handleTaskClick,
-            basePath
+            isTaskLoading, basePath
         };
     },
 
@@ -410,6 +428,7 @@ export default {
                                     :task="task"
                                     :draggable="true"
                                     :base-path="basePath"
+                                    :loading="isTaskLoading(task.id)"
                                     @click="handleTaskClick(task)"
                                     @dragstart="handleDragStart"
                                     @dragend="handleDragEnd"
@@ -419,17 +438,6 @@ export default {
                                 class="drop-placeholder"><span>Drop here</span></div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Updating overlay -->
-            <div v-if="isUpdating" class="fixed inset-0 z-50 pointer-events-none flex items-start justify-center pt-4">
-                <div class="bg-white shadow-lg rounded-lg px-4 py-2 flex items-center gap-2 pointer-events-auto">
-                    <svg class="animate-spin h-4 w-4 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span class="text-sm text-gray-600">Updating…</span>
                 </div>
             </div>
 
