@@ -10,7 +10,7 @@
     <div data-sidebar-target="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full transform transition-transform duration-300 ease-in-out lg:hidden">
         {% if theme == 'gradient' %}
         {# Gradient Theme Mobile Sidebar #}
-        <div class="flex h-full grow flex-col gap-y-5 overflow-y-auto bg-gradient-to-b from-primary-600 via-primary-700 to-indigo-800 px-6 pb-4 relative">
+        <div class="flex h-full grow flex-col gap-y-5 overflow-y-auto sidebar-scroll bg-gradient-to-b from-primary-600 via-primary-700 to-indigo-800 px-6 pb-4 relative">
             {# Decorative background elements #}
             <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
                 <div class="absolute -top-20 -right-20 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
@@ -165,7 +165,7 @@
         </div>
         {% else %}
         {# Classic White Theme Mobile Sidebar #}
-        <div class="flex h-full grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
+        <div class="flex h-full grow flex-col gap-y-5 overflow-y-auto sidebar-scroll border-r border-gray-200 bg-white px-6 pb-4">
             <div class="flex h-16 shrink-0 items-center justify-between">
                 <div class="flex items-center">
                     <span class="text-2xl">📋</span>
@@ -1847,39 +1847,44 @@
             const data = await response.json();
 
             if (data.success) {
-                // Update button state
-                btn.dataset.isFavourite = data.isFavourite ? 'true' : 'false';
+                // Update ALL favourite buttons on the page for this project
+                document.querySelectorAll('.favourite-btn').forEach(favBtn => {
+                    const btnSvg = favBtn.querySelector('svg');
+                    favBtn.dataset.isFavourite = data.isFavourite ? 'true' : 'false';
+
+                    if (data.isFavourite) {
+                        favBtn.classList.remove('text-gray-300', 'hover:text-yellow-500', 'text-gray-400', 'text-gray-700');
+                        favBtn.classList.add('text-yellow-500', 'hover:text-yellow-600');
+                        if (!favBtn.closest('#more-menu-dropdown')) favBtn.classList.add('bg-yellow-50');
+                        if (btnSvg) btnSvg.setAttribute('fill', 'currentColor');
+                        favBtn.title = 'Remove from favourites';
+                    } else {
+                        favBtn.classList.remove('text-yellow-500', 'hover:text-yellow-600', 'bg-yellow-50');
+                        if (favBtn.closest('#more-menu-dropdown')) {
+                            favBtn.classList.add('text-gray-700');
+                        } else {
+                            favBtn.classList.add('text-gray-400', 'hover:text-yellow-500');
+                        }
+                        if (btnSvg) btnSvg.setAttribute('fill', 'none');
+                        favBtn.title = 'Add to favourites';
+                    }
+
+                    // Update text label if present (e.g. mobile dropdown)
+                    const textNodes = [...favBtn.childNodes].filter(n => n.nodeType === Node.TEXT_NODE || (n.tagName && n.tagName !== 'SVG'));
+                    textNodes.forEach(n => {
+                        if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) {
+                            n.textContent = data.isFavourite ? ' Unfavourite' : ' Favourite';
+                        }
+                    });
+                });
 
                 if (data.isFavourite) {
-                    btn.classList.remove('text-gray-300', 'hover:text-yellow-500', 'text-gray-400');
-                    btn.classList.add('text-yellow-500', 'hover:text-yellow-600', 'bg-yellow-50');
-                    svg.setAttribute('fill', 'currentColor');
-                    btn.title = 'Remove from favourites';
                     Toastr.success('Added to favourites');
-
-                    // Add to sidebar
-                    const projectCard = btn.closest('[data-project-id]') || btn.closest('.card-accent-green, .card-accent-blue, .card-accent-purple, .card-accent-orange, .card-accent-yellow, .card-accent-pink');
-                    let projectName = '';
-                    if (projectCard) {
-                        const nameEl = projectCard.querySelector('h3 a, h2');
-                        if (nameEl) projectName = nameEl.textContent.trim();
-                    }
-                    // Try to get from page title if on show page
-                    if (!projectName) {
-                        const pageTitle = document.querySelector('h2.text-2xl');
-                        if (pageTitle) projectName = pageTitle.textContent.trim();
-                    }
-                    if (projectName) {
-                        addFavouriteToSidebar(projectId, projectName);
+                    if (data.projectName) {
+                        addFavouriteToSidebar(projectId, data.projectName);
                     }
                 } else {
-                    btn.classList.add('text-gray-300', 'hover:text-yellow-500');
-                    btn.classList.remove('text-yellow-500', 'hover:text-yellow-600', 'bg-yellow-50', 'text-gray-400');
-                    svg.setAttribute('fill', 'none');
-                    btn.title = 'Add to favourites';
                     Toastr.success('Removed from favourites');
-
-                    // Remove from sidebar
                     removeFavouriteFromSidebar(projectId);
                 }
             }

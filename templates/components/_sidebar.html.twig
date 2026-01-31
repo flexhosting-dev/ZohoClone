@@ -4,7 +4,7 @@
 <div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
     {% if theme == 'gradient' %}
     {# Gradient Theme #}
-    <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-gradient-to-b from-primary-600 via-primary-700 to-indigo-800 px-6 pb-4 relative">
+    <div class="flex grow flex-col gap-y-5 overflow-y-auto sidebar-scroll bg-gradient-to-b from-primary-600 via-primary-700 to-indigo-800 px-6 pb-4 relative">
         {# Decorative background elements #}
         <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
             <div class="absolute -top-20 -right-20 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
@@ -162,7 +162,7 @@
     </div>
     {% else %}
     {# Classic White Theme #}
-    <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
+    <div class="flex grow flex-col gap-y-5 overflow-y-auto sidebar-scroll border-r border-gray-200 bg-white px-6 pb-4">
         <div class="flex h-16 shrink-0 items-center">
             <span class="text-2xl">📋</span>
             <span class="ml-2 text-xl font-bold text-gray-900">WorkFlow</span>
@@ -312,3 +312,21 @@
     </div>
     {% endif %}
 </div>
+
+<style>
+.sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.3) transparent;
+}
+.sidebar-scroll::-webkit-scrollbar { width: 6px; }
+.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
+.sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
+
+/* Classic white theme override */
+.bg-white.sidebar-scroll {
+    scrollbar-color: #d1d5db transparent;
+}
+.bg-white.sidebar-scroll::-webkit-scrollbar-thumb { background: #d1d5db; }
+.bg-white.sidebar-scroll::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+</style>

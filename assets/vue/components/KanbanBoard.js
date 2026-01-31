@@ -139,6 +139,8 @@ export default {
         const setMode = (mode) => {
             currentMode.value = mode;
             try { localStorage.setItem(props.modeStorageKey, mode); } catch (e) {}
+            // Notify external switcher
+            document.dispatchEvent(new CustomEvent('kanban-mode-changed', { detail: { mode } }));
         };
 
         const loadMode = () => {
@@ -344,16 +346,28 @@ export default {
             tasks.value[idx].assignees = assignees || [];
         };
 
+        const handleExternalModeChange = (e) => {
+            const mode = e.detail?.mode;
+            if (mode && ['status', 'priority', 'milestone'].includes(mode)) {
+                currentMode.value = mode;
+                try { localStorage.setItem(props.modeStorageKey, mode); } catch (ex) {}
+            }
+        };
+
         onMounted(() => {
             loadMode();
             loadCollapseState();
             document.addEventListener('task-updated', handleTaskUpdate);
             document.addEventListener('task-assignees-updated', handleAssigneesUpdate);
+            document.addEventListener('kanban-set-mode', handleExternalModeChange);
+            // Notify external switcher of initial mode
+            document.dispatchEvent(new CustomEvent('kanban-mode-changed', { detail: { mode: currentMode.value, hasMilestones: hasMilestones.value } }));
         });
 
         onUnmounted(() => {
             document.removeEventListener('task-updated', handleTaskUpdate);
             document.removeEventListener('task-assignees-updated', handleAssigneesUpdate);
+            document.removeEventListener('kanban-set-mode', handleExternalModeChange);
         });
 
         const isTaskLoading = (taskId) => loadingTaskIds.value.has(taskId);
@@ -370,27 +384,6 @@ export default {
 
     template: `
         <div class="kanban-board-vue">
-            <!-- Mode Switcher -->
-            <div class="kanban-mode-switcher mb-3">
-                <div class="inline-flex rounded-lg bg-gray-100 p-1">
-                    <button type="button" @click="setMode('status')"
-                        class="kanban-mode-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md"
-                        :class="currentMode === 'status' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'">
-                        Status
-                    </button>
-                    <button type="button" @click="setMode('priority')"
-                        class="kanban-mode-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md"
-                        :class="currentMode === 'priority' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'">
-                        Priority
-                    </button>
-                    <button v-if="hasMilestones" type="button" @click="setMode('milestone')"
-                        class="kanban-mode-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md"
-                        :class="currentMode === 'milestone' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'">
-                        Milestone
-                    </button>
-                </div>
-            </div>
-
             <!-- Kanban Grid -->
             <div class="kanban-grid">
                 <div
@@ -407,7 +400,8 @@ export default {
                     <button type="button" class="kanban-toggle-btn" title="Toggle column"
                         @click.stop="toggleCollapse(col.value)">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h12M10 18l-6-6 6-6"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 5v14"/>
                         </svg>
                     </button>
 

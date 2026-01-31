@@ -61,21 +61,54 @@
     {% if tasks|length > 0 %}
         {# View Toggle #}
         <div class="flex items-center justify-between">
-            <div class="inline-flex rounded-lg bg-gray-100 p-1">
-                <button type="button" onclick="showTaskView(0)" id="task-view-btn-0"
-                        class="task-view-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-white text-primary-600 shadow-sm">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-                    </svg>
-                    List
-                </button>
-                <button type="button" onclick="showTaskView(1)" id="task-view-btn-1"
-                        class="task-view-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z" />
-                    </svg>
-                    Kanban
-                </button>
+            <div class="flex items-center gap-3">
+                <div class="inline-flex rounded-lg bg-gray-100 p-1">
+                    <button type="button" onclick="showTaskView(0)" id="task-view-btn-0"
+                            class="task-view-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-white text-primary-600 shadow-sm">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                        </svg>
+                        List
+                    </button>
+                    <button type="button" onclick="showTaskView(1)" id="task-view-btn-1"
+                            class="task-view-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z" />
+                        </svg>
+                        Kanban
+                    </button>
+                </div>
+
+                {# Kanban Mode Switcher - desktop: inline tabs, mobile: dropdown #}
+                <div id="kanban-mode-switcher" class="hidden">
+                    {# Desktop: inline pill tabs #}
+                    <div class="hidden md:inline-flex rounded-lg bg-gray-100 p-1">
+                        <button type="button" onclick="setKanbanMode('status')"
+                                class="kanban-mode-ext-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-white text-primary-600 shadow-sm"
+                                data-mode="status">
+                            Status
+                        </button>
+                        <button type="button" onclick="setKanbanMode('priority')"
+                                class="kanban-mode-ext-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900"
+                                data-mode="priority">
+                            Priority
+                        </button>
+                        <button type="button" onclick="setKanbanMode('milestone')"
+                                class="kanban-mode-ext-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900"
+                                data-mode="milestone" style="display:none;">
+                            Milestone
+                        </button>
+                    </div>
+                    {# Mobile: dropdown select #}
+                    <div class="md:hidden">
+                        <select id="kanban-mode-select" onchange="setKanbanMode(this.value)"
+                                class="rounded-lg border-gray-300 bg-gray-100 text-sm font-medium text-gray-700 py-1.5 pl-3 pr-8 focus:border-primary-500 focus:ring-primary-500">
+                            <option value="status">Status</option>
+                            <option value="priority">Priority</option>
+                            <option value="milestone" id="kanban-mode-milestone-option" style="display:none;">Milestone</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             {% if showAddButton and project is defined and project.milestones|length > 0 %}
             <button type="button"
@@ -129,6 +162,8 @@
 
     const storageKey = container.dataset.storageKey;
 
+    const modeSwitcher = document.getElementById('kanban-mode-switcher');
+
     window.showTaskView = function(index, save = true) {
         // Update view buttons
         document.querySelectorAll('.task-view-btn').forEach((btn, i) => {
@@ -150,15 +185,54 @@
             }
         });
 
+        // Show/hide kanban mode switcher
+        if (modeSwitcher) {
+            if (index === 1) {
+                modeSwitcher.classList.remove('hidden');
+            } else {
+                modeSwitcher.classList.add('hidden');
+            }
+        }
+
         // Save to localStorage
         if (save && storageKey) {
             try {
                 localStorage.setItem(storageKey, index);
-            } catch (e) {
-                // Ignore storage errors
-            }
+            } catch (e) {}
         }
     };
+
+    // Kanban mode switcher
+    window.setKanbanMode = function(mode) {
+        document.dispatchEvent(new CustomEvent('kanban-set-mode', { detail: { mode } }));
+        updateKanbanModeButtons(mode);
+    };
+
+    function updateKanbanModeButtons(mode) {
+        document.querySelectorAll('.kanban-mode-ext-btn').forEach(btn => {
+            if (btn.dataset.mode === mode) {
+                btn.classList.remove('text-gray-600', 'hover:text-gray-900');
+                btn.classList.add('bg-white', 'text-primary-600', 'shadow-sm');
+            } else {
+                btn.classList.remove('bg-white', 'text-primary-600', 'shadow-sm');
+                btn.classList.add('text-gray-600', 'hover:text-gray-900');
+            }
+        });
+        const select = document.getElementById('kanban-mode-select');
+        if (select) select.value = mode;
+    }
+
+    // Listen for mode changes from Vue component (initial load + internal changes)
+    document.addEventListener('kanban-mode-changed', function(e) {
+        const { mode, hasMilestones } = e.detail || {};
+        if (mode) updateKanbanModeButtons(mode);
+        if (hasMilestones !== undefined) {
+            const milestoneBtn = document.querySelector('.kanban-mode-ext-btn[data-mode="milestone"]');
+            const milestoneOpt = document.getElementById('kanban-mode-milestone-option');
+            if (milestoneBtn) milestoneBtn.style.display = hasMilestones ? '' : 'none';
+            if (milestoneOpt) milestoneOpt.style.display = hasMilestones ? '' : 'none';
+        }
+    });
 
     // Restore saved view on load
     if (storageKey) {
@@ -167,9 +241,7 @@
             if (savedView !== null) {
                 showTaskView(parseInt(savedView), false);
             }
-        } catch (e) {
-            // Ignore storage errors
-        }
+        } catch (e) {}
     }
 })();
 </script>

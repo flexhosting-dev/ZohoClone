@@ -307,6 +307,7 @@ class ProjectController extends AbstractController
         return $this->json([
             'success' => true,
             'isFavourite' => !$isFavourite,
+            'projectName' => $project->getName(),
         ]);
     }
 

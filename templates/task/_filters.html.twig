@@ -11,252 +11,319 @@
    - tasks: Task[] (for count display)
 #}
 {% set formActionParams = formActionParams|default({}) %}
+{% set hasFilters = filter.hasActiveFilters %}
+{% set filterCount = filter.activeFilterCount %}
 
-<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-    <form method="GET" action="{{ path(formAction, formActionParams) }}" id="task-filter-form" class="space-y-4">
-        {# Search and main filters row #}
-        <div class="flex flex-wrap items-center gap-3">
-            {# Search #}
-            <div class="flex-1 min-w-[200px] max-w-md">
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                    </div>
-                    <input type="text" name="search" value="{{ filter.search }}" placeholder="Search tasks..."
-                           class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                </div>
-            </div>
+<div x-data="{ open: {{ hasFilters ? 'true' : 'false' }} }">
+    {# Toggle bar #}
+    <div class="flex items-center gap-3 mb-3">
+        <button type="button" @click="open = !open"
+                class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                :class="open ? 'bg-primary-50 text-primary-700' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+            </svg>
+            <span>Filters</span>
+            {% if filterCount > 0 %}
+                <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filterCount }}</span>
+            {% endif %}
+            <svg class="w-4 h-4 text-gray-400 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+        </button>
 
-            {# Status Filter #}
-            <div class="relative" x-data="{ open: false }">
-                <button type="button" @click="open = !open" @click.away="open = false"
-                        class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <span>Status</span>
-                    {% if filter.statuses|length > 0 %}
-                        <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.statuses|length }}</span>
-                    {% endif %}
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-                <div x-show="open" x-transition class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                    <div class="p-2 space-y-1">
-                        {% for status in ['todo', 'in_progress', 'in_review', 'completed'] %}
-                            {% set statusLabels = {'todo': 'To Do', 'in_progress': 'In Progress', 'in_review': 'In Review', 'completed': 'Completed'} %}
-                            <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
-                                <input type="checkbox" name="status_{{ status }}" value="{{ status }}"
-                                       {% if status in filter.statuses|map(s => s.value) %}checked{% endif %}
-                                       class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
-                                <span class="text-sm text-gray-700">{{ statusLabels[status] }}</span>
-                            </label>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            {# Priority Filter #}
-            <div class="relative" x-data="{ open: false }">
-                <button type="button" @click="open = !open" @click.away="open = false"
-                        class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <span>Priority</span>
-                    {% if filter.priorities|length > 0 %}
-                        <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.priorities|length }}</span>
-                    {% endif %}
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-                <div x-show="open" x-transition class="absolute left-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                    <div class="p-2 space-y-1">
-                        {% for priority in ['high', 'medium', 'low', 'none'] %}
-                            {% set priorityLabels = {'none': 'None', 'low': 'Low', 'medium': 'Medium', 'high': 'High'} %}
-                            <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
-                                <input type="checkbox" name="priority_{{ priority }}" value="{{ priority }}"
-                                       {% if priority in filter.priorities|map(p => p.value) %}checked{% endif %}
-                                       class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
-                                <span class="text-sm text-gray-700">{{ priorityLabels[priority] }}</span>
-                            </label>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            {# Due Date Filter #}
-            <div class="relative" x-data="{ open: false }">
-                <button type="button" @click="open = !open" @click.away="open = false"
-                        class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <span>Due Date</span>
-                    {% if filter.dueFilter %}
-                        <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">1</span>
-                    {% endif %}
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-                <div x-show="open" x-transition class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                    <div class="p-2 space-y-1">
-                        {% for dueOption in [
-                            {'value': '', 'label': 'Any date'},
-                            {'value': 'overdue', 'label': 'Overdue'},
-                            {'value': 'today', 'label': 'Due today'},
-                            {'value': 'this_week', 'label': 'This week'},
-                            {'value': 'next_week', 'label': 'Next week'},
-                            {'value': 'no_date', 'label': 'No due date'}
-                        ] %}
-                            <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
-                                <input type="radio" name="due" value="{{ dueOption.value }}"
-                                       {% if filter.dueFilter == dueOption.value or (filter.dueFilter is null and dueOption.value == '') %}checked{% endif %}
-                                       class="border-gray-300 text-primary-600 focus:ring-primary-500">
-                                <span class="text-sm text-gray-700">{{ dueOption.label }}</span>
-                            </label>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            {# Project Filter (only shown when showProjectFilter is true and multiple projects exist) #}
-            {% if showProjectFilter|default(true) and userProjects|length > 1 %}
-            <div class="relative" x-data="{ open: false }">
-                <button type="button" @click="open = !open" @click.away="open = false"
-                        class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <span>Project</span>
-                    {% if filter.projectIds|length > 0 %}
-                        <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.projectIds|length }}</span>
-                    {% endif %}
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-                <div x-show="open" x-transition class="absolute left-0 mt-2 w-56 max-h-64 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                    <div class="p-2 space-y-1">
+        {% if hasFilters %}
+            {# Active filter pills shown inline when collapsed #}
+            <div x-show="!open" class="flex flex-wrap items-center gap-2">
+                {% if filter.statuses|length > 0 %}
+                    {% for status in filter.statuses %}
+                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">{{ status.label }}</span>
+                    {% endfor %}
+                {% endif %}
+                {% if filter.priorities|length > 0 %}
+                    {% for priority in filter.priorities %}
+                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">{{ priority.label }}</span>
+                    {% endfor %}
+                {% endif %}
+                {% if filter.dueFilter %}
+                    {% set dueLabels = {'overdue': 'Overdue', 'today': 'Due today', 'this_week': 'This week', 'next_week': 'Next week', 'no_date': 'No due date', 'custom': 'Custom date'} %}
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">{{ dueLabels[filter.dueFilter] ?? filter.dueFilter }}</span>
+                {% endif %}
+                {% if filter.projectIds|length > 0 and showProjectFilter|default(true) %}
+                    {% for projectId in filter.projectIds %}
                         {% for project in userProjects %}
-                            {% set projectIdStr = '' ~ project.id %}
-                            <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
-                                <input type="checkbox" name="project_{{ projectIdStr }}" value="{{ projectIdStr }}"
-                                       {% if projectIdStr in filter.projectIds %}checked{% endif %}
-                                       class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
-                                <span class="text-sm text-gray-700 truncate">{{ project.name }}</span>
-                            </label>
+                            {% if ('' ~ project.id) == projectId %}
+                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">{{ project.name }}</span>
+                            {% endif %}
                         {% endfor %}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            {# Assignee Filter (only shown when multiple members exist) #}
-            {% if projectMembers|length > 1 %}
-            <div class="relative" x-data="{ open: false }">
-                <button type="button" @click="open = !open" @click.away="open = false"
-                        class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <span>Assignee</span>
-                    {% if filter.assigneeIds|length > 0 %}
-                        <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.assigneeIds|length }}</span>
-                    {% endif %}
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-                <div x-show="open" x-transition class="absolute left-0 mt-2 w-64 max-h-64 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                    <div class="p-2 space-y-1">
+                    {% endfor %}
+                {% endif %}
+                {% if filter.assigneeIds|length > 0 %}
+                    {% for assigneeId in filter.assigneeIds %}
                         {% for member in projectMembers %}
-                            {% set memberIdStr = '' ~ member.id %}
-                            <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
-                                <input type="checkbox" name="assignee_{{ memberIdStr }}" value="{{ memberIdStr }}"
-                                       {% if memberIdStr in filter.assigneeIds %}checked{% endif %}
-                                       class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
-                                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full overflow-hidden flex-shrink-0">
-                                    {% if member.avatar %}
-                                        <img src="{{ app.request.basePath }}/uploads/avatars/{{ member.avatar }}" alt="{{ member.fullName }}" class="w-full h-full object-cover">
-                                    {% else %}
-                                        <span class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
-                                            <span class="text-xs font-medium text-white">{{ member.firstName|slice(0,1)|upper }}</span>
-                                        </span>
-                                    {% endif %}
-                                </span>
-                                <span class="text-sm text-gray-700 truncate">{{ member.fullName }}</span>
-                            </label>
+                            {% if ('' ~ member.id) == assigneeId %}
+                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">{{ member.fullName }}</span>
+                            {% endif %}
                         {% endfor %}
-                    </div>
-                </div>
+                    {% endfor %}
+                {% endif %}
+                {% if filter.search %}
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">"{{ filter.search }}"</span>
+                {% endif %}
+                <a href="{{ path(formAction, formActionParams) }}" class="text-xs text-gray-500 hover:text-gray-700" title="Clear filters">&times; Clear</a>
             </div>
-            {% endif %}
-
-            {# Apply Button #}
-            <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                </svg>
-                Apply
-            </button>
-
-            {# Clear Filters #}
-            {% if filter.hasActiveFilters %}
-            <a href="{{ path(formAction, formActionParams) }}" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-                Clear filters
-            </a>
-            {% endif %}
-        </div>
-
-        {# Active Filters Display #}
-        {% if filter.hasActiveFilters %}
-        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
-            <span class="text-xs text-gray-500">Active filters:</span>
-            {% if filter.statuses|length > 0 %}
-                {% for status in filter.statuses %}
-                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                        {{ status.label }}
-                    </span>
-                {% endfor %}
-            {% endif %}
-            {% if filter.priorities|length > 0 %}
-                {% for priority in filter.priorities %}
-                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                        {{ priority.label }}
-                    </span>
-                {% endfor %}
-            {% endif %}
-            {% if filter.dueFilter %}
-                {% set dueLabels = {'overdue': 'Overdue', 'today': 'Due today', 'this_week': 'This week', 'next_week': 'Next week', 'no_date': 'No due date', 'custom': 'Custom date'} %}
-                <span class="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
-                    {{ dueLabels[filter.dueFilter] ?? filter.dueFilter }}
-                </span>
-            {% endif %}
-            {% if filter.projectIds|length > 0 and showProjectFilter|default(true) %}
-                {% for projectId in filter.projectIds %}
-                    {% for project in userProjects %}
-                        {% if ('' ~ project.id) == projectId %}
-                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">
-                                {{ project.name }}
-                            </span>
-                        {% endif %}
-                    {% endfor %}
-                {% endfor %}
-            {% endif %}
-            {% if filter.assigneeIds|length > 0 %}
-                {% for assigneeId in filter.assigneeIds %}
-                    {% for member in projectMembers %}
-                        {% if ('' ~ member.id) == assigneeId %}
-                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                                {{ member.fullName }}
-                            </span>
-                        {% endif %}
-                    {% endfor %}
-                {% endfor %}
-            {% endif %}
-            {% if filter.search %}
-                <span class="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                    "{{ filter.search }}"
-                </span>
-            {% endif %}
-            <span class="text-xs text-gray-500 ml-2">{{ tasks|length }} task{{ tasks|length != 1 ? 's' : '' }} found</span>
-        </div>
         {% endif %}
-    </form>
+    </div>
+
+    {# Collapsible filter panel #}
+    <div x-cloak x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <form method="GET" action="{{ path(formAction, formActionParams) }}" id="task-filter-form" class="space-y-4">
+                {# Search and main filters row #}
+                <div class="flex flex-wrap items-center gap-3">
+                    {# Search #}
+                    <div class="flex-1 min-w-[200px] max-w-md">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </div>
+                            <input type="text" name="search" value="{{ filter.search }}" placeholder="Search tasks..."
+                                   class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                    </div>
+
+                    {# Status Filter #}
+                    <div class="relative" x-data="{ open: false }">
+                        <button type="button" @click="open = !open" @click.away="open = false"
+                                class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <span>Status</span>
+                            {% if filter.statuses|length > 0 %}
+                                <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.statuses|length }}</span>
+                            {% endif %}
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div x-show="open" x-transition class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                            <div class="p-2 space-y-1">
+                                {% for status in ['todo', 'in_progress', 'in_review', 'completed'] %}
+                                    {% set statusLabels = {'todo': 'To Do', 'in_progress': 'In Progress', 'in_review': 'In Review', 'completed': 'Completed'} %}
+                                    <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="status_{{ status }}" value="{{ status }}"
+                                               {% if status in filter.statuses|map(s => s.value) %}checked{% endif %}
+                                               class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                                        <span class="text-sm text-gray-700">{{ statusLabels[status] }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Priority Filter #}
+                    <div class="relative" x-data="{ open: false }">
+                        <button type="button" @click="open = !open" @click.away="open = false"
+                                class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <span>Priority</span>
+                            {% if filter.priorities|length > 0 %}
+                                <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.priorities|length }}</span>
+                            {% endif %}
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div x-show="open" x-transition class="absolute left-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                            <div class="p-2 space-y-1">
+                                {% for priority in ['high', 'medium', 'low', 'none'] %}
+                                    {% set priorityLabels = {'none': 'None', 'low': 'Low', 'medium': 'Medium', 'high': 'High'} %}
+                                    <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="priority_{{ priority }}" value="{{ priority }}"
+                                               {% if priority in filter.priorities|map(p => p.value) %}checked{% endif %}
+                                               class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                                        <span class="text-sm text-gray-700">{{ priorityLabels[priority] }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Due Date Filter #}
+                    <div class="relative" x-data="{ open: false }">
+                        <button type="button" @click="open = !open" @click.away="open = false"
+                                class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <span>Due Date</span>
+                            {% if filter.dueFilter %}
+                                <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">1</span>
+                            {% endif %}
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div x-show="open" x-transition class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                            <div class="p-2 space-y-1">
+                                {% for dueOption in [
+                                    {'value': '', 'label': 'Any date'},
+                                    {'value': 'overdue', 'label': 'Overdue'},
+                                    {'value': 'today', 'label': 'Due today'},
+                                    {'value': 'this_week', 'label': 'This week'},
+                                    {'value': 'next_week', 'label': 'Next week'},
+                                    {'value': 'no_date', 'label': 'No due date'}
+                                ] %}
+                                    <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                                        <input type="radio" name="due" value="{{ dueOption.value }}"
+                                               {% if filter.dueFilter == dueOption.value or (filter.dueFilter is null and dueOption.value == '') %}checked{% endif %}
+                                               class="border-gray-300 text-primary-600 focus:ring-primary-500">
+                                        <span class="text-sm text-gray-700">{{ dueOption.label }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Project Filter (only shown when showProjectFilter is true and multiple projects exist) #}
+                    {% if showProjectFilter|default(true) and userProjects|length > 1 %}
+                    <div class="relative" x-data="{ open: false }">
+                        <button type="button" @click="open = !open" @click.away="open = false"
+                                class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <span>Project</span>
+                            {% if filter.projectIds|length > 0 %}
+                                <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.projectIds|length }}</span>
+                            {% endif %}
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div x-show="open" x-transition class="absolute left-0 mt-2 w-56 max-h-64 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                            <div class="p-2 space-y-1">
+                                {% for project in userProjects %}
+                                    {% set projectIdStr = '' ~ project.id %}
+                                    <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="project_{{ projectIdStr }}" value="{{ projectIdStr }}"
+                                               {% if projectIdStr in filter.projectIds %}checked{% endif %}
+                                               class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                                        <span class="text-sm text-gray-700 truncate">{{ project.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {# Assignee Filter (only shown when multiple members exist) #}
+                    {% if projectMembers|length > 1 %}
+                    <div class="relative" x-data="{ open: false }">
+                        <button type="button" @click="open = !open" @click.away="open = false"
+                                class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <span>Assignee</span>
+                            {% if filter.assigneeIds|length > 0 %}
+                                <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.assigneeIds|length }}</span>
+                            {% endif %}
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div x-show="open" x-transition class="absolute left-0 mt-2 w-64 max-h-64 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                            <div class="p-2 space-y-1">
+                                {% for member in projectMembers %}
+                                    {% set memberIdStr = '' ~ member.id %}
+                                    <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" name="assignee_{{ memberIdStr }}" value="{{ memberIdStr }}"
+                                               {% if memberIdStr in filter.assigneeIds %}checked{% endif %}
+                                               class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                                        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full overflow-hidden flex-shrink-0">
+                                            {% if member.avatar %}
+                                                <img src="{{ app.request.basePath }}/uploads/avatars/{{ member.avatar }}" alt="{{ member.fullName }}" class="w-full h-full object-cover">
+                                            {% else %}
+                                                <span class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+                                                    <span class="text-xs font-medium text-white">{{ member.firstName|slice(0,1)|upper }}</span>
+                                                </span>
+                                            {% endif %}
+                                        </span>
+                                        <span class="text-sm text-gray-700 truncate">{{ member.fullName }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {# Apply Button #}
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                        </svg>
+                        Apply
+                    </button>
+
+                    {# Clear Filters #}
+                    {% if filter.hasActiveFilters %}
+                    <a href="{{ path(formAction, formActionParams) }}" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        Clear filters
+                    </a>
+                    {% endif %}
+                </div>
+
+                {# Active Filters Display #}
+                {% if filter.hasActiveFilters %}
+                <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
+                    <span class="text-xs text-gray-500">Active filters:</span>
+                    {% if filter.statuses|length > 0 %}
+                        {% for status in filter.statuses %}
+                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                                {{ status.label }}
+                            </span>
+                        {% endfor %}
+                    {% endif %}
+                    {% if filter.priorities|length > 0 %}
+                        {% for priority in filter.priorities %}
+                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                {{ priority.label }}
+                            </span>
+                        {% endfor %}
+                    {% endif %}
+                    {% if filter.dueFilter %}
+                        {% set dueLabels = {'overdue': 'Overdue', 'today': 'Due today', 'this_week': 'This week', 'next_week': 'Next week', 'no_date': 'No due date', 'custom': 'Custom date'} %}
+                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
+                            {{ dueLabels[filter.dueFilter] ?? filter.dueFilter }}
+                        </span>
+                    {% endif %}
+                    {% if filter.projectIds|length > 0 and showProjectFilter|default(true) %}
+                        {% for projectId in filter.projectIds %}
+                            {% for project in userProjects %}
+                                {% if ('' ~ project.id) == projectId %}
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">
+                                        {{ project.name }}
+                                    </span>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if filter.assigneeIds|length > 0 %}
+                        {% for assigneeId in filter.assigneeIds %}
+                            {% for member in projectMembers %}
+                                {% if ('' ~ member.id) == assigneeId %}
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                                        {{ member.fullName }}
+                                    </span>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if filter.search %}
+                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                            "{{ filter.search }}"
+                        </span>
+                    {% endif %}
+                    <span class="text-xs text-gray-500 ml-2">{{ tasks|length }} task{{ tasks|length != 1 ? 's' : '' }} found</span>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
