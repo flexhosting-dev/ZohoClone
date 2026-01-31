@@ -1,0 +1,215 @@
+<div class="mb-6 flex items-center gap-4 text-sm text-gray-500">
+    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+        {% if project.status.value == 'active' %}bg-green-100 text-green-700
+        {% elseif project.status.value == 'on_hold' %}bg-yellow-100 text-yellow-700
+        {% elseif project.status.value == 'completed' %}bg-blue-100 text-blue-700
+        {% else %}bg-gray-100 text-gray-700{% endif %}">
+        {{ project.status.label }}
+    </span>
+    <span class="flex items-center">
+        <svg class="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" />
+        </svg>
+        Created {{ project.createdAt|date('M d, Y') }}
+    </span>
+</div>
+
+{% set totalTasks = tasks|length %}
+{% set completedTasks = tasks|filter(t => t.status.value == 'completed')|length %}
+{% set completionPct = totalTasks > 0 ? ((completedTasks / totalTasks) * 100)|round : 0 %}
+
+{# Row 1: Stat Cards #}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    {# Tasks Done #}
+    <div class="bg-white/80 backdrop-blur-sm shadow-soft rounded-xl p-5">
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium text-gray-500">Tasks Done</h3>
+            <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+        </div>
+        <p class="text-2xl font-bold text-gray-900">{{ completedTasks }}<span class="text-sm font-normal text-gray-400">/{{ totalTasks }}</span></p>
+        <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-green-500 h-2 rounded-full transition-all" style="width: {{ completionPct }}%"></div>
+        </div>
+    </div>
+
+    {# Overdue #}
+    <div class="bg-white/80 backdrop-blur-sm shadow-soft rounded-xl p-5">
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium text-gray-500">Overdue</h3>
+            <svg class="w-5 h-5 {{ overdueCount > 0 ? 'text-red-500' : 'text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+        </div>
+        <p class="text-2xl font-bold {{ overdueCount > 0 ? 'text-red-600' : 'text-gray-900' }}">{{ overdueCount }}</p>
+        <p class="mt-1 text-xs text-gray-400">{{ overdueCount == 0 ? 'All on track' : 'tasks past due date' }}</p>
+    </div>
+
+    {# Next Deadline #}
+    <div class="bg-white/80 backdrop-blur-sm shadow-soft rounded-xl p-5">
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium text-gray-500">Next Deadline</h3>
+            <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+            </svg>
+        </div>
+        {% if nextDeadline %}
+            <p class="text-sm font-semibold text-gray-900 truncate">{{ nextDeadline.title }}</p>
+            <p class="mt-1 text-sm text-blue-600">{{ nextDeadline.dueDate|date('M d, Y') }}</p>
+        {% else %}
+            <p class="text-sm text-gray-400">No upcoming deadlines</p>
+        {% endif %}
+    </div>
+</div>
+
+{# Row 2: Status Breakdown + Milestone Progress #}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+    {# Task Status Breakdown #}
+    <div class="bg-white/80 backdrop-blur-sm shadow-soft rounded-xl p-5">
+        <h3 class="text-sm font-semibold text-gray-900 mb-4">Task Status Breakdown</h3>
+        <div class="space-y-3">
+            {% set statusColors = {todo: 'bg-gray-400', in_progress: 'bg-blue-500', in_review: 'bg-yellow-500', completed: 'bg-green-500'} %}
+            {% set statusLabels = {todo: 'To Do', in_progress: 'In Progress', in_review: 'In Review', completed: 'Completed'} %}
+            {% for status, statusTasks in tasksByStatus %}
+                {% set count = statusTasks|length %}
+                {% set pct = totalTasks > 0 ? ((count / totalTasks) * 100)|round : 0 %}
+                <div>
+                    <div class="flex items-center justify-between text-sm mb-1">
+                        <span class="text-gray-600">{{ statusLabels[status] }}</span>
+                        <span class="font-medium text-gray-900">{{ count }}</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                        <div class="{{ statusColors[status] }} h-2 rounded-full transition-all" style="width: {{ pct }}%"></div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# Milestone Progress #}
+    <div class="bg-white/80 backdrop-blur-sm shadow-soft rounded-xl p-5">
+        <h3 class="text-sm font-semibold text-gray-900 mb-4">Milestone Progress</h3>
+        {% if milestones|length > 0 %}
+            <div class="space-y-3">
+                {% for milestone in milestones %}
+                    {% set msId = milestone.id|raw %}
+                    {% set msTasks = tasksByMilestone[msId]|default([]) %}
+                    {% set msTotal = msTasks|length %}
+                    {% set msCompleted = msTasks|filter(t => t.status.value == 'completed')|length %}
+                    {% set msPct = msTotal > 0 ? ((msCompleted / msTotal) * 100)|round : 0 %}
+                    <div>
+                        <div class="flex items-center justify-between text-sm mb-1">
+                            <span class="text-gray-600 truncate mr-2">{{ milestone.name }}</span>
+                            <span class="font-medium text-gray-900 flex-shrink-0">{{ msCompleted }}/{{ msTotal }}</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2">
+                            <div class="bg-primary-500 h-2 rounded-full transition-all" style="width: {{ msPct }}%"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-sm text-gray-400">No milestones yet</p>
+        {% endif %}
+    </div>
+</div>
+
+{# Row 3: My Tasks + Team Members #}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+    {# My Tasks #}
+    <div class="bg-white/80 backdrop-blur-sm shadow-soft rounded-xl p-5">
+        <h3 class="text-sm font-semibold text-gray-900 mb-4">My Tasks</h3>
+        {% if myTasks|length > 0 %}
+            <ul class="divide-y divide-gray-100">
+                {% for task in myTasks %}
+                    <li class="py-2.5 flex items-center justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ task.title }}</p>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                                    {% if task.status.value == 'todo' %}bg-gray-100 text-gray-600
+                                    {% elseif task.status.value == 'in_progress' %}bg-blue-100 text-blue-700
+                                    {% elseif task.status.value == 'in_review' %}bg-yellow-100 text-yellow-700
+                                    {% endif %}">
+                                    {{ task.status.label }}
+                                </span>
+                                {% if task.dueDate %}
+                                    <span class="text-xs text-gray-400">{{ task.dueDate|date('M d') }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-sm text-gray-400">No tasks assigned to you</p>
+        {% endif %}
+    </div>
+
+    {# Team Members #}
+    <div class="bg-white/80 backdrop-blur-sm shadow-soft rounded-xl p-5">
+        <h3 class="text-sm font-semibold text-gray-900 mb-4">Team Members</h3>
+        {% if project.members|length > 0 %}
+            <ul class="space-y-3">
+                {% for member in project.members %}
+                    <li class="flex items-center gap-3">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex-shrink-0 overflow-hidden">
+                            {% if member.user.avatar %}
+                                <img src="{{ asset('uploads/avatars/' ~ member.user.avatar) }}" alt="{{ member.user.fullName }}" class="h-full w-full object-cover">
+                            {% else %}
+                                <span class="text-xs font-medium text-white">{{ member.user.initials }}</span>
+                            {% endif %}
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ member.user.fullName }}</p>
+                            <p class="text-xs text-gray-500">{{ member.role.name }}</p>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-sm text-gray-400">No members yet</p>
+        {% endif %}
+    </div>
+</div>
+
+{# Row 4: Recent Activity #}
+<div class="bg-white/80 backdrop-blur-sm shadow-soft rounded-xl p-5">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-semibold text-gray-900">Recent Activity</h3>
+        <button type="button" onclick="showTab(4)" class="text-xs text-primary-600 hover:text-primary-700 font-medium">View all</button>
+    </div>
+    {% if recentActivities|length > 0 %}
+        <div class="flow-root">
+            <ul class="-mb-4">
+                {% for activity in recentActivities %}
+                    <li class="relative pb-4">
+                        {% if not loop.last %}
+                            <span class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                        {% endif %}
+                        <div class="relative flex space-x-3">
+                            <div>
+                                <span class="h-8 w-8 rounded-full overflow-hidden flex items-center justify-center ring-4 ring-white">
+                                    {% if activity.user.avatar %}
+                                        <img src="{{ asset('uploads/avatars/' ~ activity.user.avatar) }}" alt="{{ activity.user.fullName }}" class="w-full h-full object-cover rounded-full">
+                                    {% else %}
+                                        <span class="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center rounded-full">
+                                            <span class="text-xs font-medium text-white">{{ activity.user.initials }}</span>
+                                        </span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+                                <p class="text-sm text-gray-600">{{ activity.description }}</p>
+                                <time class="whitespace-nowrap text-xs text-gray-400">{{ activity.createdAt|date('M d, H:i') }}</time>
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% else %}
+        <p class="text-sm text-gray-400">No recent activity</p>
+    {% endif %}
+</div>

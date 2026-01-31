@@ -275,6 +275,58 @@ class TaskRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    public function countOverdueByProject(Project $project): int
+    {
+        return (int) $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->join('t.milestone', 'm')
+            ->where('m.project = :project')
+            ->andWhere('t.dueDate < :today')
+            ->andWhere('t.status != :completed')
+            ->setParameter('project', $project)
+            ->setParameter('today', new \DateTimeImmutable('today'))
+            ->setParameter('completed', TaskStatus::COMPLETED)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function findNextDeadlineByProject(Project $project): ?Task
+    {
+        return $this->createQueryBuilder('t')
+            ->join('t.milestone', 'm')
+            ->where('m.project = :project')
+            ->andWhere('t.dueDate >= :today')
+            ->andWhere('t.status != :completed')
+            ->setParameter('project', $project)
+            ->setParameter('today', new \DateTimeImmutable('today'))
+            ->setParameter('completed', TaskStatus::COMPLETED)
+            ->orderBy('t.dueDate', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * @return Task[]
+     */
+    public function findUserTasksInProject(User $user, Project $project, int $limit = 5): array
+    {
+        return $this->createQueryBuilder('t')
+            ->join('t.assignees', 'a')
+            ->join('t.milestone', 'm')
+            ->where('a.user = :user')
+            ->andWhere('m.project = :project')
+            ->andWhere('t.status != :completed')
+            ->setParameter('user', $user)
+            ->setParameter('project', $project)
+            ->setParameter('completed', TaskStatus::COMPLETED)
+            ->orderBy('t.dueDate', 'ASC')
+            ->addOrderBy('t.priority', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
     /**
      * Find all tasks accessible to the user (for All Tasks page).
      * For admins: all tasks in the system

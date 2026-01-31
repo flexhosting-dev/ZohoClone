@@ -159,6 +159,16 @@ class ProjectController extends AbstractController
 
         $projectRoles = $this->roleRepository->findProjectRoles();
 
+        // Dashboard data for Overview tab
+        $overdueCount = $this->taskRepository->countOverdueByProject($project);
+        $nextDeadline = $this->taskRepository->findNextDeadlineByProject($project);
+        $myTasks = $this->taskRepository->findUserTasksInProject($user, $project, 5);
+        $recentActivities = $this->activityRepository->findBy(
+            ['project' => $project],
+            ['createdAt' => 'DESC'],
+            5
+        );
+
         return $this->render('project/show.html.twig', [
             'page_title' => $project->getName(),
             'project' => $project,
@@ -173,6 +183,10 @@ class ProjectController extends AbstractController
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
             'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
             'is_favourite' => $user->isFavouriteProject((string) $project->getId()),
+            'overdueCount' => $overdueCount,
+            'nextDeadline' => $nextDeadline,
+            'myTasks' => $myTasks,
+            'recentActivities' => $recentActivities,
         ]);
     }
 
