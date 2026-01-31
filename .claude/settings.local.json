@@ -10,7 +10,29 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nFix login authentication and add dummy data fixtures\n\n- Configure json_login to use email field instead of username\n- Add login route to security.yaml routes\n- Add comprehensive fixtures with 4 projects, 10 milestones, 40 tasks\n- Include sample users, comments, and task assignments\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(php bin/console:*)",
       "Bash(wsl -d Ubuntu-22.04 -- docker:*)",
-      "Bash(mysql:*)"
+      "Bash(mysql:*)",
+      "Bash(/usr/sbin/php-fpm8.3:*)",
+      "Bash(symfony server:log:*)",
+      "Bash(php -l:*)",
+      "Bash(npm run build:*)",
+      "Bash(curl:*)",
+      "Bash(grep:*)",
+      "Bash(CSRF='a16.AgpBk813LBKW2r_zN4hh4y4enNvYi9nZJDs9emy7-Dw.Q1UQqpkOQlj4v9GBdPE2rmd895eB6Le_bA1REjzvlmhIOgf2nDVrfuW2_g')",
+      "Bash(git -C /root/projects/zohoclone show HEAD:src/Entity/User.php)",
+      "Bash(php:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(pgrep:*)",
+      "Bash(ss -tlnp:*)",
+      "Bash(SP=\"/tmp/claude/-root-projects-zohoclone/51bea02a-e2a5-4032-88bc-582482413448/scratchpad\")",
+      "Bash(__NEW_LINE_7dbb79adfa7dda9b__ for PAGE in my_tasks all_tasks project my_tasks_filtered all_tasks_filtered project_filtered)",
+      "Bash(do)",
+      "Bash(echo:*)",
+      "Bash(F=\"$SP/$PAGE.html\")",
+      "Bash(done)",
+      "Bash(python3:*)",
+      "Bash(pip install:*)",
+      "Bash(git status:*)"
     ]
   }
 }

@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Entity\Project;
 use App\Entity\ProjectMember;
 use App\Entity\Milestone;
+use App\Entity\MilestoneTarget;
 use App\Entity\Task;
 use App\Entity\TaskAssignee;
 use App\Entity\TaskChecklist;
@@ -63,376 +64,909 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
         $adminUser->setPortalRole($portalSuperAdmin);
         $manager->persist($adminUser);
 
-        $johnDoe = new User();
-        $johnDoe->setEmail('john@example.com');
-        $johnDoe->setFirstName('John');
-        $johnDoe->setLastName('Doe');
-        $johnDoe->setPassword($this->passwordHasher->hashPassword($johnDoe, 'password123'));
-        $johnDoe->setIsVerified(true);
-        $manager->persist($johnDoe);
+        $sylvester = new User();
+        $sylvester->setEmail('sylvester@honeyguide.org');
+        $sylvester->setFirstName('Sylvester');
+        $sylvester->setLastName('Ngallaba');
+        $sylvester->setPassword($this->passwordHasher->hashPassword($sylvester, 'password123'));
+        $sylvester->setIsVerified(true);
+        $manager->persist($sylvester);
 
-        $janeSmith = new User();
-        $janeSmith->setEmail('jane@example.com');
-        $janeSmith->setFirstName('Jane');
-        $janeSmith->setLastName('Smith');
-        $janeSmith->setPassword($this->passwordHasher->hashPassword($janeSmith, 'password123'));
-        $janeSmith->setIsVerified(true);
-        $manager->persist($janeSmith);
+        $max = new User();
+        $max->setEmail('max@honeyguide.org');
+        $max->setFirstName('Max');
+        $max->setLastName('Chawala');
+        $max->setPassword($this->passwordHasher->hashPassword($max, 'password123'));
+        $max->setIsVerified(true);
+        $manager->persist($max);
 
-        // ============================================
-        // PROJECT 1: E-Commerce Platform
-        // ============================================
-        $project1 = new Project();
-        $project1->setName('E-Commerce Platform');
-        $project1->setDescription('Build a modern e-commerce platform with React frontend and Symfony backend. Features include product catalog, shopping cart, checkout, and admin panel.');
-        $project1->setStatus(ProjectStatus::ACTIVE);
-        $project1->setOwner($testUser);
-        $project1->setStartDate(new \DateTimeImmutable('-30 days'));
-        $project1->setEndDate(new \DateTimeImmutable('+60 days'));
-        $manager->persist($project1);
+        $fatma = new User();
+        $fatma->setEmail('fatma@honeyguide.org');
+        $fatma->setFirstName('Fatma');
+        $fatma->setLastName('Said');
+        $fatma->setPassword($this->passwordHasher->hashPassword($fatma, 'password123'));
+        $fatma->setIsVerified(true);
+        $manager->persist($fatma);
 
-        // Project 1 Members
-        $member1 = new ProjectMember();
-        $member1->setProject($project1);
-        $member1->setUser($testUser);
-        $member1->setRole($projectManager);
-        $manager->persist($member1);
+        $namnyaki = new User();
+        $namnyaki->setEmail('namnyaki@honeyguide.org');
+        $namnyaki->setFirstName('Namnyaki');
+        $namnyaki->setLastName('Mbise');
+        $namnyaki->setPassword($this->passwordHasher->hashPassword($namnyaki, 'password123'));
+        $namnyaki->setIsVerified(true);
+        $manager->persist($namnyaki);
 
-        $member2 = new ProjectMember();
-        $member2->setProject($project1);
-        $member2->setUser($johnDoe);
-        $member2->setRole($projectMember);
-        $manager->persist($member2);
+        $kateto = new User();
+        $kateto->setEmail('kateto@honeyguide.org');
+        $kateto->setFirstName('Kateto');
+        $kateto->setLastName('Oleng');
+        $kateto->setPassword($this->passwordHasher->hashPassword($kateto, 'password123'));
+        $kateto->setIsVerified(true);
+        $manager->persist($kateto);
 
-        $member3 = new ProjectMember();
-        $member3->setProject($project1);
-        $member3->setUser($janeSmith);
-        $member3->setRole($projectMember);
-        $manager->persist($member3);
+        $lemuta = new User();
+        $lemuta->setEmail('lemuta@honeyguide.org');
+        $lemuta->setFirstName('Lemuta');
+        $lemuta->setLastName('Nanai');
+        $lemuta->setPassword($this->passwordHasher->hashPassword($lemuta, 'password123'));
+        $lemuta->setIsVerified(true);
+        $manager->persist($lemuta);
 
-        // Project 1 - Milestone 1: Backend Setup
-        $milestone1_1 = new Milestone();
-        $milestone1_1->setProject($project1);
-        $milestone1_1->setName('Backend API Development');
-        $milestone1_1->setDescription('Set up Symfony backend with API Platform, authentication, and core entities.');
-        $milestone1_1->setStatus(MilestoneStatus::COMPLETED);
-        $milestone1_1->setDueDate(new \DateTimeImmutable('-10 days'));
-        $manager->persist($milestone1_1);
+        $glad = new User();
+        $glad->setEmail('glad@honeyguide.org');
+        $glad->setFirstName('Glad');
+        $glad->setLastName('Mushi');
+        $glad->setPassword($this->passwordHasher->hashPassword($glad, 'password123'));
+        $glad->setIsVerified(true);
+        $manager->persist($glad);
 
-        // Milestone 1_1 Tasks
-        $task1 = $this->createTask($manager, $milestone1_1, 'Set up Symfony project', 'Initialize Symfony project with API Platform and configure Docker environment.', TaskStatus::COMPLETED, TaskPriority::HIGH, 0, $testUser);
-        $task2 = $this->createTask($manager, $milestone1_1, 'Create User entity and authentication', 'Implement JWT authentication with LexikJWTAuthenticationBundle.', TaskStatus::COMPLETED, TaskPriority::HIGH, 1, $johnDoe);
-        $task3 = $this->createTask($manager, $milestone1_1, 'Create Product entity', 'Product with name, description, price, SKU, inventory count.', TaskStatus::COMPLETED, TaskPriority::MEDIUM, 2, $johnDoe);
-        $task4 = $this->createTask($manager, $milestone1_1, 'Create Category entity', 'Categories with hierarchical structure for products.', TaskStatus::COMPLETED, TaskPriority::MEDIUM, 3, $janeSmith);
-        $task5 = $this->createTask($manager, $milestone1_1, 'Create Order entity', 'Orders with line items, shipping address, payment status.', TaskStatus::COMPLETED, TaskPriority::HIGH, 4, $testUser);
+        $daudi = new User();
+        $daudi->setEmail('daudi@honeyguide.org');
+        $daudi->setFirstName('Daudi');
+        $daudi->setLastName('Mollel');
+        $daudi->setPassword($this->passwordHasher->hashPassword($daudi, 'password123'));
+        $daudi->setIsVerified(true);
+        $manager->persist($daudi);
 
-        // Project 1 - Milestone 2: Frontend Development
-        $milestone1_2 = new Milestone();
-        $milestone1_2->setProject($project1);
-        $milestone1_2->setName('Frontend Development');
-        $milestone1_2->setDescription('Build React frontend with product listing, cart, and checkout flow.');
-        $milestone1_2->setStatus(MilestoneStatus::OPEN);
-        $milestone1_2->setDueDate(new \DateTimeImmutable('+20 days'));
-        $manager->persist($milestone1_2);
+        $michael = new User();
+        $michael->setEmail('michael@honeyguide.org');
+        $michael->setFirstName('Michael');
+        $michael->setLastName('Kisetu');
+        $michael->setPassword($this->passwordHasher->hashPassword($michael, 'password123'));
+        $michael->setIsVerified(true);
+        $manager->persist($michael);
 
-        // Milestone 1_2 Tasks
-        $task6 = $this->createTask($manager, $milestone1_2, 'Set up React project with Vite', 'Initialize React project with TypeScript, Tailwind CSS, and React Router.', TaskStatus::COMPLETED, TaskPriority::HIGH, 0, $janeSmith);
-        $task7 = $this->createTask($manager, $milestone1_2, 'Create product listing page', 'Grid view of products with filtering and sorting.', TaskStatus::IN_PROGRESS, TaskPriority::HIGH, 1, $janeSmith);
-        $task8 = $this->createTask($manager, $milestone1_2, 'Create product detail page', 'Product details with images, description, add to cart button.', TaskStatus::IN_PROGRESS, TaskPriority::MEDIUM, 2, $johnDoe);
-        $task9 = $this->createTask($manager, $milestone1_2, 'Implement shopping cart', 'Cart with add/remove items, quantity update, price calculation.', TaskStatus::TODO, TaskPriority::HIGH, 3, $janeSmith);
-        $task10 = $this->createTask($manager, $milestone1_2, 'Build checkout flow', 'Multi-step checkout with address, payment, and confirmation.', TaskStatus::TODO, TaskPriority::HIGH, 4, null);
-        $task11 = $this->createTask($manager, $milestone1_2, 'Create user account pages', 'Login, register, profile, order history pages.', TaskStatus::TODO, TaskPriority::MEDIUM, 5, null);
+        $meleck = new User();
+        $meleck->setEmail('meleck@honeyguide.org');
+        $meleck->setFirstName('Meleck');
+        $meleck->setLastName('Pallangyo');
+        $meleck->setPassword($this->passwordHasher->hashPassword($meleck, 'password123'));
+        $meleck->setIsVerified(true);
+        $manager->persist($meleck);
 
-        // Project 1 - Milestone 3: Admin Panel
-        $milestone1_3 = new Milestone();
-        $milestone1_3->setProject($project1);
-        $milestone1_3->setName('Admin Panel');
-        $milestone1_3->setDescription('Build admin dashboard for managing products, orders, and users.');
-        $milestone1_3->setStatus(MilestoneStatus::OPEN);
-        $milestone1_3->setDueDate(new \DateTimeImmutable('+45 days'));
-        $manager->persist($milestone1_3);
-
-        // Milestone 1_3 Tasks
-        $task12 = $this->createTask($manager, $milestone1_3, 'Create admin dashboard', 'Dashboard with sales stats, recent orders, low stock alerts.', TaskStatus::TODO, TaskPriority::MEDIUM, 0, null);
-        $task13 = $this->createTask($manager, $milestone1_3, 'Product management CRUD', 'Add, edit, delete products with image upload.', TaskStatus::TODO, TaskPriority::HIGH, 1, null);
-        $task14 = $this->createTask($manager, $milestone1_3, 'Order management', 'View orders, update status, process refunds.', TaskStatus::TODO, TaskPriority::HIGH, 2, null);
-        $task15 = $this->createTask($manager, $milestone1_3, 'User management', 'View users, manage roles, disable accounts.', TaskStatus::TODO, TaskPriority::LOW, 3, null);
+        $sam = new User();
+        $sam->setEmail('sam@honeyguide.org');
+        $sam->setFirstName('Sam');
+        $sam->setLastName('Shaba');
+        $sam->setPassword($this->passwordHasher->hashPassword($sam, 'password123'));
+        $sam->setIsVerified(true);
+        $manager->persist($sam);
 
         // ============================================
-        // PROJECT 2: Mobile Banking App
+        // PROJECT A: Southern WMAs Portfolio
         // ============================================
-        $project2 = new Project();
-        $project2->setName('Mobile Banking App');
-        $project2->setDescription('Secure mobile banking application with account management, transfers, bill payments, and budgeting tools.');
-        $project2->setStatus(ProjectStatus::ACTIVE);
-        $project2->setOwner($adminUser);
-        $project2->setStartDate(new \DateTimeImmutable('-15 days'));
-        $project2->setEndDate(new \DateTimeImmutable('+90 days'));
-        $manager->persist($project2);
+        $projectA = new Project();
+        $projectA->setName('A. Southern WMAs Portfolio');
+        $projectA->setDescription('Goal 1: Southern WMAs achieve improved governance, management, protection, HWC mitigation, livelihoods, and stakeholder engagement.');
+        $projectA->setStatus(ProjectStatus::ACTIVE);
+        $projectA->setOwner($adminUser);
+        $projectA->setStartDate(new \DateTimeImmutable('2026-01-01'));
+        $projectA->setEndDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($projectA);
 
-        // Project 2 Members
-        $member4 = new ProjectMember();
-        $member4->setProject($project2);
-        $member4->setUser($adminUser);
-        $member4->setRole($projectManager);
-        $manager->persist($member4);
+        $this->addMember($manager, $projectA, $adminUser, $projectManager);
+        $this->addMember($manager, $projectA, $sylvester, $projectMember);
 
-        $member5 = new ProjectMember();
-        $member5->setProject($project2);
-        $member5->setUser($testUser);
-        $member5->setRole($projectMember);
-        $manager->persist($member5);
+        // --- Milestone 1.1: Ruvuma 5 WMAs ---
+        $m1_1 = new Milestone();
+        $m1_1->setProject($projectA);
+        $m1_1->setName('1.1 Ruvuma 5 WMAs');
+        $m1_1->setDescription("Ruvuma's 5 WMAs achieve >80% Level 3 MAT performance through improved operational efficiency, strengthened AA leadership and GIA-compliant governance, effective community-led protection and HWC strategies, impactful data-driven livelihood programs, and SMART engagement efforts that enhance collaboration and pastoralist ownership.");
+        $m1_1->setStatus(MilestoneStatus::OPEN);
+        $m1_1->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m1_1);
+        $this->createTarget($manager, $m1_1, 'MAT report showing management progress (>80% Level 3 by year end)', 0);
+        $this->createTarget($manager, $m1_1, 'Capacited 1 Field Officer in governance, MAT, Protection, HWC monitoring', 1);
+        $this->createTarget($manager, $m1_1, 'Co-implementation report on financial management capacity building in Ruvuma 5 WMAs with partners', 2);
+        $this->createTarget($manager, $m1_1, 'On-demand Governance Training Reports and Periodic GIA Reports for Ruvuma 5 WMAs', 3);
+        $this->createTarget($manager, $m1_1, 'Maintained Rangerpost & equipment, vehicles, reports on SOPs, anti-poaching strategy, intelligence Manual and data collection system', 4);
+        $this->createTarget($manager, $m1_1, 'Reports on implemented communication strategies, stakeholder engagement strategies and awareness films', 5);
+        $this->createTarget($manager, $m1_1, 'HWC toolkits training reports', 6);
+        $this->createTarget($manager, $m1_1, 'Joint Livelihood initiative reports', 7);
+        $this->createTarget($manager, $m1_1, '4 Meetings in each WMA with pastoralists, inclusion in AA and village committee', 8);
 
-        // Project 2 - Milestone 1: Security & Authentication
-        $milestone2_1 = new Milestone();
-        $milestone2_1->setProject($project2);
-        $milestone2_1->setName('Security & Authentication');
-        $milestone2_1->setDescription('Implement secure authentication with biometrics and 2FA.');
-        $milestone2_1->setStatus(MilestoneStatus::OPEN);
-        $milestone2_1->setDueDate(new \DateTimeImmutable('+15 days'));
-        $manager->persist($milestone2_1);
+        $this->createTask($manager, $m1_1, '1.1.1 MAT operational efficiency', 'MAT with a focus on achieving >80% Level 3 for operational efficiency, & filling training gaps to Field Officers.', TaskStatus::TODO, TaskPriority::HIGH, 0, $sylvester);
+        $this->createTask($manager, $m1_1, '1.1.2 AA leadership & GIA governance', 'Strengthen AA leadership, decision-making and compliance so Ruvuma 5 WMAs meet mandatory GIA standards and uphold transparent, accountable participatory governance.', TaskStatus::TODO, TaskPriority::HIGH, 1, $sylvester);
+        $this->createTask($manager, $m1_1, '1.1.3 Community-led protection & HWC', 'Developing and implementing community-led natural resource protection & HWC strategies that are cost-effective, data-driven, and show clear positive results on the ground.', TaskStatus::TODO, TaskPriority::HIGH, 2, $sylvester);
+        $this->createTask($manager, $m1_1, '1.1.4 Community livelihood programs', 'Delivering cost-effective, data-driven community livelihood programs with measurable social impact.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, $sylvester);
+        $this->createTask($manager, $m1_1, '1.1.5 SMART engagement strategies', 'Implement SMART engagement strategies to raise awareness, strengthen collaboration, and foster pastoralist WMA ownership.', TaskStatus::TODO, TaskPriority::MEDIUM, 4, $sylvester);
 
-        $task16 = $this->createTask($manager, $milestone2_1, 'Implement OAuth 2.0 authentication', 'Secure token-based authentication flow.', TaskStatus::IN_PROGRESS, TaskPriority::HIGH, 0, $adminUser);
-        $task17 = $this->createTask($manager, $milestone2_1, 'Add biometric authentication', 'Face ID and fingerprint support for iOS and Android.', TaskStatus::TODO, TaskPriority::HIGH, 1, $testUser);
-        $task18 = $this->createTask($manager, $milestone2_1, 'Implement 2FA via SMS/Email', 'Two-factor authentication for sensitive operations.', TaskStatus::TODO, TaskPriority::HIGH, 2, null);
-        $task19 = $this->createTask($manager, $milestone2_1, 'Session management', 'Secure session handling with timeout and device tracking.', TaskStatus::IN_REVIEW, TaskPriority::MEDIUM, 3, $adminUser);
+        // --- Milestone 1.2: Liwale (Magingo WMA) ---
+        $m1_2 = new Milestone();
+        $m1_2->setProject($projectA);
+        $m1_2->setName('1.2 Liwale (Magingo WMA)');
+        $m1_2->setDescription("Integrating Governance and Management Best Practices into Magingo WMA operations to strengthen governance, management, and efficiency for developing their long-term vision to sustainability.");
+        $m1_2->setStatus(MilestoneStatus::OPEN);
+        $m1_2->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m1_2);
+        $this->createTarget($manager, $m1_2, 'MAT report showing management progress >80% level 3', 0);
+        $this->createTarget($manager, $m1_2, 'Capacitated Field Officer on governance, MAT, Protection, HWC, Livelihood monitoring by Dec 2026', 1);
+        $this->createTarget($manager, $m1_2, 'Completed Gov. training reports at least 4 per WMA, SEGA actions development progress report', 2);
+        $this->createTarget($manager, $m1_2, 'Customized SOPs and anti-poaching strategy documents, intelligence manual and data collection system. Construction of 1 Ranger Post and formal employment of 10 Rangers', 3);
+        $this->createTarget($manager, $m1_2, 'Stakeholder engagement report, implemented communication strategy, and 3 awareness films', 4);
 
-        // Project 2 - Milestone 2: Core Banking Features
-        $milestone2_2 = new Milestone();
-        $milestone2_2->setProject($project2);
-        $milestone2_2->setName('Core Banking Features');
-        $milestone2_2->setDescription('Account overview, transfers, and transaction history.');
-        $milestone2_2->setStatus(MilestoneStatus::OPEN);
-        $milestone2_2->setDueDate(new \DateTimeImmutable('+40 days'));
-        $manager->persist($milestone2_2);
+        $this->createTask($manager, $m1_2, '1.2.1 MAT operational efficiency', 'MAT aiming for >80% Level 3 in operational efficiency, & filling training gaps of Field Officers.', TaskStatus::TODO, TaskPriority::HIGH, 0, $sylvester);
+        $this->createTask($manager, $m1_2, '1.2.2 Governance interventions & GIA', 'Implement targeted governance interventions & GIA actions to provide an enabling environment for governance best practices in daily WMA operations.', TaskStatus::TODO, TaskPriority::HIGH, 1, $sylvester);
+        $this->createTask($manager, $m1_2, '1.2.3 Community-led protection', 'Implementing community-led natural resource protection strategies that are cost-effective, data-driven, and show clear positive results on the ground.', TaskStatus::TODO, TaskPriority::HIGH, 2, $sylvester);
+        $this->createTask($manager, $m1_2, '1.2.4 Stakeholder engagement & comms', 'Customize and implement SMART stakeholder engagement and communications strategies to raise awareness, and enhance collaboration and ownership of WMA initiatives.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, $sylvester);
+        $this->createTask($manager, $m1_2, '1.2.5 SEGA Actions in Liwale', 'Implementing SEGA Actions in Liwale WMA.', TaskStatus::TODO, TaskPriority::MEDIUM, 4, $sylvester);
 
-        $task20 = $this->createTask($manager, $milestone2_2, 'Account dashboard', 'Display account balances, recent transactions, quick actions.', TaskStatus::TODO, TaskPriority::HIGH, 0, null);
-        $task21 = $this->createTask($manager, $milestone2_2, 'Internal transfers', 'Transfer between own accounts instantly.', TaskStatus::TODO, TaskPriority::HIGH, 1, null);
-        $task22 = $this->createTask($manager, $milestone2_2, 'External transfers', 'Transfer to other banks with validation.', TaskStatus::TODO, TaskPriority::HIGH, 2, null);
-        $task23 = $this->createTask($manager, $milestone2_2, 'Transaction history', 'Searchable transaction history with filters and export.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, null);
+        // --- Milestone 1.3: Ruaha WMAs ---
+        $m1_3 = new Milestone();
+        $m1_3->setProject($projectA);
+        $m1_3->setName('1.3 Ruaha WMAs (MBOMIPA & Waga)');
+        $m1_3->setDescription("Waga WMA and Mbomipa WMA have fully integrated their governance practices and professional management systems, ensuring data-driven operations and broader stakeholder engagement in decision-making.");
+        $m1_3->setStatus(MilestoneStatus::OPEN);
+        $m1_3->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m1_3);
+        $this->createTarget($manager, $m1_3, 'MAT progress reports for Mbomipa and Waga', 0);
+        $this->createTarget($manager, $m1_3, 'Trained Field Officer', 1);
+        $this->createTarget($manager, $m1_3, 'SEGA actions reports', 2);
+        $this->createTarget($manager, $m1_3, 'Carbon & other business prospects reports for Waga & MBOMIPA WMAs', 3);
+        $this->createTarget($manager, $m1_3, '1 constructed RP for Waga', 4);
+        $this->createTarget($manager, $m1_3, 'Reports on Protection and HWC initiatives for Waga and MBOMIPA WMAs', 5);
+        $this->createTarget($manager, $m1_3, 'Livelihood initiatives reports', 6);
 
-        // ============================================
-        // PROJECT 3: Company Website Redesign
-        // ============================================
-        $project3 = new Project();
-        $project3->setName('Company Website Redesign');
-        $project3->setDescription('Complete redesign of the corporate website with modern UI, improved UX, and better performance.');
-        $project3->setStatus(ProjectStatus::ON_HOLD);
-        $project3->setOwner($testUser);
-        $project3->setStartDate(new \DateTimeImmutable('-60 days'));
-        $project3->setEndDate(new \DateTimeImmutable('+30 days'));
-        $manager->persist($project3);
+        $this->createTask($manager, $m1_3, '1.3.1 MAT Mbomipa & Waga', 'MAT in Mbomipa and Waga WMAs, to reach 80% MAT level 3.', TaskStatus::TODO, TaskPriority::HIGH, 0, $sylvester);
+        $this->createTask($manager, $m1_3, '1.3.2 Governance & GIA interventions', 'Implement targeted governance and GIA interventions addressing SAGE findings.', TaskStatus::TODO, TaskPriority::HIGH, 1, $sylvester);
+        $this->createTask($manager, $m1_3, '1.3.3 Alternative financing models', 'Develop alternative financing and business models to ensure WMAs\' sustainability.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, $sylvester);
+        $this->createTask($manager, $m1_3, '1.3.4 Protection & HWC strategies', 'Exploring cost-effective community-led natural resource protection & HWC strategies that are data-driven and show clear positive results on the ground.', TaskStatus::TODO, TaskPriority::HIGH, 3, $sylvester);
+        $this->createTask($manager, $m1_3, '1.3.5 Community livelihood programs', 'Implement community-led, cost-effective, data-driven livelihood programs showing social and behavioral benefits.', TaskStatus::TODO, TaskPriority::MEDIUM, 4, $sylvester);
 
-        $member6 = new ProjectMember();
-        $member6->setProject($project3);
-        $member6->setUser($testUser);
-        $member6->setRole($projectManager);
-        $manager->persist($member6);
+        // --- Milestone 1.4: Ifinga ---
+        $m1_4 = new Milestone();
+        $m1_4->setProject($projectA);
+        $m1_4->setName('1.4 Ifinga');
+        $m1_4->setDescription("Support the establishment, feasibility assessment and initial interventions to prepare Ifinga for Honeyguide's capacity-building approach.");
+        $m1_4->setStatus(MilestoneStatus::OPEN);
+        $m1_4->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m1_4);
+        $this->createTarget($manager, $m1_4, 'GMP and user right in place', 0);
+        $this->createTarget($manager, $m1_4, 'Reports of initial Ifinga WMA governance and management interventions', 1);
+        $this->createTarget($manager, $m1_4, 'Office space secured', 2);
+        $this->createTarget($manager, $m1_4, 'Professional staff in place', 3);
+        $this->createTarget($manager, $m1_4, 'Governance reports', 4);
 
-        // Project 3 - Milestone 1: Design Phase
-        $milestone3_1 = new Milestone();
-        $milestone3_1->setProject($project3);
-        $milestone3_1->setName('Design Phase');
-        $milestone3_1->setDescription('Create wireframes, mockups, and design system.');
-        $milestone3_1->setStatus(MilestoneStatus::COMPLETED);
-        $milestone3_1->setDueDate(new \DateTimeImmutable('-30 days'));
-        $manager->persist($milestone3_1);
-
-        $task24 = $this->createTask($manager, $milestone3_1, 'Competitor analysis', 'Research competitor websites and identify best practices.', TaskStatus::COMPLETED, TaskPriority::MEDIUM, 0, $testUser);
-        $task25 = $this->createTask($manager, $milestone3_1, 'Create wireframes', 'Low-fidelity wireframes for all main pages.', TaskStatus::COMPLETED, TaskPriority::HIGH, 1, $testUser);
-        $task26 = $this->createTask($manager, $milestone3_1, 'Design mockups in Figma', 'High-fidelity designs with responsive breakpoints.', TaskStatus::COMPLETED, TaskPriority::HIGH, 2, $testUser);
-        $task27 = $this->createTask($manager, $milestone3_1, 'Create design system', 'Colors, typography, components, and guidelines.', TaskStatus::COMPLETED, TaskPriority::MEDIUM, 3, $testUser);
-
-        // Project 3 - Milestone 2: Development (on hold)
-        $milestone3_2 = new Milestone();
-        $milestone3_2->setProject($project3);
-        $milestone3_2->setName('Development');
-        $milestone3_2->setDescription('Build the new website using Next.js.');
-        $milestone3_2->setStatus(MilestoneStatus::OPEN);
-        $milestone3_2->setDueDate(new \DateTimeImmutable('+20 days'));
-        $manager->persist($milestone3_2);
-
-        $task28 = $this->createTask($manager, $milestone3_2, 'Set up Next.js project', 'Initialize project with TypeScript and Tailwind.', TaskStatus::COMPLETED, TaskPriority::HIGH, 0, $testUser);
-        $task29 = $this->createTask($manager, $milestone3_2, 'Build homepage', 'Hero section, features, testimonials, CTA.', TaskStatus::IN_PROGRESS, TaskPriority::HIGH, 1, $testUser);
-        $task30 = $this->createTask($manager, $milestone3_2, 'Build about page', 'Company story, team, values.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, null);
-        $task31 = $this->createTask($manager, $milestone3_2, 'Build services page', 'Service offerings with details.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, null);
-        $task32 = $this->createTask($manager, $milestone3_2, 'Build contact page', 'Contact form with validation and map.', TaskStatus::TODO, TaskPriority::LOW, 4, null);
+        $this->createTask($manager, $m1_4, '1.4.1 WMA establishment support', 'Support Ifinga WMA communities and relevant stakeholders in the establishment of the WMA.', TaskStatus::TODO, TaskPriority::HIGH, 0, $sylvester);
+        $this->createTask($manager, $m1_4, '1.4.2 Basic governance & management training', 'Support WMA basic governance & management trainings.', TaskStatus::TODO, TaskPriority::HIGH, 1, $sylvester);
 
         // ============================================
-        // PROJECT 4: Internal HR System
+        // PROJECT B: Northern WMAs Portfolio
         // ============================================
-        $project4 = new Project();
-        $project4->setName('Internal HR System');
-        $project4->setDescription('Employee management system with leave requests, timesheets, performance reviews, and payroll integration.');
-        $project4->setStatus(ProjectStatus::COMPLETED);
-        $project4->setOwner($adminUser);
-        $project4->setStartDate(new \DateTimeImmutable('-120 days'));
-        $project4->setEndDate(new \DateTimeImmutable('-10 days'));
-        $manager->persist($project4);
+        $projectB = new Project();
+        $projectB->setName('B. Northern WMAs Portfolio');
+        $projectB->setDescription('Goal 1: Northern WMAs achieve sustainability through improved governance, management, protection, livelihoods, and stakeholder engagement.');
+        $projectB->setStatus(ProjectStatus::ACTIVE);
+        $projectB->setOwner($adminUser);
+        $projectB->setStartDate(new \DateTimeImmutable('2026-01-01'));
+        $projectB->setEndDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($projectB);
 
-        $member7 = new ProjectMember();
-        $member7->setProject($project4);
-        $member7->setUser($adminUser);
-        $member7->setRole($projectManager);
-        $manager->persist($member7);
+        $this->addMember($manager, $projectB, $adminUser, $projectManager);
+        $this->addMember($manager, $projectB, $max, $projectMember);
+        $this->addMember($manager, $projectB, $sam, $projectMember);
 
-        $member8 = new ProjectMember();
-        $member8->setProject($project4);
-        $member8->setUser($johnDoe);
-        $member8->setRole($projectMember);
-        $manager->persist($member8);
+        // --- Milestone 2.1: Burunge ---
+        $m2_1 = new Milestone();
+        $m2_1->setProject($projectB);
+        $m2_1->setName('2.1 Burunge');
+        $m2_1->setDescription("Burunge WMA has a restored working relationship with Honeyguide, basic governance meetings are back on track, and conditions for deeper engagement are agreed.");
+        $m2_1->setStatus(MilestoneStatus::OPEN);
+        $m2_1->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m2_1);
+        $this->createTarget($manager, $m2_1, 'Burunge–Honeyguide light engagement MoU / agreement', 0);
+        $this->createTarget($manager, $m2_1, 'Governance meeting calendar and signed minutes', 1);
+        $this->createTarget($manager, $m2_1, 'Basic governance status checklist (minimum standards restored)', 2);
+        $this->createTarget($manager, $m2_1, 'Stakeholder engagement log (villages, AA, district, partners)', 3);
 
-        // Project 4 - Milestone 1: Employee Management (completed)
-        $milestone4_1 = new Milestone();
-        $milestone4_1->setProject($project4);
-        $milestone4_1->setName('Employee Management');
-        $milestone4_1->setDescription('Core employee records and organizational structure.');
-        $milestone4_1->setStatus(MilestoneStatus::COMPLETED);
-        $milestone4_1->setDueDate(new \DateTimeImmutable('-60 days'));
-        $manager->persist($milestone4_1);
+        $this->createTask($manager, $m2_1, '2.1.1 Re-establish Burunge relationship', 'Re-establish a constructive working relationship with Burunge WMA.', TaskStatus::TODO, TaskPriority::HIGH, 0, $max);
 
-        $task33 = $this->createTask($manager, $milestone4_1, 'Employee database schema', 'Design database for employee records.', TaskStatus::COMPLETED, TaskPriority::HIGH, 0, $adminUser);
-        $task34 = $this->createTask($manager, $milestone4_1, 'Employee CRUD operations', 'Add, edit, view, archive employees.', TaskStatus::COMPLETED, TaskPriority::HIGH, 1, $johnDoe);
-        $task35 = $this->createTask($manager, $milestone4_1, 'Department management', 'Create and manage departments.', TaskStatus::COMPLETED, TaskPriority::MEDIUM, 2, $johnDoe);
-        $task36 = $this->createTask($manager, $milestone4_1, 'Org chart visualization', 'Interactive organizational chart.', TaskStatus::COMPLETED, TaskPriority::LOW, 3, $adminUser);
+        // --- Milestone 2.2: Makame ---
+        $m2_2 = new Milestone();
+        $m2_2->setProject($projectB);
+        $m2_2->setName('2.2 Makame');
+        $m2_2->setDescription("Makame maintains a ≥90% sustainability score, runs an active carbon-and-community learning hub, and has at least one additional livelihood initiative beyond health and education in place.");
+        $m2_2->setStatus(MilestoneStatus::OPEN);
+        $m2_2->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m2_2);
+        $this->createTarget($manager, $m2_2, 'Updated sustainability scorecard (≥90%)', 0);
+        $this->createTarget($manager, $m2_2, 'Revised Makame Sustainability Plan', 1);
+        $this->createTarget($manager, $m2_2, 'SP26 partnership review note', 2);
+        $this->createTarget($manager, $m2_2, 'Carbon and community learning curriculum pack', 3);
+        $this->createTarget($manager, $m2_2, 'Learning centre improvement summary (with photos)', 4);
+        $this->createTarget($manager, $m2_2, 'New livelihood initiative concept note(s)', 5);
 
-        // Project 4 - Milestone 2: Leave Management (completed)
-        $milestone4_2 = new Milestone();
-        $milestone4_2->setProject($project4);
-        $milestone4_2->setName('Leave Management');
-        $milestone4_2->setDescription('Leave requests, approvals, and balance tracking.');
-        $milestone4_2->setStatus(MilestoneStatus::COMPLETED);
-        $milestone4_2->setDueDate(new \DateTimeImmutable('-20 days'));
-        $manager->persist($milestone4_2);
+        $this->createTask($manager, $m2_2, '2.2.1 Sustainability indicators ≥90%', 'Achieve ≥90% on Makame sustainability indicators and update the Sustainability Plan and SP26 partnership accordingly.', TaskStatus::TODO, TaskPriority::HIGH, 0, $max);
+        $this->createTask($manager, $m2_2, '2.2.2 Carbon & community learning hub', 'Strengthen Makame as a carbon-and-community learning hub by improving the curriculum and learning centre infrastructure.', TaskStatus::TODO, TaskPriority::MEDIUM, 1, $max);
+        $this->createTask($manager, $m2_2, '2.2.3 Additional livelihood initiatives', 'Develop additional livelihood initiatives that increase Makame community benefits beyond health and education.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, $max);
 
-        $task37 = $this->createTask($manager, $milestone4_2, 'Leave request form', 'Submit leave requests with date range and type.', TaskStatus::COMPLETED, TaskPriority::HIGH, 0, $johnDoe);
-        $task38 = $this->createTask($manager, $milestone4_2, 'Approval workflow', 'Manager approval with email notifications.', TaskStatus::COMPLETED, TaskPriority::HIGH, 1, $adminUser);
-        $task39 = $this->createTask($manager, $milestone4_2, 'Leave balance tracking', 'Track and display leave balances by type.', TaskStatus::COMPLETED, TaskPriority::MEDIUM, 2, $johnDoe);
-        $task40 = $this->createTask($manager, $milestone4_2, 'Team calendar view', 'Calendar showing team availability.', TaskStatus::COMPLETED, TaskPriority::MEDIUM, 3, $adminUser);
+        // --- Milestone 2.3: Randilen ---
+        $m2_3 = new Milestone();
+        $m2_3->setProject($projectB);
+        $m2_3->setName('2.3 Randilen');
+        $m2_3->setDescription("Randilen reaches ≥90% on sustainability indicators, implements its tourism plan, and operates a functional photographic tourism learning hub with complementary livelihood initiatives.");
+        $m2_3->setStatus(MilestoneStatus::OPEN);
+        $m2_3->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m2_3);
+        $this->createTarget($manager, $m2_3, 'Updated sustainability scorecard (≥90%) / human resources', 0);
+        $this->createTarget($manager, $m2_3, 'Combined Sustainability Plan + SP26 partnership review', 1);
+        $this->createTarget($manager, $m2_3, 'Tourism plan implementation progress report', 2);
+        $this->createTarget($manager, $m2_3, 'Photographic tourism learning hub curriculum and materials', 3);
+        $this->createTarget($manager, $m2_3, 'Learning centre upgrades summary (with photos)', 4);
+        $this->createTarget($manager, $m2_3, 'Livelihood initiatives summary sheet (existing + new) / strategy', 5);
+        $this->createTarget($manager, $m2_3, 'Pastoralist engagement summary (meetings, agreements)', 6);
 
-        // Add some comments to tasks
-        $this->createComment($manager, $task7, $janeSmith, 'Started working on the product grid layout. Using CSS Grid for responsive design.');
-        $this->createComment($manager, $task7, $johnDoe, 'Looks great! Should we add infinite scroll or pagination?');
-        $this->createComment($manager, $task7, $janeSmith, 'I think pagination would be better for SEO. Will implement that.');
+        $this->createTask($manager, $m2_3, '2.3.1 Sustainability indicators ≥90%', 'Achieve ≥90% on Randilen sustainability indicators and update the Sustainability Plan and renewed partnership / focus on human resources and capacity.', TaskStatus::TODO, TaskPriority::HIGH, 0, $max);
+        $this->createTask($manager, $m2_3, '2.3.2 Photographic tourism learning hub', 'Position Randilen as a leading photographic tourism learning hub by improving curriculum, learning centre infrastructure, and implementing the tourism plan.', TaskStatus::TODO, TaskPriority::MEDIUM, 1, $max);
+        $this->createTask($manager, $m2_3, '2.3.3 Additional livelihood initiatives', 'Develop additional livelihood initiatives that increase Randilen community benefits beyond health and education.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, $max);
 
-        $this->createComment($manager, $task16, $adminUser, 'Using Auth0 for OAuth implementation. Setting up the tenant now.');
-        $this->createComment($manager, $task16, $testUser, 'Make sure to configure proper PKCE flow for mobile apps.');
+        // --- Milestone 2.4: Makao WMA ---
+        $m2_4 = new Milestone();
+        $m2_4->setProject($projectB);
+        $m2_4->setName('2.4 Makao WMA');
+        $m2_4->setDescription("The Darwin habitat and livelihood programme is completed and Makao reaches at least 80% on the sustainability indicators.");
+        $m2_4->setStatus(MilestoneStatus::OPEN);
+        $m2_4->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m2_4);
+        $this->createTarget($manager, $m2_4, 'Darwin programme completion report (Makao section)', 0);
+        $this->createTarget($manager, $m2_4, 'Updated sustainability scorecard (≥80%)', 1);
+        $this->createTarget($manager, $m2_4, 'Governance and management improvement note', 2);
+        $this->createTarget($manager, $m2_4, 'Financial resilience snapshot (income vs core and protection costs)', 3);
+        $this->createTarget($manager, $m2_4, 'Tools/equipment handover list (HWC and protection)', 4);
 
-        $this->createComment($manager, $task29, $testUser, 'Hero animation is causing layout shift. Need to fix CLS score.');
+        $this->createTask($manager, $m2_4, '2.4.1 Darwin programme completion', 'Finalise the Darwin-funded programme, delivering agreed habitat, governance, and livelihood improvements in Makao.', TaskStatus::TODO, TaskPriority::HIGH, 0, $max);
+        $this->createTask($manager, $m2_4, '2.4.2 Sustainability score ≥80%', 'Raise Makao\'s sustainability score to ≥80% by strengthening governance, management, and a cost-effective protection unit.', TaskStatus::TODO, TaskPriority::HIGH, 1, $max);
+        $this->createTask($manager, $m2_4, '2.4.3 Financial & community benefits plan', 'Establish a simple financial and community benefits plan that supports Makao\'s growth and resilience.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, $max);
 
-        // Add checklists to some tasks
-        // Task 7: Product listing page
-        $this->createChecklist($manager, $task7, 'Set up product grid component', true, 0);
-        $this->createChecklist($manager, $task7, 'Implement responsive breakpoints', true, 1);
-        $this->createChecklist($manager, $task7, 'Add sorting dropdown (price, name, date)', false, 2);
-        $this->createChecklist($manager, $task7, 'Add filter sidebar (category, price range)', false, 3);
-        $this->createChecklist($manager, $task7, 'Implement pagination', false, 4);
-        $this->createChecklist($manager, $task7, 'Add loading skeletons', false, 5);
+        // --- Milestone 2.5: Uyumbu WMA ---
+        $m2_5 = new Milestone();
+        $m2_5->setProject($projectB);
+        $m2_5->setName('2.5 Uyumbu WMA');
+        $m2_5->setDescription("Uyumbu reaches MAT ≥75% (L3), has core management manuals and policies in place, has rebuilt basic trust with communities and authorities, and has tested protection/HWC operations with a completed carbon feasibility study.");
+        $m2_5->setStatus(MilestoneStatus::OPEN);
+        $m2_5->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m2_5);
+        $this->createTarget($manager, $m2_5, 'Governance and technical training completion report', 0);
+        $this->createTarget($manager, $m2_5, 'Uyumbu MAT assessment (≥75% L4)', 1);
+        $this->createTarget($manager, $m2_5, 'Core management manuals and policies (ops, finance, HR, patrol/HWC SOPs)', 2);
+        $this->createTarget($manager, $m2_5, 'Community awareness film file/link + comms materials', 3);
+        $this->createTarget($manager, $m2_5, 'Film screening and dialogue report', 4);
+        $this->createTarget($manager, $m2_5, 'Protection and HWC pilot report', 5);
+        $this->createTarget($manager, $m2_5, 'Carbon feasibility study', 6);
+        $this->createTarget($manager, $m2_5, 'BEST', 7);
 
-        // Task 8: Product detail page
-        $this->createChecklist($manager, $task8, 'Create product image gallery', true, 0);
-        $this->createChecklist($manager, $task8, 'Add image zoom on hover', false, 1);
-        $this->createChecklist($manager, $task8, 'Display product details section', true, 2);
-        $this->createChecklist($manager, $task8, 'Add quantity selector', false, 3);
-        $this->createChecklist($manager, $task8, 'Implement Add to Cart button', false, 4);
-        $this->createChecklist($manager, $task8, 'Show related products section', false, 5);
+        $this->createTask($manager, $m2_5, '2.5.1 Governance to MAT ≥75% L3', 'Strengthen Uyumbu governance to MAT ≥75% L3 through targeted capacity building (technical training, learning tour) and core management manuals, guidelines, and policies.', TaskStatus::TODO, TaskPriority::HIGH, 0, $max);
+        $this->createTask($manager, $m2_5, '2.5.2 Community trust & awareness', 'Rebuild community and stakeholder trust via a short awareness film, concise communication materials, and facilitated dialogue screenings.', TaskStatus::TODO, TaskPriority::MEDIUM, 1, $max);
+        $this->createTask($manager, $m2_5, '2.5.3 Protection, HWC & carbon feasibility', 'Pilot strategic protection and human–wildlife conflict operations and complete a carbon-business feasibility assessment to secure sustainable revenue streams, including a clear BEST.', TaskStatus::TODO, TaskPriority::HIGH, 2, $max);
 
-        // Task 9: Shopping cart
-        $this->createChecklist($manager, $task9, 'Create cart context/state', false, 0);
-        $this->createChecklist($manager, $task9, 'Build cart drawer component', false, 1);
-        $this->createChecklist($manager, $task9, 'Add item quantity controls', false, 2);
-        $this->createChecklist($manager, $task9, 'Calculate subtotal and taxes', false, 3);
-        $this->createChecklist($manager, $task9, 'Persist cart to localStorage', false, 4);
+        // --- Milestone 2.6: Other new WMAs ---
+        $m2_6 = new Milestone();
+        $m2_6->setProject($projectB);
+        $m2_6->setName('2.6 Other new WMAs (UMEMARUWA, Kilolo, Chamwino)');
+        $m2_6->setDescription("At least two new WMAs have basic governance structures in place, an expanded village footprint, and a short feasibility and management pack agreed with partners.");
+        $m2_6->setStatus(MilestoneStatus::OPEN);
+        $m2_6->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m2_6);
+        $this->createTarget($manager, $m2_6, 'Governance basics starter pack (roles, templates, checklist)', 0);
+        $this->createTarget($manager, $m2_6, 'Training and governance meeting log', 1);
+        $this->createTarget($manager, $m2_6, 'Village mobilisation report (footprint and agreements)', 2);
+        $this->createTarget($manager, $m2_6, 'Feasibility and management pack per WMA', 3);
+        $this->createTarget($manager, $m2_6, 'Partner engagement summary (CWMAC, others, roles)', 4);
+        $this->createTarget($manager, $m2_6, '"Readiness for scaling" checklist per WMA', 5);
 
-        // Task 16: OAuth authentication
-        $this->createChecklist($manager, $task16, 'Set up Auth0 tenant', true, 0);
-        $this->createChecklist($manager, $task16, 'Configure OAuth endpoints', true, 1);
-        $this->createChecklist($manager, $task16, 'Implement token refresh flow', true, 2);
-        $this->createChecklist($manager, $task16, 'Add PKCE for mobile', false, 3);
-        $this->createChecklist($manager, $task16, 'Test with iOS app', false, 4);
-        $this->createChecklist($manager, $task16, 'Test with Android app', false, 5);
+        $this->createTask($manager, $m2_6, '2.6.1 Governance basics establishment', 'Establish governance basics (clarified roles, minuted decision-making meetings, short practical training) using a light-touch engagement model as time and resources allow.', TaskStatus::TODO, TaskPriority::MEDIUM, 0, $sam);
+        $this->createTask($manager, $m2_6, '2.6.2 Scalable livelihood models', 'Explore scalable livelihood models for Northern WMAs, including community banks and community training with SAWC.', TaskStatus::TODO, TaskPriority::MEDIUM, 1, $sam);
 
-        // Task 19: Session management
-        $this->createChecklist($manager, $task19, 'Implement session timeout', true, 0);
-        $this->createChecklist($manager, $task19, 'Add device fingerprinting', true, 1);
-        $this->createChecklist($manager, $task19, 'Create active sessions list', true, 2);
-        $this->createChecklist($manager, $task19, 'Add remote logout feature', true, 3);
+        // ============================================
+        // PROJECT C: Technical Innovations (Honeyguide Lab)
+        // ============================================
+        $projectC = new Project();
+        $projectC->setName('C. Technical Innovations (Honeyguide Lab)');
+        $projectC->setDescription('Develop and package replicable tools, frameworks, and innovations for governance, management, protection, HWC, livelihoods, and learning across WMAs.');
+        $projectC->setStatus(ProjectStatus::ACTIVE);
+        $projectC->setOwner($adminUser);
+        $projectC->setStartDate(new \DateTimeImmutable('2026-01-01'));
+        $projectC->setEndDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($projectC);
 
-        // Task 29: Build homepage
-        $this->createChecklist($manager, $task29, 'Design hero section', true, 0);
-        $this->createChecklist($manager, $task29, 'Add hero animation', true, 1);
-        $this->createChecklist($manager, $task29, 'Fix CLS issues', false, 2);
-        $this->createChecklist($manager, $task29, 'Build features grid', false, 3);
-        $this->createChecklist($manager, $task29, 'Add testimonials carousel', false, 4);
-        $this->createChecklist($manager, $task29, 'Create CTA section', false, 5);
-        $this->createChecklist($manager, $task29, 'Optimize images', false, 6);
+        $this->addMember($manager, $projectC, $adminUser, $projectManager);
+        $this->addMember($manager, $projectC, $fatma, $projectMember);
+        $this->addMember($manager, $projectC, $namnyaki, $projectMember);
+        $this->addMember($manager, $projectC, $kateto, $projectMember);
+        $this->addMember($manager, $projectC, $lemuta, $projectMember);
+        $this->addMember($manager, $projectC, $glad, $projectMember);
 
-        // Task 10: Checkout flow
-        $this->createChecklist($manager, $task10, 'Create checkout layout', false, 0);
-        $this->createChecklist($manager, $task10, 'Build address form', false, 1);
-        $this->createChecklist($manager, $task10, 'Add address validation', false, 2);
-        $this->createChecklist($manager, $task10, 'Integrate payment gateway', false, 3);
-        $this->createChecklist($manager, $task10, 'Build order confirmation page', false, 4);
-        $this->createChecklist($manager, $task10, 'Send confirmation email', false, 5);
+        // --- Milestone 3.1: Governance ---
+        $m3_1 = new Milestone();
+        $m3_1->setProject($projectC);
+        $m3_1->setName('3.1 Governance');
+        $m3_1->setDescription("Develop replicable governance capacity-building tools with partners, including training, monitoring frameworks, and tools to strengthen and scale community-led governance initiatives.");
+        $m3_1->setStatus(MilestoneStatus::OPEN);
+        $m3_1->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m3_1);
+        $this->createTarget($manager, $m3_1, 'GCBF module piloted, revised, and finalized, with staff and partners trained through ToT and cascade sessions, and monitoring system in place', 0);
+        $this->createTarget($manager, $m3_1, '1–2 cost-effective awareness campaigns implemented, media collaboration strengthened, community feedback collected', 1);
+        $this->createTarget($manager, $m3_1, 'Rapid governance orientation and assessments for new WMA leaders conducted, all field officers trained', 2);
+        $this->createTarget($manager, $m3_1, 'Stakeholder engagement approach piloted in selected WMAs, leaders and staff trained', 3);
+        $this->createTarget($manager, $m3_1, 'WMA leaders trained to use the Rapid Governance Monitoring Tool, governance reviews conducted', 4);
+        $this->createTarget($manager, $m3_1, 'SAGE enhanced and expanded to support additional WMAs and partner programs', 5);
+
+        $this->createTask($manager, $m3_1, '3.1.1 Pilot & monitor GCBF Module', 'Pilot, Cascade, and Monitor the GCBF Module.', TaskStatus::TODO, TaskPriority::HIGH, 0, $fatma);
+        $this->createTask($manager, $m3_1, '3.1.2 Institutionalize governance docs & tools', 'Institutionalize and package all existing governance documents, GIA, tools, and methodologies for standardized use across WMAs.', TaskStatus::TODO, TaskPriority::HIGH, 1, $fatma);
+        $this->createTask($manager, $m3_1, '3.1.3 Rapid governance training for new leaders', 'Pilot and Support Rapid Governance Training for New WMA Leaders.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, $fatma);
+        $this->createTask($manager, $m3_1, '3.1.4 Stakeholder engagement approach pilot', 'Pilot Testing and Learning from the Stakeholder Engagement & Communication Approach.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, $fatma);
+        $this->createTask($manager, $m3_1, '3.1.5 Rapid Governance Monitoring Tool', 'Provide initial training and support for the WMA Rapid Governance Monitoring Tool for regular governance assessments.', TaskStatus::TODO, TaskPriority::MEDIUM, 4, $fatma);
+        $this->createTask($manager, $m3_1, '3.1.6 Enhance & scale SAGE', 'Enhance and scale SAGE for wider adoption across WMAs and partner programs beyond HGF\'s primary areas.', TaskStatus::TODO, TaskPriority::MEDIUM, 5, $fatma);
+
+        // --- Milestone 3.2: Management ---
+        $m3_2 = new Milestone();
+        $m3_2->setProject($projectC);
+        $m3_2->setName('3.2 Management');
+        $m3_2->setDescription("Develop and packaging the replicable tools and frameworks for professional WMA management that can be applied across diverse CBNRM contexts.");
+        $m3_2->setStatus(MilestoneStatus::OPEN);
+        $m3_2->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m3_2);
+        $this->createTarget($manager, $m3_2, 'Standardized FCG Monitoring Framework', 0);
+        $this->createTarget($manager, $m3_2, 'Pre-customized Quick Book Chart of Accounts', 1);
+        $this->createTarget($manager, $m3_2, 'Board financial oversight handbook for WMAs', 2);
+        $this->createTarget($manager, $m3_2, 'Packaging & publishing at least 5 additional Management Tools', 3);
+        $this->createTarget($manager, $m3_2, 'Pilot leadership training program report', 4);
+
+        $this->createTask($manager, $m3_2, '3.2.1 FCG Monitoring tool', 'Develop FCG Monitoring tool and testing.', TaskStatus::TODO, TaskPriority::HIGH, 0, $namnyaki);
+        $this->createTask($manager, $m3_2, '3.2.2 QuickBooks lite setup for WMAs', 'Develop pre-customized Quickbook lite setup file for WMAs (to build uniformity across WMAs).', TaskStatus::TODO, TaskPriority::MEDIUM, 1, $namnyaki);
+        $this->createTask($manager, $m3_2, '3.2.3 Board Financial Oversight Handbook', 'Develop WMA Board Financial Oversight Handbook + Tools (Helps governance members challenge management constructively and make informed approvals).', TaskStatus::TODO, TaskPriority::MEDIUM, 2, $namnyaki);
+        $this->createTask($manager, $m3_2, '3.2.4 WMA Management Toolbox', 'Design and consolidate a comprehensive WMA Management Toolbox and publish at least five additional tools guided by sound financial and operational management of WMAs.', TaskStatus::TODO, TaskPriority::HIGH, 3, $namnyaki);
+        $this->createTask($manager, $m3_2, '3.2.5 Leadership Training Program pilot', 'Implement a pilot of the pre-designed WMA Management Leadership Training Program across selected WMAs.', TaskStatus::TODO, TaskPriority::MEDIUM, 4, $namnyaki);
+
+        // --- Milestone 3.3: Protection ---
+        $m3_3 = new Milestone();
+        $m3_3->setProject($projectC);
+        $m3_3->setName('3.3 Protection');
+        $m3_3->setDescription("Review, develop, and packaging the Honeyguide's capacity-building process for the Protection of WMAs, and ensure the implementation at each of our partner sites is strategic and cost-effective.");
+        $m3_3->setStatus(MilestoneStatus::OPEN);
+        $m3_3->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m3_3);
+        $this->createTarget($manager, $m3_3, 'HGF protection tools (SOPs, Best Practices Booklet, Engagement Strategy, Baseline Survey Template) compiled, packaged, and prepared for dissemination', 0);
+        $this->createTarget($manager, $m3_3, 'Standardized Protection Tools Package developed and distributed for all WMAs', 1);
+        $this->createTarget($manager, $m3_3, 'WMAs\' protection status monitored with quarterly reports', 2);
+        $this->createTarget($manager, $m3_3, 'Quarterly-updated checklist of recommendation for WMA anti-poaching practices developed and shared', 3);
+
+        $this->createTask($manager, $m3_3, '3.3.1 Package protection docs & tools', 'Institutionalize and package all existing protection documents, tools, and methodologies for standardized use across WMAs.', TaskStatus::TODO, TaskPriority::HIGH, 0, $kateto);
+        $this->createTask($manager, $m3_3, '3.3.2 Low-cost protection strategies', 'Ensure all WMAs adopt and comply with low-cost, effective protection strategies and methodologies.', TaskStatus::TODO, TaskPriority::HIGH, 1, $kateto);
+        $this->createTask($manager, $m3_3, '3.3.3 Anti-poaching tools monitoring', 'Conduct regular assessments and monitoring of anti-poaching tools to ensure full functionality and effectiveness.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, $kateto);
+        $this->createTask($manager, $m3_3, '3.3.4 Anti-poaching improvement checklist', 'Develop a checklist of recommendation for anti-poaching strategic improvement.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, $kateto);
+
+        // --- Milestone 3.4: HWC ---
+        $m3_4 = new Milestone();
+        $m3_4->setProject($projectC);
+        $m3_4->setName('3.4 HWC');
+        $m3_4->setDescription("Research, develop and packaging of replicable, innovative, low-cost yet effective solutions for communities to mitigate HWC.");
+        $m3_4->setStatus(MilestoneStatus::OPEN);
+        $m3_4->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m3_4);
+        $this->createTarget($manager, $m3_4, 'At least 2 new innovative HEC toolkits invented', 0);
+        $this->createTarget($manager, $m3_4, 'HEC scaled up and engaged in at least 2 other countries with partners', 1);
+        $this->createTarget($manager, $m3_4, 'HEC methods guide compiled and packaged for use', 2);
+
+        $this->createTask($manager, $m3_4, '3.4.1 HEC toolkit innovation', 'Drive toolkit innovation process by gathering insights through listening, creating designs, testing prototypes, validating scientifically, and scaling successful solutions.', TaskStatus::TODO, TaskPriority::HIGH, 0, $lemuta);
+        $this->createTask($manager, $m3_4, '3.4.2 HEC mitigation beyond WMAs', 'Explore HEC mitigation strategies beyond WMAs and outside the country.', TaskStatus::TODO, TaskPriority::MEDIUM, 1, $lemuta);
+        $this->createTask($manager, $m3_4, '3.4.3 Package HEC methodologies', 'Institutionalize and packaging available HEC methodologies.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, $lemuta);
+
+        // --- Milestone 3.5: Livelihoods ---
+        $m3_5 = new Milestone();
+        $m3_5->setProject($projectC);
+        $m3_5->setName('3.5 Livelihoods');
+        $m3_5->setDescription("Develop and package Honeyguide's Education and Health Livelihoods models for replication, while expanding exploration of new income-enhancing opportunities for WMA communities.");
+        $m3_5->setStatus(MilestoneStatus::OPEN);
+        $m3_5->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m3_5);
+        $this->createTarget($manager, $m3_5, 'Education and Health program Framework drafted, reviewed, designed and finalised', 0);
+        $this->createTarget($manager, $m3_5, 'Implementation Reports of Kamitei Education Model for Mbomipa, Waga, and each of the Ruvuma 5 WMAs with baseline data', 1);
+        $this->createTarget($manager, $m3_5, 'Pilot reports of at least one Agriculture and one Microcredit project designed and launched', 2);
+        $this->createTarget($manager, $m3_5, 'Database (PDF and Excel) of 10+ livelihoods models studied and documented', 3);
+        $this->createTarget($manager, $m3_5, 'Reports of at least 2 new conservation financing mechanisms developed', 4);
+
+        $this->createTask($manager, $m3_5, '3.5.1 Education & Health replication playbook', 'Document the Makame Education and Health models into a replication playbook framework while preparing Makame WMA to fully own these programs beyond Honeyguide\'s support.', TaskStatus::TODO, TaskPriority::HIGH, 0, $glad);
+        $this->createTask($manager, $m3_5, '3.5.2 Kamitei Education replication', 'Replicate the Kamitei Education program into Mbomipa, Waga and Ruvuma 5 WMAs, ensuring WMA ownership and financial contributions.', TaskStatus::TODO, TaskPriority::HIGH, 1, $glad);
+        $this->createTask($manager, $m3_5, '3.5.3 Agriculture & microcredit pilots', 'Explore and pilot Agriculture and microcredit initiatives that can be integrated into WMA livelihood portfolios and scaled as community-owned models.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, $glad);
+        $this->createTask($manager, $m3_5, '3.5.4 Livelihood programs inventory', 'Build a detailed, research-backed inventory of at least 10 livelihood-improvement programs suitable for rural WMA communities.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, $glad);
+        $this->createTask($manager, $m3_5, '3.5.5 New financing models (CTFs, etc.)', 'Co-design at least 2 new financing models (CTFs, HWC insurance, BD credits etc) for WMAs.', TaskStatus::TODO, TaskPriority::MEDIUM, 4, $glad);
+
+        // --- Milestone 3.6: Honeyguide Learning Hub ---
+        $m3_6 = new Milestone();
+        $m3_6->setProject($projectC);
+        $m3_6->setName('3.6 Honeyguide Learning Hub');
+        $m3_6->setDescription("Establish the Honeyguide Learning Platform with a community-driven, project-based approach, featuring an online system, collaboration tools, and interactive learning activities.");
+        $m3_6->setStatus(MilestoneStatus::OPEN);
+        $m3_6->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m3_6);
+        $this->createTarget($manager, $m3_6, 'A repository of Honeyguide lessons and courses (PDFs, videos etc)', 0);
+        $this->createTarget($manager, $m3_6, 'Online self-paced learning courses', 1);
+        $this->createTarget($manager, $m3_6, 'Monitoring tools to measure learning uptake and changes', 2);
+
+        $this->createTask($manager, $m3_6, '3.6.1 Knowledge repository', 'Research and development of a repository of tools, knowledge, and information, including videos, PDFs, and Google Docs.', TaskStatus::TODO, TaskPriority::MEDIUM, 0, null);
+        $this->createTask($manager, $m3_6, '3.6.2 Online courses & monitoring', 'Design online courses and sessions for both individual and group learning, incorporating monitoring mechanisms to track uptake and learning progress.', TaskStatus::TODO, TaskPriority::MEDIUM, 1, null);
+
+        // ============================================
+        // PROJECT D: Monitoring, Evaluation & Learning
+        // ============================================
+        $projectD = new Project();
+        $projectD->setName('D. Monitoring, Evaluation & Learning');
+        $projectD->setDescription('Strengthen M&E systems, data management, GIS and mapping services aligned with SP26.');
+        $projectD->setStatus(ProjectStatus::ACTIVE);
+        $projectD->setOwner($adminUser);
+        $projectD->setStartDate(new \DateTimeImmutable('2026-01-01'));
+        $projectD->setEndDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($projectD);
+
+        $this->addMember($manager, $projectD, $adminUser, $projectManager);
+        $this->addMember($manager, $projectD, $daudi, $projectMember);
+        $this->addMember($manager, $projectD, $michael, $projectMember);
+
+        // --- Milestone 4.1: M&E ---
+        $m4_1 = new Milestone();
+        $m4_1->setProject($projectD);
+        $m4_1->setName('4.1 M&E');
+        $m4_1->setDescription("Strengthened the Monitoring and Evaluation (M&E) system and data management framework to align with SP26, ensuring greater simplicity, accessibility, and usability.");
+        $m4_1->setStatus(MilestoneStatus::OPEN);
+        $m4_1->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m4_1);
+        $this->createTarget($manager, $m4_1, 'Updated functional data tracking tools for WMA indicators of success, accessible with sustainability score', 0);
+        $this->createTarget($manager, $m4_1, 'Developed Project Impact evaluation tool', 1);
+        $this->createTarget($manager, $m4_1, 'Data reflecting Honeyguide\'s contribution to national strategy', 2);
+        $this->createTarget($manager, $m4_1, 'Evaluation reports for SP26 strategic plan review, assessments for Northern & Southern WMAs HWC', 3);
+        $this->createTarget($manager, $m4_1, 'Survey report on narrative change measuring community, stakeholder, and government perceptions', 4);
+        $this->createTarget($manager, $m4_1, 'Quarterly data updated and dashboards in Google Drive and Power BI', 5);
+        $this->createTarget($manager, $m4_1, 'At least one forum with WMA leaders/managers for feedback', 6);
+        $this->createTarget($manager, $m4_1, 'Quarterly presentation on project progress', 7);
+        $this->createTarget($manager, $m4_1, 'Quarterly consolidation of organization program reports', 8);
+
+        $this->createTask($manager, $m4_1, '4.1.1 M&E tools & systems design', 'Design, Develop, and Implementation of M&E Tools and Systems.', TaskStatus::TODO, TaskPriority::HIGH, 0, $daudi);
+        $this->createTask($manager, $m4_1, '4.1.2 Program impacts & evaluation', 'Program Impacts and Evaluation.', TaskStatus::TODO, TaskPriority::HIGH, 1, $daudi);
+        $this->createTask($manager, $m4_1, '4.1.3 M&E capacity building', 'M&E Capacity Building for WMAs and partners (Training, Mentorship, and Coaching).', TaskStatus::TODO, TaskPriority::MEDIUM, 2, $daudi);
+        $this->createTask($manager, $m4_1, '4.1.4 Quarterly data quality & reports', 'Ensure accurate, consistent, quality data and reports quarterly.', TaskStatus::TODO, TaskPriority::HIGH, 3, $daudi);
+        $this->createTask($manager, $m4_1, '4.1.5 Ecological monitoring & evidence', 'Ecological Monitoring and Evidence Generation.', TaskStatus::TODO, TaskPriority::MEDIUM, 4, $daudi);
+
+        // --- Milestone 4.2: GIS and Mapping ---
+        $m4_2 = new Milestone();
+        $m4_2->setProject($projectD);
+        $m4_2->setName('4.2 GIS and Mapping');
+        $m4_2->setDescription("Enhance and streamline GIS and mapping services to produce essential maps for field operations and reporting needs.");
+        $m4_2->setStatus(MilestoneStatus::OPEN);
+        $m4_2->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m4_2);
+        $this->createTarget($manager, $m4_2, 'Well organized, updated and accessible GIS data for programs use', 0);
+        $this->createTarget($manager, $m4_2, 'Developed template and trained WMA managers on satellite image data analysis and vegetation index query', 1);
+        $this->createTarget($manager, $m4_2, 'Developed specific WMA basemaps for reporting (incident and coverage)', 2);
+        $this->createTarget($manager, $m4_2, 'Story Maps to support Honeyguide communications', 3);
+        $this->createTarget($manager, $m4_2, 'Consistent, professional-quality maps support communication, M&E, and reporting', 4);
+
+        $this->createTask($manager, $m4_2, '4.2.1 GIS maps & tools for project areas', 'Develop GIS maps and tools for all project areas to include all potential information for investment and protection.', TaskStatus::TODO, TaskPriority::HIGH, 0, $michael);
+        $this->createTask($manager, $m4_2, '4.2.2 Map making & navigation capacity', 'Establishing Capacity for Map Making and Navigation to Support Honeyguide Initiatives.', TaskStatus::TODO, TaskPriority::MEDIUM, 1, $michael);
+
+        // ============================================
+        // PROJECT E: Special Programs
+        // ============================================
+        $projectE = new Project();
+        $projectE->setName('E. Special Programs');
+        $projectE->setDescription('K9 Unit operations and Rubondo Chimpanzee Habituation Project.');
+        $projectE->setStatus(ProjectStatus::ACTIVE);
+        $projectE->setOwner($adminUser);
+        $projectE->setStartDate(new \DateTimeImmutable('2026-01-01'));
+        $projectE->setEndDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($projectE);
+
+        $this->addMember($manager, $projectE, $adminUser, $projectManager);
+        $this->addMember($manager, $projectE, $meleck, $projectMember);
+
+        // --- Milestone 5.1: Honeyguide K9 Unit ---
+        $m5_1 = new Milestone();
+        $m5_1->setProject($projectE);
+        $m5_1->setName('5.1 Honeyguide K9 Unit');
+        $m5_1->setDescription("Expanding the impact and reach of Honeyguide's K9 unit for combatting wildlife crime in partnership with TANAPA, TAWA and other conservation partners.");
+        $m5_1->setStatus(MilestoneStatus::OPEN);
+        $m5_1->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m5_1);
+        $this->createTarget($manager, $m5_1, 'Monthly K9 unit reports and quarterly stories', 0);
+        $this->createTarget($manager, $m5_1, 'MR training center developed and approved', 1);
+        $this->createTarget($manager, $m5_1, 'K9 medical plan and evacuation protocol in place with vaccination and treatment schedules', 2);
+
+        $this->createTask($manager, $m5_1, '5.1.1 Maintain 24/7 standby K9 unit', 'Maintaining a standby canine unit that is 24/7 ready to respond to all calls in our working areas.', TaskStatus::TODO, TaskPriority::HIGH, 0, $meleck);
+        $this->createTask($manager, $m5_1, '5.1.2 Strengthen K9 operations & reporting', 'Strengthening K9 unit operations and reporting.', TaskStatus::TODO, TaskPriority::HIGH, 1, $meleck);
+        $this->createTask($manager, $m5_1, '5.1.3 HGF-Kuru-Manyara collaboration', 'Strengthen collaboration between HGF, Kuru and Manyara Board of Trustee.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, $meleck);
+
+        // --- Milestone 5.2: Rubondo Chimpanzee Habituation ---
+        $m5_2 = new Milestone();
+        $m5_2->setProject($projectE);
+        $m5_2->setName('5.2 Rubondo Chimpanzee Habituation');
+        $m5_2->setDescription("Support Rubondo National Park's chimpanzee habituation project to improve chimps' visibility and contact for tourism experience.");
+        $m5_2->setStatus(MilestoneStatus::OPEN);
+        $m5_2->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m5_2);
+        $this->createTarget($manager, $m5_2, 'Sightings above 100%, visibility 8-12m and 3hrs:45m in Northern Chimps subgroup', 0);
+        $this->createTarget($manager, $m5_2, 'Sightings above 50%, visibility 10-15m and 1hr in Southern Chimps subgroup', 1);
+        $this->createTarget($manager, $m5_2, '20km+ new trails in Southern Rubondo identified and cleared', 2);
+        $this->createTarget($manager, $m5_2, '5 Chimpanzee individuals identified and documented', 3);
+        $this->createTarget($manager, $m5_2, '17 chimp trackers trained on guiding techniques, 1st Aid, Navigation, and Botany', 4);
+        $this->createTarget($manager, $m5_2, '7 Community trackers attended English courses', 5);
+        $this->createTarget($manager, $m5_2, '7 community trackers equipped with Licence D', 6);
+        $this->createTarget($manager, $m5_2, '4-year action plan report developed and Reviewed MoU between HGF and TANAPA', 7);
+        $this->createTarget($manager, $m5_2, 'New marketing materials for Rubondo chimp products', 8);
+
+        $this->createTask($manager, $m5_2, '5.2.1 Northern chimps habituation', 'Continued habituation of the northern chimps sub-group.', TaskStatus::TODO, TaskPriority::HIGH, 0, $meleck);
+        $this->createTask($manager, $m5_2, '5.2.2 Southern chimps mapping & monitoring', 'Start habituating the southern chimp subgroup through mapping and monitoring.', TaskStatus::TODO, TaskPriority::HIGH, 1, $meleck);
+        $this->createTask($manager, $m5_2, '5.2.3 Chimp tourism & tracker training', 'Strengthen chimpanzee tourism through habituation and tracker training.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, $meleck);
+        $this->createTask($manager, $m5_2, '5.2.4 Marketing with TANAPA', 'Improve marketing and advertising of the Chimp product with TANAPA.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, $meleck);
+        $this->createTask($manager, $m5_2, '5.2.5 New 4-year action plan', 'Develop a new 4-year action plan that includes a diversified fundraising strategy.', TaskStatus::TODO, TaskPriority::HIGH, 4, $meleck);
+
+        // ============================================
+        // PROJECT F: Narrative Change & Strategic Influence
+        // ============================================
+        $projectF = new Project();
+        $projectF->setName('F. Narrative Change & Strategic Influence');
+        $projectF->setDescription('Goal 2: Narrative change and strategic influence through public awareness, stakeholder perception, policy, regional networks, and capacity building.');
+        $projectF->setStatus(ProjectStatus::ACTIVE);
+        $projectF->setOwner($adminUser);
+        $projectF->setStartDate(new \DateTimeImmutable('2026-01-01'));
+        $projectF->setEndDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($projectF);
+
+        $this->addMember($manager, $projectF, $adminUser, $projectManager);
+
+        // --- Milestone 6.1: Public Awareness ---
+        $m6_1 = new Milestone();
+        $m6_1->setProject($projectF);
+        $m6_1->setName('6.1 Public Awareness');
+        $m6_1->setDescription("Develop a smart communication strategies, providing a structured approach to evaluate progress, measure outcomes, and determine whether desired goals have been achieved.");
+        $m6_1->setStatus(MilestoneStatus::OPEN);
+        $m6_1->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m6_1);
+        $this->createTarget($manager, $m6_1, '10 TV shows on WMA related issues', 0);
+        $this->createTarget($manager, $m6_1, '3 radio stations broadcasting at local level on WMA issues', 1);
+        $this->createTarget($manager, $m6_1, '10 WMAs independently posting on social media', 2);
+
+        $this->createTask($manager, $m6_1, '6.1.1 National & local media awareness', 'National and local media and general public awareness.', TaskStatus::TODO, TaskPriority::HIGH, 0, null);
+
+        // --- Milestone 6.2: Stakeholder Perception ---
+        $m6_2 = new Milestone();
+        $m6_2->setProject($projectF);
+        $m6_2->setName('6.2 Stakeholder Perception');
+        $m6_2->setDescription("Develop a stakeholder narrative benchmark tool and test.");
+        $m6_2->setStatus(MilestoneStatus::OPEN);
+        $m6_2->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m6_2);
+        $this->createTarget($manager, $m6_2, 'Benchmarking tool tested', 0);
+
+        $this->createTask($manager, $m6_2, '6.2.1 Narrative benchmark assessment', 'Stakeholder narrative benchmark assessment.', TaskStatus::TODO, TaskPriority::MEDIUM, 0, null);
+
+        // --- Milestone 6.3: Policy ---
+        $m6_3 = new Milestone();
+        $m6_3->setProject($projectF);
+        $m6_3->setName('6.3 Policy');
+        $m6_3->setDescription("Initiate and facilitate a forum for Advocacy and policy reform.");
+        $m6_3->setStatus(MilestoneStatus::OPEN);
+        $m6_3->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m6_3);
+        $this->createTarget($manager, $m6_3, '1x Plan and budget developed with clear roles of network team, clear goals, monitoring and outcomes developed and shared', 0);
+        $this->createTarget($manager, $m6_3, '4x Quarterly Reports developed', 1);
+
+        $this->createTask($manager, $m6_3, '6.3.1 Policy network & facilitation', 'Policy network and facilitation.', TaskStatus::TODO, TaskPriority::MEDIUM, 0, null);
+
+        // --- Milestone 6.4: Regional Networks ---
+        $m6_4 = new Milestone();
+        $m6_4->setProject($projectF);
+        $m6_4->setName('6.4 Regional Networks');
+        $m6_4->setDescription("Engage with regional CLC networks to continue to share Honeyguide tools and approaches.");
+        $m6_4->setStatus(MilestoneStatus::OPEN);
+        $m6_4->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m6_4);
+        $this->createTarget($manager, $m6_4, 'Attended BCC conference', 0);
+        $this->createTarget($manager, $m6_4, 'Engaged in quarterly CLC network calls', 1);
+
+        $this->createTask($manager, $m6_4, '6.4.1 Regional CLC narrative', 'Regional narrative on CLC.', TaskStatus::TODO, TaskPriority::LOW, 0, null);
+
+        // --- Milestone 6.5: Capacity Building ---
+        $m6_5 = new Milestone();
+        $m6_5->setProject($projectF);
+        $m6_5->setName('6.5 Capacity Building');
+        $m6_5->setDescription("Building capacity in HGF for policy and narrative change.");
+        $m6_5->setStatus(MilestoneStatus::OPEN);
+        $m6_5->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m6_5);
+        $this->createTarget($manager, $m6_5, '2 key persons trained in advocacy and media', 0);
+
+        $this->createTask($manager, $m6_5, '6.5.1 Advocacy & media training', 'Training and equipment for advocacy and media teams.', TaskStatus::TODO, TaskPriority::MEDIUM, 0, null);
+
+        // ============================================
+        // PROJECT G: Finance and Admin
+        // ============================================
+        $projectG = new Project();
+        $projectG->setName('G. Finance and Admin');
+        $projectG->setDescription('Financial management, HR, IT infrastructure, asset/risk management, and workshop operations.');
+        $projectG->setStatus(ProjectStatus::ACTIVE);
+        $projectG->setOwner($adminUser);
+        $projectG->setStartDate(new \DateTimeImmutable('2026-01-01'));
+        $projectG->setEndDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($projectG);
+
+        $this->addMember($manager, $projectG, $adminUser, $projectManager);
+
+        // --- Milestone 7.1: Financial Management ---
+        $m7_1 = new Milestone();
+        $m7_1->setProject($projectG);
+        $m7_1->setName('7.1 Financial Management');
+        $m7_1->setDescription("Strengthen Financial Management Systems and Procedures to ensure efficiency, transparency, and accountability.");
+        $m7_1->setStatus(MilestoneStatus::OPEN);
+        $m7_1->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m7_1);
+        $this->createTarget($manager, $m7_1, 'Training on the Financial and Procurement Manual in use', 0);
+        $this->createTarget($manager, $m7_1, 'Staff trained on financial systems and reporting', 1);
+        $this->createTarget($manager, $m7_1, 'An automated/digitized finance system reduces errors and delays', 2);
+        $this->createTarget($manager, $m7_1, 'Procurement Manual developed and approved by the board', 3);
+        $this->createTarget($manager, $m7_1, 'Transparent, competitive, and compliant procurement system operational', 4);
+        $this->createTarget($manager, $m7_1, 'Stronger donor confidence due to improved accountability and compliance', 5);
+
+        $this->createTask($manager, $m7_1, '7.1.1 Finance & procurement manual awareness', 'Awareness of finance and procurement manual procedures and practices.', TaskStatus::TODO, TaskPriority::HIGH, 0, null);
+        $this->createTask($manager, $m7_1, '7.1.2 Internal audit & compliance', 'Strengthen internal audit and compliance mechanisms and follow up on Audit recommendations.', TaskStatus::TODO, TaskPriority::HIGH, 1, null);
+        $this->createTask($manager, $m7_1, '7.1.3 Donor-specific dashboards & automation', 'Enhance financial reporting by introducing donor-specific dashboards and automating report generation.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, null);
+        $this->createTask($manager, $m7_1, '7.1.4 Long-term financial planning', 'Strategic long-term financial planning.', TaskStatus::TODO, TaskPriority::HIGH, 3, null);
+        $this->createTask($manager, $m7_1, '7.1.5 Budget & cashflow monitoring', 'Annual Budget and Cashflow development and monitoring.', TaskStatus::TODO, TaskPriority::HIGH, 4, null);
+        $this->createTask($manager, $m7_1, '7.1.6 e-Asset & e-Procurement rollout', 'Roll out e-Asset management (Asset lists, regular inventory, valuation, security, insurance) and improve e-procurement system within the finance system.', TaskStatus::TODO, TaskPriority::MEDIUM, 5, null);
+
+        // --- Milestone 7.2: HR Management ---
+        $m7_2 = new Milestone();
+        $m7_2->setProject($projectG);
+        $m7_2->setName('7.2 HR Management');
+        $m7_2->setDescription("To strengthen HR foundations by improving systems, structures, and culture moving from the current baseline to a significantly higher level of efficiency by the end of 2026.");
+        $m7_2->setStatus(MilestoneStatus::OPEN);
+        $m7_2->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m7_2);
+        $this->createTarget($manager, $m7_2, 'Job profiles and grades finalized; Competency matrix approved; HR framework published', 0);
+        $this->createTarget($manager, $m7_2, '100% of staff appraised bi-annually; 2 training sessions and mentorship program implemented', 1);
+        $this->createTarget($manager, $m7_2, 'Succession plan for executives completed; 3 departmental pipelines developed', 2);
+        $this->createTarget($manager, $m7_2, '2 leadership workshops delivered; 100% managers trained in decision-making and coaching', 3);
+        $this->createTarget($manager, $m7_2, '1 culture survey conducted; Recognition program launched; Engagement index improved by 15%', 4);
+        $this->createTarget($manager, $m7_2, 'Data protection policy and registers developed; All staff trained on compliance', 5);
+
+        $this->createTask($manager, $m7_2, '7.2.1 Workforce planning & job evaluation', 'Workforce Planning, Compensation and Benefits – Develop job profiles, competency models, and conduct a comprehensive job evaluation to establish clear job grades.', TaskStatus::TODO, TaskPriority::HIGH, 0, null);
+        $this->createTask($manager, $m7_2, '7.2.2 Performance management improvement', 'Strengthen the performance management system and support employee development through training, mentorship, and cross-department exposure.', TaskStatus::TODO, TaskPriority::HIGH, 1, null);
+        $this->createTask($manager, $m7_2, '7.2.3 Staff training & development', 'Identify organization development priority and ensure implementation of staff development activities and measure its impact.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, null);
+        $this->createTask($manager, $m7_2, '7.2.4 HRIS integration & consolidation', 'Automate all HR processes and consolidate different HR systems to one system.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, null);
+        $this->createTask($manager, $m7_2, '7.2.5 Culture & engagement improvement', 'Launch engagement programs with surveys, accountability initiatives, recognition schemes, and a strong Employer Value Proposition.', TaskStatus::TODO, TaskPriority::MEDIUM, 4, null);
+        $this->createTask($manager, $m7_2, '7.2.6 HR compliance & data protection', 'Implement a personal data protection compliance program with policies, training, registers, and clear oversight roles.', TaskStatus::TODO, TaskPriority::MEDIUM, 5, null);
+
+        // --- Milestone 7.3: IT ---
+        $m7_3 = new Milestone();
+        $m7_3->setProject($projectG);
+        $m7_3->setName('7.3 IT');
+        $m7_3->setDescription("Strengthen IT infrastructure and digital tools by enhancing automation, optimizing HR and asset management processes, ensuring compliance with data protection standards, and improving system reliability.");
+        $m7_3->setStatus(MilestoneStatus::OPEN);
+        $m7_3->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m7_3);
+        $this->createTarget($manager, $m7_3, 'All five core modules (Leave, Payroll, Performance, Assets, M&E) developed, tested, and deployed', 0);
+        $this->createTarget($manager, $m7_3, 'Data Protection Policy and compliance framework fully developed, approved, and rolled out', 1);
+        $this->createTarget($manager, $m7_3, 'ICT infrastructure maintained at 95%+ uptime, with quarterly preventive maintenance and license renewals', 2);
+        $this->createTarget($manager, $m7_3, 'Shared digital workspace for WMA resources established and actively used', 3);
+
+        $this->createTask($manager, $m7_3, '7.3.1 App development (Leave, Payroll, etc.)', 'App Development – Leave, Payroll, Performance, Assets, M&E, HGF Website, Honeyguide Learning.', TaskStatus::TODO, TaskPriority::HIGH, 0, null);
+        $this->createTask($manager, $m7_3, '7.3.2 Data protection & compliance', 'Establish strong data protection measures aligned with national and international standards.', TaskStatus::TODO, TaskPriority::HIGH, 1, null);
+        $this->createTask($manager, $m7_3, '7.3.3 Tech support & maintenance', 'Deliver regular IT support for internet, hardware, software, and maintain in-house web/mobile applications. Provide IT equipment and upgrade mobile internet infrastructure.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, null);
+        $this->createTask($manager, $m7_3, '7.3.4 Collaboration & knowledge sharing', 'Create a shared digital workspace for WMA resources and support the Honeyguide Learning Initiative with platforms, tools, and knowledge-sharing systems.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, null);
+
+        // --- Milestone 7.4: Asset and Risk Management ---
+        $m7_4 = new Milestone();
+        $m7_4->setProject($projectG);
+        $m7_4->setName('7.4 Asset and Risk Management');
+        $m7_4->setDescription("Enhance and digitalize asset and risk management systems to ensure real-time accountability, proactive risk monitoring, and long-term sustainability of organizational resources.");
+        $m7_4->setStatus(MilestoneStatus::OPEN);
+        $m7_4->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m7_4);
+        $this->createTarget($manager, $m7_4, 'Digital Asset Management System (linked to finance system) operational, with quarterly automated reports and annual physical verification completed', 0);
+        $this->createTarget($manager, $m7_4, 'Comprehensive Risk Management Framework finalized and implemented, with quarterly risk review reports and updated risk register', 1);
+
+        $this->createTask($manager, $m7_4, '7.4.1 Asset management system', 'Maintain and optimize asset management system for efficiency, accountability, and sustainability.', TaskStatus::TODO, TaskPriority::MEDIUM, 0, null);
+        $this->createTask($manager, $m7_4, '7.4.2 Risk management framework', 'Strengthen organizational risk management framework and implement monitoring processes for financial, cyber, and political risks.', TaskStatus::TODO, TaskPriority::MEDIUM, 1, null);
+
+        // --- Milestone 7.5: Workshop ---
+        $m7_5 = new Milestone();
+        $m7_5->setProject($projectG);
+        $m7_5->setName('7.5 Workshop');
+        $m7_5->setDescription("Well equipped and professionally-run workshop Operations for Better Vehicle and Equipment Management.");
+        $m7_5->setStatus(MilestoneStatus::OPEN);
+        $m7_5->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m7_5);
+        $this->createTarget($manager, $m7_5, '100% of fleet serviced on schedule, with >95% operational readiness', 0);
+        $this->createTarget($manager, $m7_5, '90%+ of repairs completed within 24 hours', 1);
+        $this->createTarget($manager, $m7_5, 'Standardized checklist adopted, reducing unscheduled repairs by 15% in Q1', 2);
+        $this->createTarget($manager, $m7_5, '100% of vehicles pass safety inspections; zero workshop-related accidents', 3);
+        $this->createTarget($manager, $m7_5, '100% of workshop staff trained and adhering to SOPs by year-end', 4);
+        $this->createTarget($manager, $m7_5, 'Accurate reports submitted on time with actionable insights', 5);
+
+        $this->createTask($manager, $m7_5, '7.5.1 Fleet management & safety', 'Enhancing scheduled Workshop and vehicles by implementing a Fleet Management System, standardize Workshop Processes and Enhance Safety & Compliance Culture.', TaskStatus::TODO, TaskPriority::HIGH, 0, null);
+        $this->createTask($manager, $m7_5, '7.5.2 Zero lost-time injuries target', 'Achieve Zero Lost-Time Injuries in the workshop and for fleet operations.', TaskStatus::TODO, TaskPriority::HIGH, 1, null);
+        $this->createTask($manager, $m7_5, '7.5.3 Spare parts & lifecycle analysis', 'Analyze and consolidate spare part suppliers for bulk discounts and conduct a lifecycle cost analysis for each vehicle.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, null);
+        $this->createTask($manager, $m7_5, '7.5.4 Fuel & maintenance metrics', 'Monitor and report on key metrics: Fuel Use, Maintenance Cost per Kilometer.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, null);
+        $this->createTask($manager, $m7_5, '7.5.5 Quarterly workshop review', 'Perform quarterly internal review on workshop practices.', TaskStatus::TODO, TaskPriority::LOW, 4, null);
+
+        // ============================================
+        // PROJECT H: Communication and Fundraising
+        // ============================================
+        $projectH = new Project();
+        $projectH->setName('H. Communication and Fundraising');
+        $projectH->setDescription('Fundraising, systems/tools development, international and national communications.');
+        $projectH->setStatus(ProjectStatus::ACTIVE);
+        $projectH->setOwner($adminUser);
+        $projectH->setStartDate(new \DateTimeImmutable('2026-01-01'));
+        $projectH->setEndDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($projectH);
+
+        $this->addMember($manager, $projectH, $adminUser, $projectManager);
+
+        // --- Milestone 8.1: Fundraising ---
+        $m8_1 = new Milestone();
+        $m8_1->setProject($projectH);
+        $m8_1->setName('8.1 Fundraising');
+        $m8_1->setDescription("Design + develop systems to enhance collaborative fundraising efforts.");
+        $m8_1->setStatus(MilestoneStatus::OPEN);
+        $m8_1->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m8_1);
+        $this->createTarget($manager, $m8_1, 'Key long-term donors maintained or increased contribution, at least one donor increased support by 20%', 0);
+        $this->createTarget($manager, $m8_1, 'Funding gap for 2026 reduced by 100%', 1);
+        $this->createTarget($manager, $m8_1, 'Funding gap for 2027 reduced by 70%', 2);
+        $this->createTarget($manager, $m8_1, 'Engaged in productive discussions with at least 2 donors that can contribute >50k per year', 3);
+        $this->createTarget($manager, $m8_1, 'Responded to at least 1 large multi-year international call (>400k - Darwin)', 4);
+        $this->createTarget($manager, $m8_1, 'MOUs and agreements with partners that include joint fundraising', 5);
+        $this->createTarget($manager, $m8_1, 'Raised necessary funds to support Special Programs (K9 + Rubondo) - HWC Lab potential', 6);
+
+        $this->createTask($manager, $m8_1, '8.1.1 Top ten donor engagement', 'Strategically engage with our current top ten donors to encourage them to increase their contribution.', TaskStatus::TODO, TaskPriority::HIGH, 0, null);
+        $this->createTask($manager, $m8_1, '8.1.2 Broaden donor base', 'Broaden current donor base by actively pursuing potential donors that have an interest in Honeyguide priority areas.', TaskStatus::TODO, TaskPriority::HIGH, 1, null);
+        $this->createTask($manager, $m8_1, '8.1.3 Funding opportunities & proposals', 'Monitor and respond to active funding opportunities and calls for proposals for financial assistance.', TaskStatus::TODO, TaskPriority::HIGH, 2, null);
+        $this->createTask($manager, $m8_1, '8.1.4 Joint funding tools & agreements', 'Develop tools and agreements with key partners to streamline joint funding applications.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, null);
+        $this->createTask($manager, $m8_1, '8.1.5 Special programs funding partners', 'Strategically search for funding partners that have an interest in any of the special programs.', TaskStatus::TODO, TaskPriority::MEDIUM, 4, null);
+
+        // --- Milestone 8.2: Systems and Tool Development ---
+        $m8_2 = new Milestone();
+        $m8_2->setProject($projectH);
+        $m8_2->setName('8.2 Systems and Tool Development');
+        $m8_2->setDescription("Design and develop systems and tools (AI) for the organization to support its communications and fundraising efforts.");
+        $m8_2->setStatus(MilestoneStatus::OPEN);
+        $m8_2->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m8_2);
+        $this->createTarget($manager, $m8_2, 'Collaborative dashboard with updated information/data tracking organizational impact 2017-2025', 0);
+        $this->createTarget($manager, $m8_2, 'Shared dashboard monitoring HGF impact on national WMA strategy 2023-2033', 1);
+        $this->createTarget($manager, $m8_2, 'Active online library with easy search and retrieve functions, HGF team trained', 2);
+        $this->createTarget($manager, $m8_2, 'Monthly updating from WhatsApp groups and organizing photos on Smugmug', 3);
+
+        $this->createTask($manager, $m8_2, '8.2.1 Build comms tools capacity', 'Build capacity with new tools for comms.', TaskStatus::TODO, TaskPriority::MEDIUM, 0, null);
+        $this->createTask($manager, $m8_2, '8.2.2 Comms team data training', 'Training comms team and coaching on use and access of the data.', TaskStatus::TODO, TaskPriority::MEDIUM, 1, null);
+        $this->createTask($manager, $m8_2, '8.2.3 AI for communications', 'Design, test, and develop knowledge resource of AI for communications.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, null);
+        $this->createTask($manager, $m8_2, '8.2.4 Communications App management', 'Manage and maintain the Honeyguide Communications App, training and coach Honeyguide team to participate and update activities in the app.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, null);
+
+        // --- Milestone 8.3: Comms International ---
+        $m8_3 = new Milestone();
+        $m8_3->setProject($projectH);
+        $m8_3->setName('8.3 Comms International');
+        $m8_3->setDescription("Design and produce creative, informative materials highlighting our unique approach and impact.");
+        $m8_3->setStatus(MilestoneStatus::OPEN);
+        $m8_3->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m8_3);
+        $this->createTarget($manager, $m8_3, 'Four communication campaigns developed annually, one per quarter', 0);
+        $this->createTarget($manager, $m8_3, 'Donor Visibility Guidelines: one-page document per donor', 1);
+        $this->createTarget($manager, $m8_3, 'Annual Report produced', 2);
+        $this->createTarget($manager, $m8_3, 'Case Studies highlighting key field activities, produced quarterly', 3);
+        $this->createTarget($manager, $m8_3, 'Brochures & Presentations updated biannually', 4);
+        $this->createTarget($manager, $m8_3, 'Four 5-minute promotional videos produced annually', 5);
+        $this->createTarget($manager, $m8_3, 'Website Redesign: Honeyguide Innovation section added', 6);
+        $this->createTarget($manager, $m8_3, 'Communications Plan for 2026 created', 7);
+
+        $this->createTask($manager, $m8_3, '8.3.1 Thematic communication campaigns', 'Package and produce communication campaigns in the form of thematic areas, where each theme is supported by a data sheet and editorial (for blogs, newsletters, social media and webinars).', TaskStatus::TODO, TaskPriority::HIGH, 0, null);
+        $this->createTask($manager, $m8_3, '8.3.2 One-way communications (blogs, etc.)', 'Produce regular one-way communications (blogs, publications, newsletters, videos) and monitor views.', TaskStatus::TODO, TaskPriority::MEDIUM, 1, null);
+        $this->createTask($manager, $m8_3, '8.3.3 Two-way communications (webinars, etc.)', 'Produce material to support two-way communications (webinar, 1-1 meetings, presentations).', TaskStatus::TODO, TaskPriority::MEDIUM, 2, null);
+        $this->createTask($manager, $m8_3, '8.3.4 Website updates', 'Ongoing updates in the website with current information (introduction Honeyguide Innovation) and organizational development.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, null);
+        $this->createTask($manager, $m8_3, '8.3.5 2026 Communications plan', 'Create a 2026 Communications plan.', TaskStatus::TODO, TaskPriority::HIGH, 4, null);
+
+        // --- Milestone 8.4: Comms National ---
+        $m8_4 = new Milestone();
+        $m8_4->setProject($projectH);
+        $m8_4->setName('8.4 Comms National');
+        $m8_4->setDescription("Design, test, and develop knowledge resources to be shared both internally + externally.");
+        $m8_4->setStatus(MilestoneStatus::OPEN);
+        $m8_4->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m8_4);
+        $this->createTarget($manager, $m8_4, 'Produced quarterly newsletter in Swahili', 0);
+        $this->createTarget($manager, $m8_4, 'Weekly posts in social media and shared reports', 1);
+        $this->createTarget($manager, $m8_4, 'Posters designed and shared of Honeyguide work', 2);
+        $this->createTarget($manager, $m8_4, 'Honeyguide is live in Swahili', 3);
+
+        $this->createTask($manager, $m8_4, '8.4.1 Swahili quarterly newsletter', 'Production of Newsletter (every quarter) in Swahili with project updates and organization news.', TaskStatus::TODO, TaskPriority::MEDIUM, 0, null);
+        $this->createTask($manager, $m8_4, '8.4.2 Swahili social media posts', 'Regular social media posts in Swahili.', TaskStatus::TODO, TaskPriority::MEDIUM, 1, null);
+        $this->createTask($manager, $m8_4, '8.4.3 Honeyguide awareness posters', 'Design and develop Honeyguide awareness posters (posters to show Honeyguide work and approach) and publications in Swahili.', TaskStatus::TODO, TaskPriority::LOW, 2, null);
+        $this->createTask($manager, $m8_4, '8.4.4 Swahili website', 'Design and develop Honeyguide Swahili website and publish.', TaskStatus::TODO, TaskPriority::MEDIUM, 3, null);
+
+        // ============================================
+        // PROJECT I: Honeyguide Board Governance
+        // ============================================
+        $projectI = new Project();
+        $projectI->setName('I. Honeyguide Board Governance');
+        $projectI->setDescription('An effective board that are able to perform their roles to support and guide the organization.');
+        $projectI->setStatus(ProjectStatus::ACTIVE);
+        $projectI->setOwner($adminUser);
+        $projectI->setStartDate(new \DateTimeImmutable('2026-01-01'));
+        $projectI->setEndDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($projectI);
+
+        $this->addMember($manager, $projectI, $adminUser, $projectManager);
+
+        // --- Milestone 9.0: Honeyguide Oversight ---
+        $m9_0 = new Milestone();
+        $m9_0->setProject($projectI);
+        $m9_0->setName('9.0 Honeyguide Oversight');
+        $m9_0->setDescription("An effective board that are able to perform their roles to support and guide the organization.");
+        $m9_0->setStatus(MilestoneStatus::OPEN);
+        $m9_0->setDueDate(new \DateTimeImmutable('2026-12-31'));
+        $manager->persist($m9_0);
+        $this->createTarget($manager, $m9_0, 'At least 2 new board members recruited by end of year', 0);
+        $this->createTarget($manager, $m9_0, 'An online training course is designed and shared to the board members; all board members have completed the course', 1);
+        $this->createTarget($manager, $m9_0, 'Revised constitution in place. Onboarding procedure in place for new members', 2);
+        $this->createTarget($manager, $m9_0, 'Annual meeting dates communicated in January. 4 online board meetings held. 1 AGM held. Annual retreat of at least 2 days held', 3);
+
+        $this->createTask($manager, $m9_0, '9.1.1 Recruit diverse board members', 'Recruit additional board members that come from diverse backgrounds and support our board development plan.', TaskStatus::TODO, TaskPriority::HIGH, 0, null);
+        $this->createTask($manager, $m9_0, '9.1.2 Board training & onboarding', 'Provide the board with training materials and a training and onboarding process to build the capacity of the board members to understand their roles.', TaskStatus::TODO, TaskPriority::MEDIUM, 1, null);
+        $this->createTask($manager, $m9_0, '9.1.3 Board policies & procedures', 'Develop board guiding policies, procedures and systems that continue to aid the board\'s capability to perform their roles.', TaskStatus::TODO, TaskPriority::MEDIUM, 2, null);
+        $this->createTask($manager, $m9_0, '9.1.4 Board meetings & AGM management', 'Plan and manage all documentation and procedures for board meetings including the committees meetings, AGM and annual retreat.', TaskStatus::TODO, TaskPriority::HIGH, 3, null);
 
         // ============================================
         // TAGS
         // ============================================
-        $tagBug = $this->createTag($manager, 'bug', '#ef4444', $testUser);
-        $tagFeature = $this->createTag($manager, 'feature', '#22c55e', $testUser);
-        $tagEnhancement = $this->createTag($manager, 'enhancement', '#3b82f6', $testUser);
-        $tagDocumentation = $this->createTag($manager, 'documentation', '#8b5cf6', $adminUser);
-        $tagUrgent = $this->createTag($manager, 'urgent', '#f97316', $adminUser);
-        $tagBackend = $this->createTag($manager, 'backend', '#06b6d4', $johnDoe);
-        $tagFrontend = $this->createTag($manager, 'frontend', '#ec4899', $janeSmith);
-        $tagUI = $this->createTag($manager, 'UI', '#d946ef', $janeSmith);
-        $tagAPI = $this->createTag($manager, 'API', '#14b8a6', $johnDoe);
-        $tagSecurity = $this->createTag($manager, 'security', '#eab308', $adminUser);
-        $tagPerformance = $this->createTag($manager, 'performance', '#84cc16', $testUser);
-        $tagRefactor = $this->createTag($manager, 'refactor', '#6b7280', $testUser);
-
-        // Add tags to tasks
-        $task1->addTag($tagBackend);
-        $task1->addTag($tagFeature);
-
-        $task2->addTag($tagBackend);
-        $task2->addTag($tagSecurity);
-        $task2->addTag($tagAPI);
-
-        $task3->addTag($tagBackend);
-        $task3->addTag($tagAPI);
-
-        $task6->addTag($tagFrontend);
-        $task6->addTag($tagFeature);
-
-        $task7->addTag($tagFrontend);
-        $task7->addTag($tagUI);
-
-        $task8->addTag($tagFrontend);
-        $task8->addTag($tagUI);
-
-        $task9->addTag($tagFrontend);
-        $task9->addTag($tagFeature);
-
-        $task10->addTag($tagFrontend);
-        $task10->addTag($tagFeature);
-        $task10->addTag($tagUrgent);
-
-        $task16->addTag($tagSecurity);
-        $task16->addTag($tagBackend);
-        $task16->addTag($tagUrgent);
-
-        $task17->addTag($tagSecurity);
-        $task17->addTag($tagFeature);
-
-        $task19->addTag($tagSecurity);
-        $task19->addTag($tagBackend);
-
-        $task29->addTag($tagFrontend);
-        $task29->addTag($tagUI);
-        $task29->addTag($tagPerformance);
+        $this->createTag($manager, 'governance', '#3b82f6', $adminUser);
+        $this->createTag($manager, 'management', '#22c55e', $adminUser);
+        $this->createTag($manager, 'protection', '#ef4444', $adminUser);
+        $this->createTag($manager, 'HWC', '#f97316', $adminUser);
+        $this->createTag($manager, 'livelihoods', '#8b5cf6', $adminUser);
+        $this->createTag($manager, 'M&E', '#06b6d4', $adminUser);
+        $this->createTag($manager, 'GIS', '#14b8a6', $adminUser);
+        $this->createTag($manager, 'fundraising', '#eab308', $adminUser);
+        $this->createTag($manager, 'communications', '#ec4899', $adminUser);
+        $this->createTag($manager, 'finance', '#84cc16', $adminUser);
+        $this->createTag($manager, 'HR', '#d946ef', $adminUser);
+        $this->createTag($manager, 'IT', '#6b7280', $adminUser);
 
         $manager->flush();
+    }
+
+    private function addMember(
+        ObjectManager $manager,
+        Project $project,
+        User $user,
+        Role $role
+    ): ProjectMember {
+        $member = new ProjectMember();
+        $member->setProject($project);
+        $member->setUser($user);
+        $member->setRole($role);
+        $manager->persist($member);
+
+        return $member;
     }
 
     private function createTask(
@@ -452,13 +986,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
         $task->setStatus($status);
         $task->setPriority($priority);
         $task->setPosition($position);
-
-        // Set due date based on status
-        if ($status === TaskStatus::COMPLETED) {
-            $task->setDueDate(new \DateTimeImmutable('-' . rand(5, 30) . ' days'));
-        } else {
-            $task->setDueDate(new \DateTimeImmutable('+' . rand(5, 30) . ' days'));
-        }
+        $task->setDueDate(new \DateTimeImmutable('2026-12-31'));
 
         $manager->persist($task);
 
@@ -473,36 +1001,19 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
         return $task;
     }
 
-    private function createComment(
+    private function createTarget(
         ObjectManager $manager,
-        Task $task,
-        User $author,
-        string $content
-    ): Comment {
-        $comment = new Comment();
-        $comment->setTask($task);
-        $comment->setAuthor($author);
-        $comment->setContent($content);
-        $manager->persist($comment);
-
-        return $comment;
-    }
-
-    private function createChecklist(
-        ObjectManager $manager,
-        Task $task,
-        string $title,
-        bool $isCompleted,
+        Milestone $milestone,
+        string $description,
         int $position
-    ): TaskChecklist {
-        $checklist = new TaskChecklist();
-        $checklist->setTask($task);
-        $checklist->setTitle($title);
-        $checklist->setIsCompleted($isCompleted);
-        $checklist->setPosition($position);
-        $manager->persist($checklist);
+    ): MilestoneTarget {
+        $target = new MilestoneTarget();
+        $target->setMilestone($milestone);
+        $target->setDescription($description);
+        $target->setPosition($position);
+        $manager->persist($target);
 
-        return $checklist;
+        return $target;
     }
 
     private function createTag(

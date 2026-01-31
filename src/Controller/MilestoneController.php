@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Milestone;
+use App\Entity\MilestoneTarget;
 use App\Entity\Project;
 use App\Entity\User;
 use App\Form\MilestoneFormType;
@@ -10,6 +11,7 @@ use App\Repository\ProjectRepository;
 use App\Service\ActivityService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -126,5 +128,70 @@ class MilestoneController extends AbstractController
         }
 
         return $this->redirectToRoute('app_project_show', ['id' => $project->getId()]);
+    }
+
+    #[Route('/{id}/targets/add', name: 'app_milestone_target_add', methods: ['POST'])]
+    public function addTarget(Request $request, string $projectId, Milestone $milestone): JsonResponse
+    {
+        $project = $this->projectRepository->find($projectId);
+        if (!$project || $milestone->getProject()->getId()->toString() !== $projectId) {
+            throw $this->createNotFoundException();
+        }
+        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
+
+        $data = json_decode($request->getContent(), true);
+        $description = trim($data['description'] ?? '');
+        if (!$description) {
+            return new JsonResponse(['error' => 'Description required'], 400);
+        }
+
+        $target = new MilestoneTarget();
+        $target->setMilestone($milestone);
+        $target->setDescription($description);
+        $target->setPosition($milestone->getTargets()->count());
+        $this->entityManager->persist($target);
+        $this->entityManager->flush();
+
+        return new JsonResponse(['id' => $target->getId()->toString()]);
+    }
+
+    #[Route('/{id}/targets/{targetId}/toggle', name: 'app_milestone_target_toggle', methods: ['POST'])]
+    public function toggleTarget(string $projectId, Milestone $milestone, string $targetId): JsonResponse
+    {
+        $project = $this->projectRepository->find($projectId);
+        if (!$project || $milestone->getProject()->getId()->toString() !== $projectId) {
+            throw $this->createNotFoundException();
+        }
+        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
+
+        $target = $this->entityManager->getRepository(MilestoneTarget::class)->find($targetId);
+        if (!$target || $target->getMilestone()->getId()->toString() !== $milestone->getId()->toString()) {
+            throw $this->createNotFoundException();
+        }
+
+        $target->setCompleted(!$target->isCompleted());
+        $this->entityManager->flush();
+
+        return new JsonResponse(['completed' => $target->isCompleted()]);
+    }
+
+    #[Route('/{id}/targets/{targetId}/remove', name: 'app_milestone_target_remove', methods: ['POST'])]
+    public function removeTarget(string $projectId, Milestone $milestone, string $targetId): JsonResponse
+    {
+        $project = $this->projectRepository->find($projectId);
+        if (!$project || $milestone->getProject()->getId()->toString() !== $projectId) {
+            throw $this->createNotFoundException();
+        }
+        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
+
+        $target = $this->entityManager->getRepository(MilestoneTarget::class)->find($targetId);
+        if (!$target || $target->getMilestone()->getId()->toString() !== $milestone->getId()->toString()) {
+            throw $this->createNotFoundException();
+        }
+
+        $this->entityManager->remove($target);
+        $this->entityManager->flush();
+
+        return new JsonResponse(['removed' => true]);
     }
 }

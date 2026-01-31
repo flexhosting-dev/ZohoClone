@@ -50,10 +50,16 @@ class Milestone
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $tasks;
 
+    /** @var Collection<int, MilestoneTarget> */
+    #[ORM\OneToMany(targetEntity: MilestoneTarget::class, mappedBy: 'milestone', orphanRemoval: true, cascade: ['persist', 'remove'])]
+    #[ORM\OrderBy(['position' => 'ASC'])]
+    private Collection $targets;
+
     public function __construct()
     {
         $this->id = Uuid::uuid7();
         $this->tasks = new ArrayCollection();
+        $this->targets = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -162,5 +168,31 @@ class Milestone
             return 0;
         }
         return (int) round(($this->getCompletedTaskCount() / $total) * 100);
+    }
+
+    /** @return Collection<int, MilestoneTarget> */
+    public function getTargets(): Collection
+    {
+        return $this->targets;
+    }
+
+    public function addTarget(MilestoneTarget $target): static
+    {
+        if (!$this->targets->contains($target)) {
+            $this->targets->add($target);
+            $target->setMilestone($this);
+        }
+        return $this;
+    }
+
+    public function removeTarget(MilestoneTarget $target): static
+    {
+        $this->targets->removeElement($target);
+        return $this;
+    }
+
+    public function getCompletedTargetCount(): int
+    {
+        return $this->targets->filter(fn(MilestoneTarget $t) => $t->isCompleted())->count();
     }
 }
