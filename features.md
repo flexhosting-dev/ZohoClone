@@ -159,179 +159,30 @@ eventSource.onmessage = (event) => {
 
 ---
 
-## 3. Subtasks (Nested Tasks)
+## 3. Subtasks — Remaining Enhancements
 
-**Priority:** High
+**Priority:** Medium
 **Complexity:** Medium
-**Impact:** Enables breaking down complex tasks into manageable pieces
 
-### Overview
-Add full-featured subtasks that mirror the parent task's capabilities. Subtasks are displayed as a new tab in the task detail page/panel, next to Checklist, Comments, and Activity tabs.
+Core subtask functionality is implemented (creation, stacking panel navigation, parent chain display, depth enforcement). The following features remain.
 
-### Key Requirements
+### Completion Enhancements
+- Warning when completing a parent that has open subtasks
+- "Complete all subtasks" bulk action on parent task
 
-1. **Full Task Parity**
-   - Subtasks have identical layout and fields as parent tasks:
-     - Title, description
-     - Status (To Do, In Progress, In Review, Completed)
-     - Priority (None, Low, Medium, High)
-     - Assignees
-     - Due date, start date
-     - Tags
-     - Checklist items
-     - Comments
-     - Activity log
-   - Subtasks can be opened in the same panel/detail view as regular tasks
+### Deletion Confirmation
+- Show subtask count in delete confirmation dialog (cascade delete already works at DB level)
 
-2. **Nesting Depth**
-   - Maximum 3 levels deep:
-     ```
-     Task (Level 0)
-     +-- Subtask (Level 1)
-         +-- Sub-subtask (Level 2)
-             +-- Sub-sub-subtask (Level 3) <- Maximum depth
-     ```
-   - UI prevents creating subtasks beyond level 3
-   - Clear visual indication of nesting level
+### Subtask Reordering
+- Drag-drop reordering within the Subtasks tab
+- API endpoint: `POST /tasks/{id}/subtasks/reorder`
 
-3. **UI Location**
-   - New "Subtasks" tab in task panel (between Checklist and Comments)
-   - Tab shows count: "Subtasks (3)"
-   - Progress indicator: "2/5 completed"
-
-### UI Design
-
-**Subtasks Tab Content:**
-```
-+-------------------------------------------------------------+
-| [+ Add Subtask]                          2/5 completed       |
-+-------------------------------------------------------------+
-| [x] Design database schema                    Completed      |
-| [x] Create API endpoints                      Completed      |
-| [ ] Build frontend components                 In Progress    |
-|   +-- [ ] Create form component                  To Do       |
-|   +-- [ ] Create list component                  To Do       |
-| [ ] Write tests                                  To Do       |
-| [ ] Documentation                                To Do       |
-+-------------------------------------------------------------+
-```
-
-**Subtask Row Features:**
-- Checkbox for quick complete/uncomplete
-- Click title to open subtask in panel (replaces current content)
-- Status badge
-- Assignee avatar(s)
-- Due date (if set)
-- Nested subtasks shown indented below parent
-- Collapse/expand for nested items
-
-**Breadcrumb Navigation:**
-When viewing a subtask, show breadcrumb trail:
-```
-Project Name > Parent Task > Subtask > Current Sub-subtask
-```
-
-### Data Model
-
-**Task Entity Changes:**
-```php
-// src/Entity/Task.php
-#[ORM\ManyToOne(targetEntity: Task::class, inversedBy: 'subtasks')]
-#[ORM\JoinColumn(nullable: true)]
-private ?Task $parent = null;
-
-#[ORM\OneToMany(mappedBy: 'parent', targetEntity: Task::class, cascade: ['persist', 'remove'])]
-#[ORM\OrderBy(['position' => 'ASC'])]
-private Collection $subtasks;
-
-#[ORM\Column(type: 'integer', options: ['default' => 0])]
-private int $depth = 0;  // 0 = root task, 1-3 = subtask levels
-
-public function canHaveSubtasks(): bool
-{
-    return $this->depth < 3;
-}
-
-public function getSubtaskCount(): int { }
-public function getCompletedSubtaskCount(): int { }
-```
-
-### API Endpoints
-
-| Method | Route | Purpose |
-|--------|-------|---------|
-| GET | `/tasks/{id}/subtasks` | List subtasks for a task |
-| POST | `/tasks/{id}/subtasks` | Create subtask under task |
-| PATCH | `/tasks/{id}/parent` | Move subtask to different parent |
-| GET | `/tasks/{id}/breadcrumbs` | Get parent chain for navigation |
-
-### Behavior Rules
-
-1. **Inheritance (Optional)**
-   - Subtasks can optionally inherit milestone from parent
-   - Subtasks belong to same project as parent (enforced)
-
-2. **Completion Logic**
-   - Parent task can be completed independently of subtasks
-   - Option: "Complete all subtasks" action
-   - Option: Show warning if completing parent with open subtasks
-
-3. **Deletion**
-   - Deleting parent task deletes all subtasks (cascade)
-   - Confirmation dialog shows subtask count
-
-4. **Moving/Reordering**
-   - Subtasks can be reordered within their parent
-   - Subtasks can be promoted to root tasks
-   - Root tasks can be demoted to subtasks of another task
-   - Prevent circular references
-
-5. **Kanban Display**
-   - Subtasks do NOT appear on main kanban board
-   - Only root-level tasks shown in kanban
-   - Subtask count/progress shown on task card
-
-### Implementation Phases
-
-1. **Database & Entity**
-   - Add parent/subtasks relations to Task entity
-   - Add depth field
-   - Create migration
-
-2. **API Endpoints**
-   - CRUD for subtasks
-   - Breadcrumb endpoint
-   - Validation (depth limit, same project)
-
-3. **Subtasks Tab Component**
-   - Vue component for subtask list
-   - Inline create form
-   - Drag-drop reordering
-
-4. **Panel Navigation**
-   - Breadcrumb component
-   - Back button behavior
-   - Panel history stack
-
-5. **Task Card Integration**
-   - Show subtask progress on cards
-   - "Has subtasks" indicator
-
-### Files Affected
-
-**Backend:**
-- Modified: `src/Entity/Task.php` - Add relations and methods
-- New: `migrations/VersionXXX.php` - Add parent_id, depth columns
-- Modified: `src/Controller/TaskController.php` - Subtask endpoints
-- Modified: `src/Repository/TaskRepository.php` - Subtask queries
-
-**Frontend:**
-- New: `assets/vue/components/SubtasksEditor.js` - Subtasks tab component
-- New: `templates/task/_subtasks_vue.html.twig` - Vue mount point
-- Modified: `templates/task/_panel.html.twig` - Add Subtasks tab
-- Modified: `templates/task/show.html.twig` - Add Subtasks tab
-- Modified: `templates/task/_card.html.twig` - Show subtask count
-- Modified: `assets/vue/components/TaskCard.js` - Subtask indicator
+### Promotion & Demotion
+- Promote a subtask to a root-level task (remove parent)
+- Demote a root task to become a subtask of another task
+- Move a subtask to a different parent
+- API endpoint: `PATCH /tasks/{id}/parent`
+- Circular reference prevention when re-parenting
 
 ---
 
