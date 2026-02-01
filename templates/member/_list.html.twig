@@ -1,6 +1,7 @@
 {# Members List Partial #}
 <div class="space-y-6">
     {# Invite Form #}
+    {% if canManageMembers|default(false) %}
     <div class="bg-white shadow rounded-lg p-4">
         <h4 class="text-sm font-semibold text-gray-900 mb-4">Invite a new member</h4>
         <form action="{{ path('app_member_invite', {id: project.id}) }}" method="post" class="flex items-end gap-4">
@@ -25,6 +26,7 @@
             </button>
         </form>
     </div>
+    {% endif %}
 
     {# Members List #}
     <div class="bg-white shadow rounded-lg">
@@ -58,6 +60,7 @@
                                 </div>
                             </div>
                             <div class="flex items-center space-x-4">
+                                {% if canManageMembers|default(false) %}
                                 <form action="{{ path('app_member_update_role', {id: project.id, memberId: member.id}) }}" method="post" class="flex items-center">
                                     <select name="role" onchange="this.form.submit()"
                                             class="rounded-md border-0 py-1 pl-3 pr-8 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary-600 sm:text-sm">
@@ -75,6 +78,11 @@
                                         </svg>
                                     </button>
                                 </form>
+                                {% else %}
+                                <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                                    {{ member.role.name }}
+                                </span>
+                                {% endif %}
                             </div>
                         </div>
                         <p class="mt-2 text-xs text-gray-500">Joined {{ member.joinedAt|date('M d, Y') }}</p>

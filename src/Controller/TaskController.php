@@ -17,7 +17,10 @@ use App\Repository\TaskRepository;
 use App\Repository\UserRepository;
 use App\Repository\AttachmentRepository;
 use App\Service\ActivityService;
+use App\Enum\NotificationType;
 use App\Service\HtmlSanitizer;
+use App\Service\NotificationService;
+use App\Service\PermissionChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -37,6 +40,8 @@ class TaskController extends AbstractController
         private readonly ActivityService $activityService,
         private readonly HtmlSanitizer $htmlSanitizer,
         private readonly AttachmentRepository $attachmentRepository,
+        private readonly NotificationService $notificationService,
+        private readonly PermissionChecker $permissionChecker,
     ) {
     }
 
@@ -332,6 +337,7 @@ class TaskController extends AbstractController
         $user = $this->getUser();
         $recentProjects = $this->projectRepository->findByUser($user);
         $canEdit = $this->isGranted('PROJECT_EDIT', $project);
+        $canComment = $this->permissionChecker->hasPermission($user, 'comment.create', $task);
 
         $taskAttachments = $this->serializeAttachments(
             $this->attachmentRepository->findByAttachable('task', $task->getId()),
@@ -344,6 +350,7 @@ class TaskController extends AbstractController
             'project' => $project,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
             'canEdit' => $canEdit,
+            'canComment' => $canComment,
             'taskAttachments' => $taskAttachments,
         ]);
     }
@@ -450,6 +457,22 @@ class TaskController extends AbstractController
             $newStatus->label()
         );
 
+        // Notify assignees of status change
+        $notifType = $newStatus === TaskStatus::COMPLETED
+            ? NotificationType::TASK_COMPLETED
+            : NotificationType::TASK_STATUS_CHANGED;
+        foreach ($task->getAssignees() as $assignee) {
+            $this->notificationService->notify(
+                $assignee->getUser(),
+                $notifType,
+                $user,
+                'task',
+                $task->getId(),
+                $task->getTitle(),
+                ['oldStatus' => $oldStatus->label(), 'newStatus' => $newStatus->label()],
+            );
+        }
+
         $this->entityManager->flush();
 
         return $this->json([
@@ -555,6 +578,10 @@ class TaskController extends AbstractController
         $this->denyAccessUnlessGranted('PROJECT_VIEW', $project);
         $canEdit = $this->isGranted('PROJECT_EDIT', $project);
 
+        /** @var User $user */
+        $user = $this->getUser();
+        $canComment = $this->permissionChecker->hasPermission($user, 'comment.create', $task);
+
         $basePath = $request->getBasePath();
         $taskAttachments = $this->serializeAttachments(
             $this->attachmentRepository->findByAttachable('task', $task->getId()),
@@ -565,6 +592,7 @@ class TaskController extends AbstractController
             'task' => $task,
             'project' => $project,
             'canEdit' => $canEdit,
+            'canComment' => $canComment,
             'taskAttachments' => $taskAttachments,
         ]);
     }
@@ -894,6 +922,16 @@ class TaskController extends AbstractController
                 $task->getTitle(),
                 $targetUser->getFullName()
             );
+
+            $this->notificationService->notify(
+                $targetUser,
+                NotificationType::TASK_ASSIGNED,
+                $user,
+                'task',
+                $task->getId(),
+                $task->getTitle(),
+                ['projectName' => $project->getName()],
+            );
         } else {
             // Remove assignee
             $assigneeToRemove = null;
@@ -917,6 +955,16 @@ class TaskController extends AbstractController
                 $task->getId(),
                 $task->getTitle(),
                 $targetUser->getFullName()
+            );
+
+            $this->notificationService->notify(
+                $targetUser,
+                NotificationType::TASK_UNASSIGNED,
+                $user,
+                'task',
+                $task->getId(),
+                $task->getTitle(),
+                ['projectName' => $project->getName()],
             );
         }
 

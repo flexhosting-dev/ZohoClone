@@ -11,8 +11,10 @@ use App\Repository\ActivityRepository;
 use App\Repository\ProjectRepository;
 use App\Repository\RoleRepository;
 use App\Repository\TaskRepository;
+use App\Enum\Permission;
 use App\Service\ActivityService;
 use App\Service\HtmlSanitizer;
+use App\Service\PermissionChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -32,6 +34,7 @@ class ProjectController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ActivityService $activityService,
         private readonly HtmlSanitizer $htmlSanitizer,
+        private readonly PermissionChecker $permissionChecker,
     ) {
     }
 
@@ -171,6 +174,13 @@ class ProjectController extends AbstractController
             5
         );
 
+        // Permission flags for template
+        $canEditProject = $this->permissionChecker->hasPermission($user, Permission::PROJECT_EDIT, $project);
+        $canCreateMilestone = $this->permissionChecker->hasPermission($user, Permission::MILESTONE_CREATE, $project);
+        $canCreateTask = $this->permissionChecker->hasPermission($user, Permission::TASK_CREATE, $project);
+        $canManageMembers = $this->permissionChecker->hasPermission($user, Permission::PROJECT_MANAGE_MEMBERS, $project);
+        $canEditMilestone = $this->permissionChecker->hasPermission($user, Permission::MILESTONE_EDIT, $project);
+
         return $this->render('project/show.html.twig', [
             'page_title' => $project->getName(),
             'project' => $project,
@@ -189,6 +199,11 @@ class ProjectController extends AbstractController
             'nextDeadline' => $nextDeadline,
             'myTasks' => $myTasks,
             'recentActivities' => $recentActivities,
+            'canEditProject' => $canEditProject,
+            'canCreateMilestone' => $canCreateMilestone,
+            'canCreateTask' => $canCreateTask,
+            'canManageMembers' => $canManageMembers,
+            'canEditMilestone' => $canEditMilestone,
         ]);
     }
 

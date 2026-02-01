@@ -319,12 +319,12 @@
 
             {# Checklist Tab Content (Vue Component) #}
             <div class="tab-content" id="tab-checklist">
-                {% include 'task/_checklist_vue.html.twig' with {task: task} %}
+                {% include 'task/_checklist_vue.html.twig' with {task: task, canEdit: canEdit} %}
             </div>
 
             {# Comments Tab Content (Vue Component) #}
             <div class="tab-content hidden" id="tab-comments">
-                {% include 'task/_comments_vue.html.twig' with {task: task} %}
+                {% include 'task/_comments_vue.html.twig' with {task: task, canEdit: canComment|default(true)} %}
             </div>
 
             {# Activity Tab Content (Vue Component) #}

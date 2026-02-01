@@ -22,14 +22,18 @@
             </div>
 
             <div class="flex items-center space-x-2">
+                {% if canEditMilestone|default(false) %}
                 <a href="{{ path('app_milestone_edit', {projectId: project.id, id: milestone.id}) }}"
                    class="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                     Edit
                 </a>
+                {% endif %}
+                {% if canCreateTask|default(false) %}
                 <a href="{{ path('app_task_new', {milestoneId: milestone.id}) }}"
                    class="inline-flex items-center rounded-md bg-primary-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
                     Add Task
                 </a>
+                {% endif %}
             </div>
         </div>
 
@@ -42,7 +46,7 @@
                 data-vue-save-endpoint="{{ path('app_milestone_update_description', {projectId: project.id, id: milestone.id}) }}"
                 data-vue-initial-content="{{ milestone.description|default('')|e('html_attr') }}"
                 data-vue-base-path="{{ app.request.basePath }}"
-                data-vue-can-edit="true"
+                data-vue-can-edit="{{ canEditMilestone|default(false) ? 'true' : 'false' }}"
                 data-vue-show-attachments="false"
                 data-vue-initial-attachments="[]"
             >
