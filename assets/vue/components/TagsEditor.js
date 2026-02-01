@@ -282,17 +282,24 @@ export default {
                     </button>
                 </span>
 
-                <!-- Add Tag Button (inline with tags) -->
-                <span
+                <!-- Add Tag Button (inline with tags, tag shape via SVG) -->
+                <button
                     v-if="canEdit && !showInput"
-                    @click="openTagInput"
-                    class="tag-chip-add inline-flex items-center text-xs font-medium text-gray-500 pl-1.5 pr-2 cursor-pointer hover:text-gray-600 hover:border-gray-400"
+                    type="button"
+                    @click.stop="openTagInput"
+                    class="tag-chip-add cursor-pointer group"
                 >
-                    <svg class="h-3 w-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    <svg class="absolute left-0 top-0 w-full h-full" viewBox="0 0 70 20" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 1 L1 10 L10 19 L67 19 Q69 19 69 17 L69 3 Q69 1 67 1 Z" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="3 2" fill="none" class="group-hover:stroke-gray-400"/>
+                        <circle cx="11" cy="10" r="1.5" fill="white" stroke="#d1d5db" stroke-width="1" class="group-hover:stroke-gray-400"/>
                     </svg>
-                    Add
-                </span>
+                    <span class="relative flex items-center text-xs font-medium text-gray-500 group-hover:text-gray-600 pl-4 pr-2">
+                        <svg class="h-3 w-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Add
+                    </span>
+                </button>
             </div>
 
             <!-- Add Tag Input (shown on click) -->
