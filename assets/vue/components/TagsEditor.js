@@ -1,4 +1,4 @@
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue';
 
 export default {
     name: 'TagsEditor',
@@ -25,11 +25,13 @@ export default {
     setup(props) {
         const tags = ref([...props.initialTags]);
         const searchQuery = ref('');
+        const showInput = ref(false);
         const showDropdown = ref(false);
         const showColorPicker = ref(false);
         const selectedColor = ref('#3b82f6');
         const projectTags = ref([]);
         const isLoading = ref(false);
+        const searchInputRef = ref(null);
 
         const basePath = props.basePath || window.BASE_PATH || '';
 
@@ -103,6 +105,7 @@ export default {
                     tags.value.push({ ...tag });
                     searchQuery.value = '';
                     showDropdown.value = false;
+                    showInput.value = false;
                 }
             } catch (error) {
                 console.error('Error adding tag:', error);
@@ -136,6 +139,7 @@ export default {
                     searchQuery.value = '';
                     showDropdown.value = false;
                     showColorPicker.value = false;
+                    showInput.value = false;
                 }
             } catch (error) {
                 console.error('Error creating tag:', error);
@@ -163,6 +167,16 @@ export default {
             }
         };
 
+        // Show the tag input
+        const openTagInput = () => {
+            showInput.value = true;
+            nextTick(() => {
+                if (searchInputRef.value) {
+                    searchInputRef.value.focus();
+                }
+            });
+        };
+
         // Handle input focus
         const onInputFocus = () => {
             showDropdown.value = true;
@@ -185,6 +199,8 @@ export default {
             } else if (event.key === 'Escape') {
                 showDropdown.value = false;
                 showColorPicker.value = false;
+                showInput.value = false;
+                searchQuery.value = '';
             }
         };
 
@@ -200,6 +216,8 @@ export default {
             if (container && !container.contains(event.target)) {
                 showDropdown.value = false;
                 showColorPicker.value = false;
+                showInput.value = false;
+                searchQuery.value = '';
             }
         };
 
@@ -214,6 +232,7 @@ export default {
         return {
             tags,
             searchQuery,
+            showInput,
             showDropdown,
             showColorPicker,
             selectedColor,
@@ -225,10 +244,12 @@ export default {
             standardColors,
             neutralColors,
             canEdit: props.canEdit,
+            searchInputRef,
             isTagAdded,
             addTag,
             createTag,
             removeTag,
+            openTagInput,
             onInputFocus,
             onInputChange,
             onKeydown,
@@ -262,9 +283,23 @@ export default {
                 </span>
             </div>
 
-            <!-- Add Tag Input (only if canEdit) -->
-            <div v-if="canEdit" class="add-tag-container relative mt-2">
+            <!-- Add Tag Button (only if canEdit) -->
+            <span
+                v-if="canEdit && !showInput"
+                @click="openTagInput"
+                class="inline-flex items-center text-xs font-medium border-2 border-dashed border-gray-300 text-gray-500 pl-1.5 pr-2 py-0.5 cursor-pointer hover:border-gray-400 hover:text-gray-600 tag-chip"
+                style="--tag-color: transparent"
+            >
+                <svg class="h-3 w-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add
+            </span>
+
+            <!-- Add Tag Input (shown on click) -->
+            <div v-if="canEdit && showInput" class="add-tag-container relative mt-2">
                 <input
+                    ref="searchInputRef"
                     type="text"
                     v-model="searchQuery"
                     @focus="onInputFocus"
@@ -390,8 +425,8 @@ export default {
                 </div>
             </div>
 
-            <!-- Empty State -->
-            <p v-if="tags.length === 0" class="no-tags-msg text-sm text-gray-400 italic mt-2">No tags</p>
+            <!-- Empty State (only for read-only) -->
+            <p v-if="tags.length === 0 && !canEdit" class="no-tags-msg text-sm text-gray-400 italic mt-2">No tags</p>
         </div>
     `
 };
