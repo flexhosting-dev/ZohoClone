@@ -337,9 +337,9 @@ function showTab(index, save = true) {
         initGantt();
     }
 
-    // Lazy load feed when Feed tab is opened
-    if (index === 5 && !feedState.loaded && !feedState.loading) {
-        loadFeed();
+    // Reload feed every time Feed tab is opened
+    if (index === 5 && !feedState.loading) {
+        reloadFeed();
     }
 }
 
@@ -361,6 +361,28 @@ document.addEventListener('click', function(e) {
         dropdown.classList.add('hidden');
     }
 });
+
+// Reset feed state and reload from scratch
+function reloadFeed() {
+    feedState.loaded = false;
+    feedState.loading = false;
+    feedState.page = 1;
+    feedState.hasMore = true;
+
+    const listEl = document.getElementById('feed-list');
+    const contentEl = document.getElementById('feed-content');
+    const emptyEl = document.getElementById('feed-empty');
+    const endEl = document.getElementById('feed-end');
+    const loadingEl = document.getElementById('feed-loading');
+
+    if (listEl) listEl.innerHTML = '';
+    if (contentEl) contentEl.classList.add('hidden');
+    if (emptyEl) emptyEl.classList.add('hidden');
+    if (endEl) endEl.classList.add('hidden');
+    if (loadingEl) loadingEl.classList.remove('hidden');
+
+    loadFeed();
+}
 
 // Feed lazy loading and infinite scroll
 async function loadFeed(append = false) {

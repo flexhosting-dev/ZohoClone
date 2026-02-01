@@ -124,9 +124,16 @@ export default {
             }
         };
 
+        // Reload activities (reset state and fetch fresh data)
+        const reloadActivities = async () => {
+            isLoaded.value = false;
+            activities.value = [];
+            await loadActivities();
+        };
+
         // Handle custom event to trigger loading
         const handleLoadEvent = () => {
-            loadActivities();
+            reloadActivities();
         };
 
         // Auto-load if prop is set, and listen for custom event
