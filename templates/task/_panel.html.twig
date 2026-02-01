@@ -104,6 +104,8 @@
                         {{ task.priority.label }}
                     </span>
                     {% endif %}
+
+                    <span class="text-xs text-gray-400">&middot; {{ task.createdAt|date('M d, Y') }}</span>
                 </div>
             </div>
             <button type="button" onclick="closeTaskPanel()" class="ml-4 rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500">
@@ -278,10 +280,6 @@
                     <span class="text-sm text-gray-900">{{ task.milestone.name }}</span>
                     {% endif %}
                 </dd>
-            </div>
-            <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Created</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ task.createdAt|date('M d, Y') }}</dd>
             </div>
         </div>
 
