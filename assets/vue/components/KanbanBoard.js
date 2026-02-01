@@ -412,37 +412,40 @@ export default {
             quickAddAfterTask.value = null;
         };
 
+        const fillTaskDefaults = (taskData) => {
+            taskData.assignees = taskData.assignees || [];
+            taskData.tags = taskData.tags || [];
+            taskData.commentCount = taskData.commentCount || 0;
+            taskData.checklistCount = taskData.checklistCount || 0;
+            taskData.completedChecklistCount = taskData.completedChecklistCount || 0;
+            taskData.subtaskCount = taskData.subtaskCount || 0;
+            taskData.completedSubtaskCount = taskData.completedSubtaskCount || 0;
+        };
+
         const handleColumnTaskCreated = (taskData, colValue) => {
             if (taskData) {
-                // Ensure defaults for kanban card display
-                taskData.assignees = taskData.assignees || [];
-                taskData.tags = taskData.tags || [];
-                taskData.commentCount = taskData.commentCount || 0;
-                taskData.checklistCount = taskData.checklistCount || 0;
-                taskData.completedChecklistCount = taskData.completedChecklistCount || 0;
-                taskData.subtaskCount = taskData.subtaskCount || 0;
-                taskData.completedSubtaskCount = taskData.completedSubtaskCount || 0;
+                fillTaskDefaults(taskData);
                 taskData.depth = 0;
+                // Set position lower than all existing tasks in this column so it appears at top
+                const colTasks = tasksByColumn.value[colValue] || [];
+                const minPos = colTasks.length > 0 ? Math.min(...colTasks.map(t => t.position || 0)) : 0;
+                taskData.position = minPos - 1;
                 tasks.value.push(taskData);
             }
         };
 
         const handleSubtaskCreated = (taskData, parentTask) => {
             if (taskData) {
-                taskData.assignees = taskData.assignees || [];
-                taskData.tags = taskData.tags || [];
-                taskData.commentCount = taskData.commentCount || 0;
-                taskData.checklistCount = taskData.checklistCount || 0;
-                taskData.completedChecklistCount = taskData.completedChecklistCount || 0;
-                taskData.subtaskCount = taskData.subtaskCount || 0;
-                taskData.completedSubtaskCount = taskData.completedSubtaskCount || 0;
+                fillTaskDefaults(taskData);
                 taskData.parentId = parentTask.id;
                 taskData.parentChain = parentTask.title;
                 taskData.depth = (parentTask.depth || 0) + 1;
-                // Inherit milestone from parent
                 if (!taskData.milestoneId) {
                     taskData.milestoneId = parentTask.milestoneId;
                 }
+                // Position right after parent
+                const parentPos = parentTask.position || 0;
+                taskData.position = parentPos + 0.5;
                 tasks.value.push(taskData);
                 // Increment parent subtask count
                 const pi = tasks.value.findIndex(t => t.id === parentTask.id);
