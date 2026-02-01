@@ -194,12 +194,6 @@
                 {% endif %}
             </div>
 
-            {# Tags (Vue Component) - pass canEdit #}
-            <div class="mb-6">
-                <h3 class="text-sm font-medium text-gray-900 mb-2">Tags</h3>
-                {% include 'task/_tags_vue.html.twig' with {task: task, canEdit: canEdit} %}
-            </div>
-
             {# Details Grid #}
             <div class="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {# Start Date - Editable only if canEdit #}
@@ -285,6 +279,12 @@
                     <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Created</dt>
                     <dd class="mt-1 text-sm text-gray-900">{{ task.createdAt|date('M d, Y') }}</dd>
                 </div>
+            </div>
+
+            {# Tags (Vue Component) - pass canEdit #}
+            <div class="mb-6">
+                <h3 class="text-sm font-medium text-gray-900 mb-2">Tags</h3>
+                {% include 'task/_tags_vue.html.twig' with {task: task, canEdit: canEdit} %}
             </div>
         </div>
 
