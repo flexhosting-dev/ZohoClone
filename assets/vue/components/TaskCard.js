@@ -145,15 +145,13 @@ export default {
                 </svg>
             </div>
             <div class="flex items-start justify-between">
-                <h4 class="text-sm font-medium text-gray-900 flex-1">
+                <h4 class="text-sm flex-1 min-w-0 line-clamp-3">
                     <a
                         :href="taskUrl"
-                        class="hover:text-primary-600 task-link"
+                        class="font-medium text-gray-900 hover:text-primary-600 task-link"
                         :data-task-id="task.id"
                         @click="handleClick"
-                    >
-                        {{ task.title }}
-                    </a>
+                    >{{ task.title }}</a><span v-if="task.parentChain" class="text-xs text-gray-400 font-normal ml-1" :title="task.parentChain">in {{ task.parentChain }}</span>
                 </h4>
                 <span
                     class="ml-2 flex-shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"

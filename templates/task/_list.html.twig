@@ -20,13 +20,15 @@
                     <tr class="task-list-row hover:bg-gray-50 cursor-pointer"
                         data-task-id="{{ task.id }}"
                         onclick="openTaskPanel('{{ task.id }}')">
-                        <td class="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
-                            <a href="{{ path('app_task_show', {id: task.id}) }}"
-                               class="task-title text-sm font-medium text-gray-900 hover:text-primary-600 task-link"
-                               data-task-id="{{ task.id }}"
-                               onclick="event.preventDefault(); event.stopPropagation(); openTaskPanel('{{ task.id }}');">
-                                {{ task.title }}
-                            </a>
+                        <td class="py-4 pl-4 pr-3 sm:pl-6 max-w-sm">
+                            <div class="max-w-sm">
+                                <span class="line-clamp-3">
+                                    <a href="{{ path('app_task_show', {id: task.id}) }}"
+                                       class="task-title text-sm font-medium text-gray-900 hover:text-primary-600 task-link"
+                                       data-task-id="{{ task.id }}"
+                                       onclick="event.preventDefault(); event.stopPropagation(); openTaskPanel('{{ task.id }}');">{{ task.title }}</a>{% if task.parentChain %}<span class="text-xs text-gray-400 font-normal ml-1.5" title="{{ task.parentChain }}">in {{ task.parentChain }}</span>{% endif %}
+                                </span>
+                            </div>
                             {% if task.description %}
                                 <p class="task-description text-xs text-gray-500 truncate max-w-xs">{{ task.description|slice(0, 50) }}{% if task.description|length > 50 %}...{% endif %}</p>
                             {% else %}

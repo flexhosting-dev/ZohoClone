@@ -41,7 +41,8 @@
         }),
         subtaskCount: task.subtaskCount|default(0),
         completedSubtaskCount: task.completedSubtaskCount|default(0),
-        parentId: task.parent ? task.parent.id ~ '' : null
+        parentId: task.parent ? task.parent.id ~ '' : null,
+        parentChain: task.parentChain
     })|json_encode|e('html_attr') }}'
     data-vue-milestones='{{ milestones|map(m => {
         id: m.id ~ '',

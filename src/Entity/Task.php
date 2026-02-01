@@ -341,6 +341,24 @@ class Task
         return $depth;
     }
 
+    /**
+     * Returns parent titles from immediate parent up to root, joined by " in ".
+     * E.g. "Parent Title in Grandparent Title"
+     */
+    public function getParentChain(): ?string
+    {
+        if ($this->parent === null) {
+            return null;
+        }
+        $parts = [];
+        $current = $this->parent;
+        while ($current !== null) {
+            $parts[] = $current->getTitle();
+            $current = $current->getParent();
+        }
+        return implode(' in ', $parts);
+    }
+
     public function getCommentCount(): int
     {
         return $this->comments->count();
