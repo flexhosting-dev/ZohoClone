@@ -29,7 +29,6 @@ export default {
         // Trigger states
         const showMemberDropdown = ref(false);
         const showDateDropdown = ref(false);
-        const showCustomDatePicker = ref(false);
         const memberSearch = ref('');
         const members = ref([]);
         const membersLoaded = ref(false);
@@ -73,7 +72,7 @@ export default {
             if (e.key === 'Escape') {
                 showMemberDropdown.value = false;
                 showDateDropdown.value = false;
-                showCustomDatePicker.value = false;
+
                 emit('cancel');
             }
         };
@@ -117,7 +116,7 @@ export default {
             // Check for @ trigger → date dropdown
             if (val[pos - 1] === '@') {
                 showDateDropdown.value = true;
-                showCustomDatePicker.value = false;
+
                 showMemberDropdown.value = false;
                 // Remove the @ from title
                 title.value = val.slice(0, pos - 1) + val.slice(pos);
@@ -150,26 +149,21 @@ export default {
             nextTick(() => inputEl.value?.focus());
         };
 
+        const dateInputEl = ref(null);
+
         const selectQuickDate = (option) => {
             if (option.value === '__custom__') {
-                showCustomDatePicker.value = true;
                 showDateDropdown.value = false;
-                nextTick(() => {
-                    const dateInput = document.querySelector('.quick-add-date-input');
-                    dateInput?.showPicker?.();
-                    dateInput?.focus();
-                });
+                dateInputEl.value?.showPicker?.();
                 return;
             }
             selectedDueDate.value = option.value;
             showDateDropdown.value = false;
-            showCustomDatePicker.value = false;
             nextTick(() => inputEl.value?.focus());
         };
 
         const selectCustomDate = (e) => {
             selectedDueDate.value = e.target.value;
-            showCustomDatePicker.value = false;
             showDateDropdown.value = false;
             nextTick(() => inputEl.value?.focus());
         };
@@ -193,9 +187,8 @@ export default {
                         title.value = title.value.slice(0, triggerStart.value);
                         triggerStart.value = -1;
                     }
-                } else if (showDateDropdown.value || showCustomDatePicker.value) {
+                } else if (showDateDropdown.value) {
                     showDateDropdown.value = false;
-                    showCustomDatePicker.value = false;
                 } else {
                     emit('cancel');
                 }
@@ -288,8 +281,8 @@ export default {
         };
 
         return {
-            title, inputEl, selectedAssignee, selectedDueDate, selectedMilestone,
-            submitting, showMemberDropdown, showDateDropdown, showCustomDatePicker, filteredMembers,
+            title, inputEl, dateInputEl, selectedAssignee, selectedDueDate, selectedMilestone,
+            submitting, showMemberDropdown, showDateDropdown, filteredMembers,
             showMilestoneSelect, handleInput, handleKeydown, selectMember,
             removeMember, quickDateOptions, selectQuickDate, selectCustomDate, removeDate, submit
         };
@@ -339,10 +332,8 @@ export default {
                     </button>
                 </div>
 
-                <!-- Custom date picker -->
-                <div v-if="showCustomDatePicker" class="absolute z-20 top-full left-0 mt-1">
-                    <input type="date" class="quick-add-date-input text-sm border border-gray-300 rounded px-2 py-1" @change="selectCustomDate" />
-                </div>
+                <!-- Hidden date input for native picker -->
+                <input type="date" ref="dateInputEl" class="sr-only" tabindex="-1" @change="selectCustomDate" />
             </div>
 
             <!-- Chips -->

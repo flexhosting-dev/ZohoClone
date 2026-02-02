@@ -26,7 +26,6 @@ export default {
         const selectedDueDate = ref('');
         const showMemberDropdown = ref(false);
         const showDateDropdown = ref(false);
-        const showCustomDatePicker = ref(false);
         const memberSearch = ref('');
         const members = ref([]);
         const membersLoaded = ref(false);
@@ -86,7 +85,6 @@ export default {
 
             if (val[pos - 1] === '@') {
                 showDateDropdown.value = true;
-                showCustomDatePicker.value = false;
                 showMemberDropdown.value = false;
                 newTitle.value = val.slice(0, pos - 1) + val.slice(pos);
                 return;
@@ -116,26 +114,22 @@ export default {
             nextTick(() => inputEl.value?.focus());
         };
 
+        const dateInputEl = ref(null);
+
         const selectQuickDate = (option) => {
             if (option.value === '__custom__') {
-                showCustomDatePicker.value = true;
                 showDateDropdown.value = false;
-                nextTick(() => {
-                    const dateInput = inputEl.value?.closest('.subtask-smart-input')?.querySelector('.subtask-date-input');
-                    dateInput?.showPicker?.();
-                    dateInput?.focus();
-                });
+                // showPicker must be called synchronously from user gesture
+                dateInputEl.value?.showPicker?.();
                 return;
             }
             selectedDueDate.value = option.value;
             showDateDropdown.value = false;
-            showCustomDatePicker.value = false;
             nextTick(() => inputEl.value?.focus());
         };
 
         const selectCustomDate = (e) => {
             selectedDueDate.value = e.target.value;
-            showCustomDatePicker.value = false;
             showDateDropdown.value = false;
             nextTick(() => inputEl.value?.focus());
         };
@@ -204,9 +198,8 @@ export default {
                         newTitle.value = newTitle.value.slice(0, triggerStart.value);
                         triggerStart.value = -1;
                     }
-                } else if (showDateDropdown.value || showCustomDatePicker.value) {
+                } else if (showDateDropdown.value) {
                     showDateDropdown.value = false;
-                    showCustomDatePicker.value = false;
                 }
             }
         };
@@ -235,8 +228,8 @@ export default {
         return {
             subtasks, newTitle, saving, error, completedCount, addSubtask, handleKeydown, handleInput,
             openSubtask, statusClass, basePath, inputEl,
-            selectedAssignee, selectedDueDate, showMemberDropdown, showDateDropdown, showCustomDatePicker,
-            filteredMembers, selectMember, removeMember, quickDateOptions, selectQuickDate, selectCustomDate, removeDate
+            selectedAssignee, selectedDueDate, showMemberDropdown, showDateDropdown,
+            filteredMembers, selectMember, removeMember, quickDateOptions, selectQuickDate, selectCustomDate, removeDate, dateInputEl
         };
     },
 
@@ -321,10 +314,8 @@ export default {
                         </button>
                     </div>
 
-                    <!-- Custom date picker (shown after choosing "Custom date...") -->
-                    <div v-if="showCustomDatePicker" class="absolute z-20 top-full left-0 mt-1">
-                        <input type="date" class="subtask-date-input text-sm border border-gray-300 rounded px-2 py-1" @change="selectCustomDate" />
-                    </div>
+                    <!-- Hidden date input for native picker -->
+                    <input type="date" ref="dateInputEl" class="sr-only" tabindex="-1" @change="selectCustomDate" />
                 </div>
 
                 <!-- Chips -->
