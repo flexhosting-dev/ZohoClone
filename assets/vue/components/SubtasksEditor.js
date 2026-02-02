@@ -151,6 +151,12 @@ export default {
             nextTick(() => inputEl.value?.focus());
         };
 
+        const scrollInputIntoView = () => {
+            setTimeout(() => {
+                inputEl.value?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 350);
+        };
+
         const addSubtask = async () => {
             const title = newTitle.value.trim();
             if (!title || saving.value) return;
@@ -240,7 +246,7 @@ export default {
         return {
             subtasks, newTitle, saving, error, completedCount, addSubtask, handleKeydown, handleInput,
             openSubtask, statusClass, basePath, inputEl,
-            selectedAssignee, selectedDueDate, showMemberDropdown, showDateDropdown, dropUp,
+            selectedAssignee, selectedDueDate, showMemberDropdown, showDateDropdown, dropUp, scrollInputIntoView,
             filteredMembers, selectMember, removeMember, quickDateOptions, selectQuickDate, selectCustomDate, removeDate, dateInputEl
         };
     },
@@ -292,6 +298,7 @@ export default {
                                    v-model="newTitle"
                                    @input="handleInput"
                                    @keydown="handleKeydown"
+                                   @focus="scrollInputIntoView"
                                    placeholder="Add a subtask... (#assign, @date)"
                                    class="flex-1 min-w-[120px] text-sm border-0 outline-none bg-transparent p-0.5"
                                    :disabled="saving">
