@@ -26,6 +26,16 @@ export default {
         const selectedDueDate = ref('');
         const showMemberDropdown = ref(false);
         const showDateDropdown = ref(false);
+        const dropUp = ref(false);
+        const updateDropDirection = () => {
+            nextTick(() => {
+                const el = inputEl.value?.closest('.relative');
+                if (!el) return;
+                const rect = el.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                dropUp.value = spaceBelow < 200;
+            });
+        };
         const memberSearch = ref('');
         const members = ref([]);
         const membersLoaded = ref(false);
@@ -80,12 +90,14 @@ export default {
                 showMemberDropdown.value = true;
                 showDateDropdown.value = false;
                 fetchMembers();
+                updateDropDirection();
                 return;
             }
 
             if (val[pos - 1] === '@') {
                 showDateDropdown.value = true;
                 showMemberDropdown.value = false;
+                updateDropDirection();
                 newTitle.value = val.slice(0, pos - 1) + val.slice(pos);
                 return;
             }
@@ -228,7 +240,7 @@ export default {
         return {
             subtasks, newTitle, saving, error, completedCount, addSubtask, handleKeydown, handleInput,
             openSubtask, statusClass, basePath, inputEl,
-            selectedAssignee, selectedDueDate, showMemberDropdown, showDateDropdown,
+            selectedAssignee, selectedDueDate, showMemberDropdown, showDateDropdown, dropUp,
             filteredMembers, selectMember, removeMember, quickDateOptions, selectQuickDate, selectCustomDate, removeDate, dateInputEl
         };
     },
@@ -296,7 +308,7 @@ export default {
                     </div>
 
                     <!-- Member dropdown -->
-                    <div v-if="showMemberDropdown" class="absolute z-20 top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 max-h-40 overflow-y-auto">
+                    <div v-if="showMemberDropdown" class="absolute z-20 left-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 max-h-40 overflow-y-auto" :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'">
                         <div v-if="filteredMembers.length === 0" class="px-3 py-2 text-xs text-gray-400">No members found</div>
                         <button
                             v-for="member in filteredMembers"
@@ -311,7 +323,7 @@ export default {
                     </div>
 
                     <!-- Date dropdown -->
-                    <div v-if="showDateDropdown" class="absolute z-20 top-full left-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                    <div v-if="showDateDropdown" class="absolute z-20 left-0 w-44 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden" :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'">
                         <button
                             v-for="opt in quickDateOptions"
                             :key="opt.value"
