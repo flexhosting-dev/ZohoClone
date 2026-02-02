@@ -291,33 +291,26 @@ export default {
     template: `
         <div class="quick-add-card bg-white rounded-lg shadow-sm border-2 border-primary-300 p-3" @click.stop>
             <div class="relative">
-                <input
-                    ref="inputEl"
-                    v-model="title"
-                    type="text"
-                    class="w-full text-sm border-0 outline-none bg-transparent placeholder-gray-400 p-0"
-                    placeholder="Task title... (#assign, @date)"
-                    enterkeyhint="send"
-                    @input="handleInput"
-                    @keydown="handleKeydown"
-                    :disabled="submitting"
-                />
-
-                <div v-if="selectedAssignee || selectedDueDate" class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-gray-500">
-                    <span v-if="selectedAssignee" class="inline-flex items-center gap-1">
-                        Assigned to:
-                        <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 font-medium">
-                            {{ selectedAssignee.fullName }}
-                            <button type="button" class="hover:text-blue-900" @click.stop="removeMember">&times;</button>
-                        </span>
+                <div class="flex items-center flex-wrap gap-1" @click="$refs.inputEl?.focus()">
+                    <span v-if="selectedAssignee" class="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-xs whitespace-nowrap">
+                        <span class="text-blue-400">assigned to</span> {{ selectedAssignee.fullName }}
+                        <button type="button" class="hover:text-blue-900" @click.stop="removeMember">&times;</button>
                     </span>
-                    <span v-if="selectedDueDate" class="inline-flex items-center gap-1">
-                        Complete by:
-                        <span class="inline-flex items-center gap-1 rounded-full bg-green-50 text-green-700 px-2 py-0.5 font-medium">
-                            {{ selectedDueDate }}
-                            <button type="button" class="hover:text-green-900" @click.stop="removeDate">&times;</button>
-                        </span>
+                    <span v-if="selectedDueDate" class="inline-flex items-center gap-1 rounded-full bg-green-50 text-green-700 px-2 py-0.5 text-xs whitespace-nowrap">
+                        <span class="text-green-400">due by</span> {{ selectedDueDate }}
+                        <button type="button" class="hover:text-green-900" @click.stop="removeDate">&times;</button>
                     </span>
+                    <input
+                        ref="inputEl"
+                        v-model="title"
+                        type="text"
+                        class="flex-1 min-w-[100px] text-sm border-0 outline-none bg-transparent placeholder-gray-400 p-0"
+                        placeholder="Task title... (#assign, @date)"
+                        enterkeyhint="send"
+                        @input="handleInput"
+                        @keydown="handleKeydown"
+                        :disabled="submitting"
+                    />
                 </div>
 
                 <!-- Member dropdown -->
