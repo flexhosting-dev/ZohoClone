@@ -339,7 +339,7 @@
 
             {# Subtasks Tab Content (Vue Component) #}
             <div class="tab-content hidden" id="tab-subtasks">
-                {% include 'task/_subtasks_vue.html.twig' with {task: task, canEdit: canEdit} %}
+                {% include 'task/_subtasks_vue.html.twig' with {task: task, canEdit: canEdit, project: project} %}
             </div>
 
             {# Comments Tab Content (Vue Component) #}

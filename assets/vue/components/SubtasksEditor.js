@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 
 export default {
     name: 'SubtasksEditor',
@@ -8,7 +8,9 @@ export default {
         initialSubtasks: { type: Array, default: () => [] },
         basePath: { type: String, default: '' },
         canEdit: { type: Boolean, default: true },
-        maxDepthReached: { type: Boolean, default: false }
+        maxDepthReached: { type: Boolean, default: false },
+        membersUrl: { type: String, default: '' },
+        assignUrlTemplate: { type: String, default: '' }
     },
 
     setup(props) {
@@ -17,10 +19,102 @@ export default {
         const saving = ref(false);
         const error = ref('');
         const basePath = props.basePath || window.BASE_PATH || '';
+        const inputEl = ref(null);
+
+        // Smart input state
+        const selectedAssignee = ref(null);
+        const selectedDueDate = ref('');
+        const showMemberDropdown = ref(false);
+        const showDatePicker = ref(false);
+        const memberSearch = ref('');
+        const members = ref([]);
+        const membersLoaded = ref(false);
+        const triggerStart = ref(-1);
 
         const completedCount = computed(() =>
             subtasks.value.filter(s => s.status?.value === 'completed').length
         );
+
+        const filteredMembers = computed(() => {
+            if (!memberSearch.value) return members.value;
+            const q = memberSearch.value.toLowerCase();
+            return members.value.filter(m =>
+                m.fullName.toLowerCase().includes(q) || (m.email && m.email.toLowerCase().includes(q))
+            );
+        });
+
+        const fetchMembers = async () => {
+            if (membersLoaded.value || !props.membersUrl) return;
+            try {
+                const resp = await fetch(props.membersUrl, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await resp.json();
+                members.value = data.members || [];
+                membersLoaded.value = true;
+            } catch (e) {
+                console.error('Failed to fetch members:', e);
+            }
+        };
+
+        const handleInput = (e) => {
+            const val = e.target.value;
+            const pos = e.target.selectionStart;
+
+            if (val[pos - 1] === '#' && props.membersUrl) {
+                triggerStart.value = pos - 1;
+                memberSearch.value = '';
+                showMemberDropdown.value = true;
+                showDatePicker.value = false;
+                fetchMembers();
+                return;
+            }
+
+            if (val[pos - 1] === '@') {
+                showDatePicker.value = true;
+                showMemberDropdown.value = false;
+                newTitle.value = val.slice(0, pos - 1) + val.slice(pos);
+                nextTick(() => {
+                    const dateInput = inputEl.value?.closest('.subtask-smart-input')?.querySelector('.subtask-date-input');
+                    dateInput?.focus();
+                });
+                return;
+            }
+
+            if (showMemberDropdown.value && triggerStart.value >= 0) {
+                memberSearch.value = val.slice(triggerStart.value + 1, pos);
+            }
+        };
+
+        const selectMember = (member) => {
+            selectedAssignee.value = member;
+            showMemberDropdown.value = false;
+            if (triggerStart.value >= 0) {
+                const val = newTitle.value;
+                const afterTrigger = val.indexOf(' ', triggerStart.value);
+                const end = afterTrigger === -1 ? val.length : afterTrigger;
+                newTitle.value = val.slice(0, triggerStart.value) + val.slice(end);
+            }
+            triggerStart.value = -1;
+            memberSearch.value = '';
+            nextTick(() => inputEl.value?.focus());
+        };
+
+        const removeMember = () => {
+            selectedAssignee.value = null;
+            nextTick(() => inputEl.value?.focus());
+        };
+
+        const selectDate = (e) => {
+            selectedDueDate.value = e.target.value;
+            showDatePicker.value = false;
+            nextTick(() => inputEl.value?.focus());
+        };
+
+        const removeDate = () => {
+            selectedDueDate.value = '';
+            nextTick(() => inputEl.value?.focus());
+        };
 
         const addSubtask = async () => {
             const title = newTitle.value.trim();
@@ -30,18 +124,37 @@ export default {
             error.value = '';
 
             try {
+                const body = { title };
+                if (selectedDueDate.value) body.dueDate = selectedDueDate.value;
+
                 const res = await fetch(`${basePath}/tasks/${props.taskId}/subtasks`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title })
+                    body: JSON.stringify(body)
                 });
                 const data = await res.json();
                 if (!res.ok) {
                     error.value = data.error || 'Failed to create subtask';
                     return;
                 }
-                subtasks.value.push(data.subtask);
+
+                const subtaskData = data.subtask;
+
+                // Assign if selected
+                if (selectedAssignee.value && subtaskData?.id && props.assignUrlTemplate) {
+                    const assignUrl = props.assignUrlTemplate.replace('__TASK_ID__', subtaskData.id);
+                    await fetch(assignUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        body: JSON.stringify({ action: 'add', userId: selectedAssignee.value.id })
+                    });
+                }
+
+                subtasks.value.push(subtaskData);
                 newTitle.value = '';
+                selectedAssignee.value = null;
+                selectedDueDate.value = '';
+                nextTick(() => inputEl.value?.focus());
             } catch (e) {
                 error.value = 'Network error';
             } finally {
@@ -50,9 +163,21 @@ export default {
         };
 
         const handleKeydown = (e) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
+                if (showMemberDropdown.value) return;
                 addSubtask();
+            }
+            if (e.key === 'Escape') {
+                if (showMemberDropdown.value) {
+                    showMemberDropdown.value = false;
+                    if (triggerStart.value >= 0) {
+                        newTitle.value = newTitle.value.slice(0, triggerStart.value);
+                        triggerStart.value = -1;
+                    }
+                } else if (showDatePicker.value) {
+                    showDatePicker.value = false;
+                }
             }
         };
 
@@ -77,7 +202,12 @@ export default {
             return map[v] || map.todo;
         };
 
-        return { subtasks, newTitle, saving, error, completedCount, addSubtask, handleKeydown, openSubtask, statusClass, basePath };
+        return {
+            subtasks, newTitle, saving, error, completedCount, addSubtask, handleKeydown, handleInput,
+            openSubtask, statusClass, basePath, inputEl,
+            selectedAssignee, selectedDueDate, showMemberDropdown, showDatePicker,
+            filteredMembers, selectMember, removeMember, selectDate, removeDate
+        };
     },
 
     template: `
@@ -110,24 +240,61 @@ export default {
 
             <div v-if="subtasks.length === 0 && !canEdit" class="text-sm text-gray-400 italic py-4">No subtasks yet</div>
 
-            <div v-if="canEdit && !maxDepthReached" class="mt-3">
-                <div class="flex items-center gap-2">
-                    <input type="text"
-                           v-model="newTitle"
-                           @keydown="handleKeydown"
-                           placeholder="Add a subtask..."
-                           class="flex-1 text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:ring-primary-500 focus:border-primary-500"
-                           :disabled="saving">
-                    <button @click="addSubtask"
-                            :disabled="!newTitle.trim() || saving"
-                            class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <svg v-if="saving" class="animate-spin -ml-0.5 mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Add
-                    </button>
+            <div v-if="canEdit && !maxDepthReached" class="mt-3 subtask-smart-input">
+                <div class="relative">
+                    <div class="flex items-center gap-2">
+                        <input type="text"
+                               ref="inputEl"
+                               v-model="newTitle"
+                               @input="handleInput"
+                               @keydown="handleKeydown"
+                               placeholder="Add a subtask... (#assign, @date)"
+                               class="flex-1 text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:ring-primary-500 focus:border-primary-500"
+                               :disabled="saving">
+                        <button @click="addSubtask"
+                                :disabled="!newTitle.trim() || saving"
+                                class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg v-if="saving" class="animate-spin -ml-0.5 mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Add
+                        </button>
+                    </div>
+
+                    <!-- Member dropdown -->
+                    <div v-if="showMemberDropdown" class="absolute z-20 top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 max-h-40 overflow-y-auto">
+                        <div v-if="filteredMembers.length === 0" class="px-3 py-2 text-xs text-gray-400">No members found</div>
+                        <button
+                            v-for="member in filteredMembers"
+                            :key="member.id"
+                            type="button"
+                            class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-2"
+                            @click.stop="selectMember(member)"
+                        >
+                            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 text-[10px] font-medium text-white flex-shrink-0">{{ member.initials }}</span>
+                            <span class="truncate">{{ member.fullName }}</span>
+                        </button>
+                    </div>
+
+                    <!-- Date picker -->
+                    <div v-if="showDatePicker" class="absolute z-20 top-full left-0 mt-1">
+                        <input type="date" class="subtask-date-input text-sm border border-gray-300 rounded px-2 py-1" @change="selectDate" />
+                    </div>
                 </div>
+
+                <!-- Chips -->
+                <div v-if="selectedAssignee || selectedDueDate" class="flex flex-wrap gap-1.5 mt-1.5">
+                    <span v-if="selectedAssignee" class="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-xs">
+                        {{ selectedAssignee.fullName }}
+                        <button type="button" class="hover:text-blue-900" @click.stop="removeMember">&times;</button>
+                    </span>
+                    <span v-if="selectedDueDate" class="inline-flex items-center gap-1 rounded-full bg-green-50 text-green-700 px-2 py-0.5 text-xs">
+                        {{ selectedDueDate }}
+                        <button type="button" class="hover:text-green-900" @click.stop="removeDate">&times;</button>
+                    </span>
+                </div>
+
                 <p v-if="error" class="mt-1 text-xs text-red-600">{{ error }}</p>
             </div>
             <div v-if="maxDepthReached && canEdit" class="mt-3 text-xs text-gray-400 italic">Maximum nesting depth reached</div>

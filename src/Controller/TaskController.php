@@ -1018,6 +1018,14 @@ class TaskController extends AbstractController
         $subtask->setMilestone($parentTask->getMilestone());
         $subtask->setParent($parentTask);
 
+        if (!empty($data['dueDate'])) {
+            try {
+                $subtask->setDueDate(new \DateTimeImmutable($data['dueDate']));
+            } catch (\Exception $e) {
+                // Ignore invalid date
+            }
+        }
+
         $maxPosition = $this->taskRepository->findMaxPositionInMilestone($parentTask->getMilestone());
         $subtask->setPosition($maxPosition + 1);
 

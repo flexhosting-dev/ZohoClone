@@ -11,6 +11,8 @@
     data-vue-base-path="{{ app.request.basePath }}"
     data-vue-can-edit="{{ canEdit ? 'true' : 'false' }}"
     data-vue-max-depth-reached="{{ task.depth >= 2 ? 'true' : 'false' }}"
+    data-vue-members-url="{{ project is defined ? path('app_project_members_list', {projectId: project.id}) : '' }}"
+    data-vue-assign-url-template="{{ path('app_task_update_assignees', {id: '__TASK_ID__'}) }}"
 >
     <noscript>
         {% if task.subtasks|length > 0 %}

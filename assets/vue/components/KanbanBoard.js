@@ -487,29 +487,31 @@ export default {
                     @dragleave="handleColumnDragLeave($event)"
                     @drop="handleColumnDrop($event, col.value)"
                 >
-                    <!-- Toggle button -->
-                    <button type="button" class="kanban-toggle-btn" title="Toggle column"
-                        @click.stop="toggleCollapse(col.value)">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h12M10 18l-6-6 6-6"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 5v14"/>
-                        </svg>
-                    </button>
+                    <!-- Column header actions (right-aligned) -->
+                    <div class="kanban-col-actions">
+                        <button
+                            v-if="createUrl"
+                            type="button"
+                            class="kanban-col-add-btn inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/60 hover:bg-white text-gray-500 hover:text-primary-600 transition-colors"
+                            title="Quick add task"
+                            @click.stop="openColumnQuickAdd(col.value)"
+                        >
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        </button>
+                        <button type="button" class="kanban-toggle-btn" title="Toggle column"
+                            @click.stop="toggleCollapse(col.value)">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h12M10 18l-6-6 6-6"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 5v14"/>
+                            </svg>
+                        </button>
+                    </div>
 
                     <!-- Badge -->
                     <div class="kanban-badge-wrap">
                         <span class="kanban-badge" :class="col.badgeClass">
                             {{ col.label }} ({{ tasksByColumn[col.value]?.length || 0 }})
                         </span>
-                        <button
-                            v-if="createUrl"
-                            type="button"
-                            class="kanban-col-add-btn ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/60 hover:bg-white text-gray-500 hover:text-primary-600 transition-colors"
-                            title="Quick add task"
-                            @click.stop="openColumnQuickAdd(col.value)"
-                        >
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        </button>
                     </div>
 
                     <!-- Body -->
