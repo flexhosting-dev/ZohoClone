@@ -266,24 +266,14 @@ export default {
             <div v-if="canEdit && !maxDepthReached" class="mt-3 subtask-smart-input">
                 <div class="relative">
                     <div class="flex items-center gap-2">
-                        <div class="flex-1 flex items-center flex-wrap gap-1 border border-gray-300 rounded-md px-2 py-1 focus-within:ring-1 focus-within:ring-primary-500 focus-within:border-primary-500" @click="inputEl?.focus()">
-                            <span v-if="selectedAssignee" class="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-xs whitespace-nowrap">
-                                {{ selectedAssignee.fullName }}
-                                <button type="button" class="hover:text-blue-900" @click.stop="removeMember">&times;</button>
-                            </span>
-                            <span v-if="selectedDueDate" class="inline-flex items-center gap-1 rounded-full bg-green-50 text-green-700 px-2 py-0.5 text-xs whitespace-nowrap">
-                                {{ selectedDueDate }}
-                                <button type="button" class="hover:text-green-900" @click.stop="removeDate">&times;</button>
-                            </span>
-                            <input type="text"
-                                   ref="inputEl"
-                                   v-model="newTitle"
-                                   @input="handleInput"
-                                   @keydown="handleKeydown"
-                                   placeholder="Add a subtask... (#assign, @date)"
-                                   class="flex-1 min-w-[120px] text-sm border-0 outline-none bg-transparent p-0.5"
-                                   :disabled="saving">
-                        </div>
+                        <input type="text"
+                               ref="inputEl"
+                               v-model="newTitle"
+                               @input="handleInput"
+                               @keydown="handleKeydown"
+                               placeholder="Add a subtask... (#assign, @date)"
+                               class="flex-1 text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:ring-primary-500 focus:border-primary-500"
+                               :disabled="saving">
                         <button @click="addSubtask"
                                 :disabled="!newTitle.trim() || saving"
                                 class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -293,6 +283,23 @@ export default {
                             </svg>
                             Add
                         </button>
+                    </div>
+
+                    <div v-if="selectedAssignee || selectedDueDate" class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-gray-500">
+                        <span v-if="selectedAssignee" class="inline-flex items-center gap-1">
+                            Assigned to:
+                            <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 font-medium">
+                                {{ selectedAssignee.fullName }}
+                                <button type="button" class="hover:text-blue-900" @click.stop="removeMember">&times;</button>
+                            </span>
+                        </span>
+                        <span v-if="selectedDueDate" class="inline-flex items-center gap-1">
+                            Complete by:
+                            <span class="inline-flex items-center gap-1 rounded-full bg-green-50 text-green-700 px-2 py-0.5 font-medium">
+                                {{ selectedDueDate }}
+                                <button type="button" class="hover:text-green-900" @click.stop="removeDate">&times;</button>
+                            </span>
+                        </span>
                     </div>
 
                     <!-- Member dropdown -->
