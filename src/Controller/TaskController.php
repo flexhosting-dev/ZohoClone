@@ -1161,6 +1161,25 @@ class TaskController extends AbstractController
 
         $this->entityManager->persist($task);
 
+        // Auto-assign to current user if personal project
+        $assigneesData = [];
+        if ($project->isPersonal()) {
+            $assignee = new TaskAssignee();
+            $assignee->setTask($task);
+            $assignee->setUser($user);
+            $assignee->setAssignedBy($user);
+            $this->entityManager->persist($assignee);
+            $task->addAssignee($assignee);
+
+            $basePath = $request->getBasePath();
+            $assigneesData[] = [
+                'id' => $user->getId()->toString(),
+                'name' => $user->getFullName(),
+                'initials' => strtoupper(substr($user->getFirstName(), 0, 1) . substr($user->getLastName(), 0, 1)),
+                'avatar' => $user->getAvatar() ? $basePath . '/uploads/avatars/' . $user->getAvatar() : null,
+            ];
+        }
+
         $this->activityService->logTaskCreated(
             $project,
             $user,
@@ -1191,7 +1210,7 @@ class TaskController extends AbstractController
                 'dueDate' => $task->getDueDate()?->format('Y-m-d'),
                 'position' => $task->getPosition(),
                 'projectName' => $project->getName(),
-                'assignees' => [],
+                'assignees' => $assigneesData,
                 'tags' => [],
                 'commentCount' => 0,
                 'checklistCount' => 0,
