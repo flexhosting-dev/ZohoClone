@@ -2,14 +2,16 @@
 
 {% block title %}Settings - WorkFlow{% endblock %}
 
+{% set page_title = 'Settings' %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="mb-8">
+<div class="settings-page">
+    <div class="settings-header mb-8">
         <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
         <p class="mt-1 text-sm text-gray-500">Manage your account and workspace preferences</p>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="settings-cards flex flex-col gap-4">
         {# Profile & Preferences Card #}
         <a href="{{ path('app_profile') }}" class="group block bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md hover:border-primary-300 transition-all p-6">
             <div class="flex items-center gap-4">

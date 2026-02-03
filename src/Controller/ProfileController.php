@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Form\ProfileFormType;
 use App\Repository\ProjectRepository;
+use App\Service\PersonalProjectService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -28,6 +29,7 @@ class ProfileController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly SluggerInterface $slugger,
+        private readonly PersonalProjectService $personalProjectService,
         #[Autowire('%avatars_directory%')]
         private readonly string $avatarsDirectory,
     ) {
@@ -83,11 +85,18 @@ class ProfileController extends AbstractController
         $setter = 'set' . ucfirst($field);
         if (method_exists($user, $setter)) {
             $user->$setter($value ?: null);
+
+            // Update personal project name if first name changed
+            if ($field === 'firstName') {
+                $this->personalProjectService->updateProjectNameIfNeeded($user);
+            }
+
             $this->entityManager->flush();
 
             return new JsonResponse([
                 'success' => true,
                 'value' => $value,
+                'fullName' => $user->getFullName(),
                 'message' => 'Field updated successfully',
             ]);
         }
