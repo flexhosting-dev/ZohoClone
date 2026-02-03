@@ -1252,14 +1252,23 @@ POST   /settings/statuses/reorder # Reorder statuses
 - Show color indicator next to each option
 
 #### Kanban Board
-- Columns generated from active statuses
-- Column headers show status color
-- "Open" and "Closed" columns visually distinguished
-- Option to collapse all "Closed" columns
+- Each individual status becomes its own column (not grouped by Open/Closed)
+- Column headers show status name and color
+- Columns ordered by admin-defined sort order
+- Option to collapse/hide specific columns
 
 #### Filters
-- Status filter shows all custom statuses
-- Add meta-filter: "All Open" / "All Closed"
+- Status filter dropdown groups statuses by parent type:
+  ```
+  ▼ Open
+    ☐ To Do
+    ☐ In Progress
+    ☐ On Hold
+  ▼ Closed
+    ☐ Completed
+    ☐ Dropped
+  ```
+- Clicking parent type header (Open/Closed) toggles all child statuses
 - Filter chips show status color
 
 #### Task Cards/List
@@ -1333,7 +1342,7 @@ POST   /settings/statuses/reorder # Reorder statuses
 - **Empty statuses**: Require at least one Open and one Closed status
 - **Default status**: Mark one Open status as default for new tasks
 - **Kanban column order**: Allow customizing which statuses appear as columns
-- **Status transitions**: Optional: Define allowed transitions (e.g., can't go from "Done" back to "To Do")
+- **Status transitions**: Allow free movement between any statuses (including Closed → Open) since accidental closures happen
 - **Project-specific statuses**: Future enhancement - allow per-project status customization
 
 ### Example Custom Configurations
