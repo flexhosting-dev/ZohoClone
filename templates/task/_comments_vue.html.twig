@@ -1,10 +1,10 @@
 {# Comments Component - Vue Version #}
-{# Required variables: task, canEdit (optional, defaults to true) #}
+{# Required variables: task, canEdit (optional, defaults to false for security) #}
 {#
    This uses Vue for reactivity instead of vanilla JS.
    The Vue component will auto-mount on elements with data-vue-component="CommentsEditor"
 #}
-{% set canEdit = canEdit|default(true) %}
+{% set canEdit = canEdit|default(false) %}
 {% set basePath = app.request.basePath %}
 <div
     data-vue-component="CommentsEditor"

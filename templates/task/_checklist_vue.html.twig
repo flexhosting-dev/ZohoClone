@@ -1,10 +1,10 @@
 {# Checklist Component - Vue Version #}
-{# Required variables: task, canEdit (optional, defaults to true) #}
+{# Required variables: task, canEdit (optional, defaults to false for security) #}
 {#
    This uses Vue for reactivity instead of vanilla JS.
    The Vue component will auto-mount on elements with data-vue-component="ChecklistEditor"
 #}
-{% set canEdit = canEdit|default(true) %}
+{% set canEdit = canEdit|default(false) %}
 <div
     data-vue-component="ChecklistEditor"
     data-vue-task-id="{{ task.id }}"

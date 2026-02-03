@@ -1,5 +1,5 @@
 {# Task Panel Content - loaded via AJAX into off-canvas #}
-{% set canEdit = canEdit|default(true) %}
+{% set canEdit = canEdit|default(false) %}
 <div class="flex flex-col h-full" data-task-id="{{ task.id }}" data-project-id="{{ project.id }}" data-can-edit="{{ canEdit ? 'true' : 'false' }}">
     {# Header #}
     <div class="flex-shrink-0 px-6 py-4 border-b border-gray-200">
