@@ -63,7 +63,7 @@
                     {% endif %}
                     {{ notification.type.label|lower }}
                     {% if notification.entityName %}
-                        {% set url = notification.entityType == 'task' ? '/tasks/' ~ notification.entityId : (notification.entityType == 'project' ? '/projects/' ~ notification.entityId : null) %}
+                        {% set url = notification.entityType == 'task' ? path('app_task_show', {id: notification.entityId}) : (notification.entityType == 'project' ? path('app_project_show', {id: notification.entityId}) : null) %}
                         {% if url %}
                             <a href="{{ url }}" class="font-medium text-primary-600 hover:text-primary-700">{{ notification.entityName }}</a>
                         {% else %}
@@ -116,8 +116,9 @@
 </div>
 
 <script>
+var basePath = (window.BASE_PATH || '').replace(/\/+$/, '');
 function markRead(id) {
-    fetch('/notifications/' + id + '/read', { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} })
+    fetch(basePath + '/notifications/' + id + '/read', { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} })
         .then(r => r.json())
         .then(() => {
             const el = document.getElementById('notification-' + id);
@@ -130,7 +131,7 @@ function markRead(id) {
 }
 
 function markAllRead() {
-    fetch('/notifications/mark-all-read', { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} })
+    fetch(basePath + '/notifications/mark-all-read', { method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'} })
         .then(r => r.json())
         .then(() => location.reload());
 }

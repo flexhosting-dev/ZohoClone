@@ -13,12 +13,16 @@
         pollInterval = null;
     }
 
+    function basePath() {
+        return (window.BASE_PATH || '').replace(/\/+$/, '');
+    }
+
     function updateUnreadCount() {
         // Only poll if there are badge elements on the page (user is logged in)
         const badges = document.querySelectorAll('[data-notification-count]');
         if (badges.length === 0) return;
 
-        fetch('/notifications/unread-count', {
+        fetch(basePath() + '/notifications/unread-count', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin'
         })
@@ -45,7 +49,7 @@
 
     function loadRecent(container) {
         container.innerHTML = '<div class="px-4 py-8 text-center text-sm text-gray-400">Loading...</div>';
-        fetch('/notifications/recent', {
+        fetch(basePath() + '/notifications/recent', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin'
         })
@@ -102,11 +106,11 @@
     }
 
     window._markNotifRead = function (id) {
-        fetch('/notifications/' + id + '/read', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).catch(function () {});
+        fetch(basePath() + '/notifications/' + id + '/read', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).catch(function () {});
     };
 
     window._markAllNotifsRead = function () {
-        fetch('/notifications/mark-all-read', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        fetch(basePath() + '/notifications/mark-all-read', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
             .then(function () {
                 updateUnreadCount();
                 document.querySelectorAll('[data-notification-list]').forEach(function (c) { loadRecent(c); });

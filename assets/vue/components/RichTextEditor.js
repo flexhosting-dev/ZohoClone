@@ -76,7 +76,11 @@ export default {
             isSaving.value = true;
 
             const newContent = editorRef.value ? editorRef.value.innerHTML : '';
-            const endpoint = props.saveEndpoint || `${basePath}/tasks/${props.taskId}/description`;
+            // Build endpoint - prepend basePath if endpoint starts with / but not with basePath
+            let endpoint = props.saveEndpoint || `/tasks/${props.taskId}/description`;
+            if (basePath && endpoint.startsWith('/') && !endpoint.startsWith(basePath)) {
+                endpoint = basePath + endpoint;
+            }
 
             try {
                 const response = await fetch(endpoint, {
@@ -91,9 +95,25 @@ export default {
                 if (response.ok) {
                     content.value = newContent;
                     isEditing.value = false;
+                    if (typeof Toastr !== 'undefined') {
+                        Toastr.success('Saved', 'Description updated');
+                    }
+                } else {
+                    const data = await response.json().catch(() => ({}));
+                    const errorMsg = data.error || 'Failed to save description';
+                    if (typeof Toastr !== 'undefined') {
+                        Toastr.error('Error', errorMsg);
+                    } else {
+                        alert(errorMsg);
+                    }
                 }
             } catch (error) {
                 console.error('Error saving description:', error);
+                if (typeof Toastr !== 'undefined') {
+                    Toastr.error('Error', 'Failed to save description');
+                } else {
+                    alert('Failed to save description');
+                }
             } finally {
                 isSaving.value = false;
             }

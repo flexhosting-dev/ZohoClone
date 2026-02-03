@@ -121,8 +121,8 @@ class NotificationController extends AbstractController
         $entityId = $notification->getEntityId()->toString();
 
         return match ($entityType) {
-            'task' => '/tasks/' . $entityId,
-            'project' => '/projects/' . $entityId,
+            'task' => $this->generateUrl('app_task_show', ['id' => $entityId]),
+            'project' => $this->generateUrl('app_project_show', ['id' => $entityId]),
             default => null,
         };
     }
