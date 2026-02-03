@@ -249,14 +249,19 @@ export default {
 
         const handleDrop = async (event, targetIndex) => {
             event.preventDefault();
-            if (!draggedItem.value || isLoading.value) return;
+            event.stopPropagation();
 
-            const draggedId = draggedItem.value.id;
+            // Capture and immediately clear drag state to prevent double-fires
+            const dragged = draggedItem.value;
+            if (!dragged || isLoading.value) return;
+
+            draggedItem.value = null;
+            dragOverIndex.value = null;
+
+            const draggedId = dragged.id;
             const currentIndex = items.value.findIndex(i => i.id === draggedId);
 
             if (currentIndex === -1 || currentIndex === targetIndex) {
-                draggedItem.value = null;
-                dragOverIndex.value = null;
                 return;
             }
 
@@ -272,14 +277,13 @@ export default {
             itemsCopy.splice(insertIndex, 0, removed);
             items.value = itemsCopy;
 
-            draggedItem.value = null;
-            dragOverIndex.value = null;
-
             // Persist to server
             await saveOrder();
         };
 
         const saveOrder = async () => {
+            if (isLoading.value) return; // Prevent double saves
+            isLoading.value = true;
             const itemIds = items.value.map(item => item.id);
 
             try {
@@ -307,6 +311,8 @@ export default {
                 if (typeof Toastr !== 'undefined') {
                     Toastr.error('Reorder Failed', 'Could not save new order');
                 }
+            } finally {
+                isLoading.value = false;
             }
         };
 
