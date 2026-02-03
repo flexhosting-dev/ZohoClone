@@ -6,7 +6,18 @@
     data-vue-initial-subtasks='{{ task.subtasks|map(s => {
         id: s.id ~ '',
         title: s.title,
-        status: { value: s.status.value, label: s.status.label }
+        status: { value: s.status.value, label: s.status.label },
+        dueDate: s.dueDate ? s.dueDate|date('Y-m-d') : null,
+        assignees: s.assignees|map(a => {
+            id: a.id ~ '',
+            user: {
+                id: a.user.id ~ '',
+                firstName: a.user.firstName,
+                lastName: a.user.lastName,
+                fullName: a.user.fullName,
+                avatar: a.user.avatar ? app.request.basePath ~ '/uploads/avatars/' ~ a.user.avatar : null
+            }
+        })
     })|json_encode|e('html_attr') }}'
     data-vue-base-path="{{ app.request.basePath }}"
     data-vue-can-edit="{{ canEdit ? 'true' : 'false' }}"

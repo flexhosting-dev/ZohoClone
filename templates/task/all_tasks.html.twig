@@ -3,6 +3,9 @@
 {% block title %}All Tasks - WorkFlow{% endblock %}
 
 {% block content %}
+{# Determine filtered project ID: only if exactly one project is filtered #}
+{% set filteredProjectId = filter.projectIds|length == 1 ? filter.projectIds|first : '' %}
+
 {% include 'task/_task_page.html.twig' with {
     pageTitle: 'All Tasks',
     pageDescription: isAdmin ? 'All tasks in the system.' : 'All tasks from your projects.',
@@ -19,6 +22,8 @@
     showProjectFilter: true,
     storageKey: 'all_tasks_view',
     showHeader: true,
-    showAddButton: false
+    showAddButton: false,
+    availableProjects: editableProjects,
+    filteredProjectId: filteredProjectId
 } %}
 {% endblock %}

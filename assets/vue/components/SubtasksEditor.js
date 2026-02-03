@@ -189,6 +189,22 @@ export default {
                         headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                         body: JSON.stringify({ action: 'add', userId: selectedAssignee.value.id })
                     });
+                    // Add assignee to subtask data for immediate display
+                    subtaskData.assignees = [{
+                        id: selectedAssignee.value.id,
+                        user: {
+                            id: selectedAssignee.value.id,
+                            firstName: selectedAssignee.value.fullName.split(' ')[0] || '',
+                            lastName: selectedAssignee.value.fullName.split(' ').slice(1).join(' ') || '',
+                            fullName: selectedAssignee.value.fullName,
+                            avatar: selectedAssignee.value.avatar || null
+                        }
+                    }];
+                }
+
+                // Add dueDate to subtask data for immediate display
+                if (selectedDueDate.value) {
+                    subtaskData.dueDate = selectedDueDate.value;
                 }
 
                 subtasks.value.push(subtaskData);
@@ -243,11 +259,43 @@ export default {
             return map[v] || map.todo;
         };
 
+        const isOverdue = (dateStr) => {
+            if (!dateStr) return false;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const due = new Date(dateStr);
+            return due < today;
+        };
+
+        const formatDisplayDate = (dateStr) => {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const due = new Date(date);
+            due.setHours(0, 0, 0, 0);
+
+            if (due.getTime() === today.getTime()) return 'Today';
+            if (due.getTime() === tomorrow.getTime()) return 'Tomorrow';
+
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        };
+
+        const getInitials = (user) => {
+            if (!user) return '?';
+            const first = user.firstName?.[0] || '';
+            const last = user.lastName?.[0] || '';
+            return (first + last).toUpperCase() || user.fullName?.[0]?.toUpperCase() || '?';
+        };
+
         return {
             subtasks, newTitle, saving, error, completedCount, addSubtask, handleKeydown, handleInput,
             openSubtask, statusClass, basePath, inputEl,
             selectedAssignee, selectedDueDate, showMemberDropdown, showDateDropdown, dropUp, scrollInputIntoView,
-            filteredMembers, selectMember, removeMember, quickDateOptions, selectQuickDate, selectCustomDate, removeDate, dateInputEl
+            filteredMembers, selectMember, removeMember, quickDateOptions, selectQuickDate, selectCustomDate, removeDate, dateInputEl,
+            isOverdue, formatDisplayDate, getInitials
         };
     },
 
@@ -272,8 +320,40 @@ export default {
                           :class="statusClass(subtask.status)">
                         {{ subtask.status?.label || 'To Do' }}
                     </span>
-                    <span class="text-sm text-gray-900 group-hover:text-primary-600 flex-1">{{ subtask.title }}</span>
-                    <svg class="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <span class="text-sm text-gray-900 group-hover:text-primary-600 flex-1 truncate">{{ subtask.title }}</span>
+
+                    <!-- Due date indicator -->
+                    <span v-if="subtask.dueDate" class="inline-flex items-center gap-1 text-xs text-gray-500" :class="{ 'text-red-500': isOverdue(subtask.dueDate) }">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                        </svg>
+                        <span class="hidden sm:inline">{{ formatDisplayDate(subtask.dueDate) }}</span>
+                    </span>
+                    <span v-else class="text-gray-300">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                        </svg>
+                    </span>
+
+                    <!-- Assignee indicator -->
+                    <span v-if="subtask.assignees && subtask.assignees.length > 0" class="inline-flex -space-x-1">
+                        <template v-for="(assignee, idx) in subtask.assignees.slice(0, 2)" :key="assignee.id">
+                            <img v-if="assignee.user?.avatar" :src="assignee.user.avatar" :alt="assignee.user.fullName" :title="assignee.user.fullName" class="h-5 w-5 rounded-full ring-1 ring-white object-cover" />
+                            <span v-else class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 text-[9px] font-medium text-white ring-1 ring-white" :title="assignee.user?.fullName">
+                                {{ getInitials(assignee.user) }}
+                            </span>
+                        </template>
+                        <span v-if="subtask.assignees.length > 2" class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[9px] font-medium text-gray-600 ring-1 ring-white">
+                            +{{ subtask.assignees.length - 2 }}
+                        </span>
+                    </span>
+                    <span v-else class="text-gray-300" title="Unassigned">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                    </span>
+
+                    <svg class="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                     </svg>
                 </div>

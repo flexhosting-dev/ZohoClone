@@ -143,7 +143,9 @@
             {% include 'task/_kanban_shared.html.twig' with {
                 tasks: tasks,
                 milestones: milestones|default([]),
-                kanbanModeKey: kanbanModeKey|default('kanban_mode')
+                kanbanModeKey: kanbanModeKey|default('kanban_mode'),
+                availableProjects: availableProjects|default([]),
+                filteredProjectId: filteredProjectId|default('')
             } %}
         </div>
     {% else %}

@@ -59,6 +59,10 @@ class TaskController extends AbstractController
         // Get all user's projects for the filter dropdown
         $userProjects = $this->projectRepository->findByUser($user);
 
+        // Filter to only projects where user can create tasks (has PROJECT_EDIT permission)
+        $editableProjects = array_filter($userProjects, fn($project) => $this->isGranted('PROJECT_EDIT', $project));
+        $editableProjects = array_values($editableProjects); // Re-index array
+
         // Get all unique users who are members of user's projects for assignee filter
         $projectMembers = [];
         $seenUserIds = [];
@@ -127,6 +131,7 @@ class TaskController extends AbstractController
             'milestones' => $milestones,
             'filter' => $filter,
             'userProjects' => $userProjects,
+            'editableProjects' => $editableProjects,
             'projectMembers' => $projectMembers,
             'personalProject' => $personalProject,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
@@ -142,6 +147,10 @@ class TaskController extends AbstractController
 
         $isAdmin = $user->isPortalAdmin();
         $userProjects = $this->projectRepository->findByUser($user);
+
+        // Filter to only projects where user can create tasks (has PROJECT_EDIT permission)
+        $editableProjects = array_filter($userProjects, fn($project) => $this->isGranted('PROJECT_EDIT', $project));
+        $editableProjects = array_values($editableProjects); // Re-index array
 
         $filter = TaskFilterDTO::fromRequest($request);
         $tasks = $this->taskRepository->findAllTasksFiltered($user, $filter, $isAdmin);
@@ -211,6 +220,7 @@ class TaskController extends AbstractController
             'milestones' => $milestones,
             'filter' => $filter,
             'userProjects' => $userProjects,
+            'editableProjects' => $editableProjects,
             'projectMembers' => $projectMembers,
             'isAdmin' => $isAdmin,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),

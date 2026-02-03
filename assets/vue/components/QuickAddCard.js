@@ -1,10 +1,10 @@
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 
 export default {
     name: 'QuickAddCard',
 
     props: {
-        projectId: { type: String, required: true },
+        projectId: { type: String, default: '' },
         milestones: { type: Array, default: () => [] },
         columnValue: { type: [String, Number], default: null },
         columnMode: { type: String, default: 'status' },
@@ -15,6 +15,11 @@ export default {
         subtaskUrlTemplate: { type: String, default: '' },
         parentTask: { type: Object, default: null },
         isPersonalProject: { type: Boolean, default: false },
+        // Multi-project props
+        availableProjects: { type: Array, default: () => [] },
+        defaultProjectId: { type: String, default: '' },
+        milestonesUrlTemplate: { type: String, default: '' },
+        isMultiProject: { type: Boolean, default: false },
     },
 
     emits: ['task-created', 'cancel'],
@@ -22,10 +27,18 @@ export default {
     setup(props, { emit }) {
         const title = ref('');
         const inputEl = ref(null);
+        const projectSelectEl = ref(null);
+        const milestoneSelectEl = ref(null);
         const selectedAssignee = ref(null);
         const selectedDueDate = ref('');
         const selectedMilestone = ref('');
         const submitting = ref(false);
+
+        // Multi-project state
+        const selectedProject = ref('');
+        const dynamicMilestones = ref([]);
+        const loadingMilestones = ref(false);
+        const membersUrlForProject = ref('');
 
         // Trigger states
         const showMemberDropdown = ref(false);
@@ -58,20 +71,169 @@ export default {
             ];
         });
 
+        // Determine if we need project selector
+        const needsProjectSelector = computed(() => {
+            // Subtasks inherit from parent - no project selector needed
+            if (props.parentTask) return false;
+            // Milestone mode - project can be inferred from milestone
+            if (props.columnMode === 'milestone') return false;
+            // Single project context - no selector needed
+            if (props.projectId) return false;
+            // Multi-project with available projects
+            return props.isMultiProject && props.availableProjects.length > 0;
+        });
+
+        // Show project selector only if multiple projects available
+        const showProjectSelector = computed(() => {
+            return needsProjectSelector.value && props.availableProjects.length > 1;
+        });
+
+        // Effective milestones - either from props or dynamically loaded
+        const effectiveMilestones = computed(() => {
+            if (props.isMultiProject && dynamicMilestones.value.length > 0) {
+                return dynamicMilestones.value;
+            }
+            return props.milestones;
+        });
+
         // Milestone logic
         const showMilestoneSelect = computed(() => {
-            return !props.parentTask && props.columnMode !== 'milestone' && props.milestones.length > 1;
+            if (props.parentTask) return false;
+            if (props.columnMode === 'milestone') return false;
+            return effectiveMilestones.value.length > 1;
         });
 
         const defaultMilestone = computed(() => {
             if (props.columnMode === 'milestone') return props.columnValue;
-            if (props.milestones.length === 1) return props.milestones[0].id;
+            if (effectiveMilestones.value.length === 1) return effectiveMilestones.value[0].id;
             return '';
         });
 
+        // Effective project ID
+        const effectiveProjectId = computed(() => {
+            if (props.projectId) return props.projectId;
+            if (selectedProject.value) return selectedProject.value;
+            // In milestone mode, derive project from the milestone
+            if (props.columnMode === 'milestone' && props.columnValue) {
+                const milestone = props.milestones.find(m => m.id === props.columnValue);
+                if (milestone?.projectId) return milestone.projectId;
+            }
+            return '';
+        });
+
+        // Check if selected project is personal
+        const isEffectivePersonalProject = computed(() => {
+            if (props.projectId) return props.isPersonalProject;
+            if (selectedProject.value) {
+                const proj = props.availableProjects.find(p => p.id === selectedProject.value);
+                return proj?.isPersonal || false;
+            }
+            // In milestone mode, check available projects
+            const projId = effectiveProjectId.value;
+            if (projId) {
+                const proj = props.availableProjects.find(p => p.id === projId);
+                return proj?.isPersonal || false;
+            }
+            return false;
+        });
+
+        // Compute create URL based on selected project
+        const effectiveCreateUrl = computed(() => {
+            if (props.createUrl) return props.createUrl;
+            if (effectiveProjectId.value) {
+                // Build URL from basePath
+                return `${props.basePath}/projects/${effectiveProjectId.value}/tasks/json`;
+            }
+            return '';
+        });
+
+        // Compute members URL based on selected project
+        const effectiveMembersUrl = computed(() => {
+            if (props.membersUrl) return props.membersUrl;
+            if (effectiveProjectId.value) {
+                return `${props.basePath}/projects/${effectiveProjectId.value}/members/list`;
+            }
+            return '';
+        });
+
+        // Load milestones for selected project
+        const loadMilestones = async (projectId) => {
+            if (!projectId || !props.milestonesUrlTemplate) return;
+
+            loadingMilestones.value = true;
+            try {
+                const url = props.milestonesUrlTemplate.replace('__PROJECT_ID__', projectId);
+                const resp = await fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await resp.json();
+                dynamicMilestones.value = data.milestones || [];
+
+                // Auto-select if only one milestone
+                if (dynamicMilestones.value.length === 1) {
+                    selectedMilestone.value = dynamicMilestones.value[0].id;
+                    // Focus input since milestone is auto-selected
+                    nextTick(() => inputEl.value?.focus());
+                } else if (dynamicMilestones.value.length > 1) {
+                    selectedMilestone.value = '';
+                    // Focus milestone selector
+                    nextTick(() => milestoneSelectEl.value?.focus());
+                } else {
+                    // No milestones - show warning?
+                    selectedMilestone.value = '';
+                }
+            } catch (e) {
+                console.error('Failed to load milestones:', e);
+                dynamicMilestones.value = [];
+            } finally {
+                loadingMilestones.value = false;
+            }
+        };
+
+        // Watch for project changes
+        watch(selectedProject, (newProjectId) => {
+            if (newProjectId && props.isMultiProject) {
+                // Save to localStorage
+                try {
+                    localStorage.setItem('quick_add_last_project', newProjectId);
+                } catch (e) {}
+
+                // Reset members cache
+                members.value = [];
+                membersLoaded.value = false;
+
+                // Load milestones for new project
+                loadMilestones(newProjectId);
+            }
+        });
+
+        // Initialize
         onMounted(() => {
-            selectedMilestone.value = defaultMilestone.value;
-            nextTick(() => { inputEl.value?.focus(); });
+            if (needsProjectSelector.value) {
+                // Multi-project mode
+                if (props.availableProjects.length === 1) {
+                    // Auto-select single project
+                    selectedProject.value = props.availableProjects[0].id;
+                } else if (props.defaultProjectId) {
+                    selectedProject.value = props.defaultProjectId;
+                }
+
+                // Focus on appropriate element
+                nextTick(() => {
+                    if (showProjectSelector.value && !selectedProject.value) {
+                        projectSelectEl.value?.focus();
+                    } else if (showMilestoneSelect.value && !selectedMilestone.value) {
+                        milestoneSelectEl.value?.focus();
+                    } else {
+                        inputEl.value?.focus();
+                    }
+                });
+            } else {
+                // Single project mode - use existing milestone logic
+                selectedMilestone.value = defaultMilestone.value;
+                nextTick(() => inputEl.value?.focus());
+            }
+
             document.addEventListener('keydown', handleGlobalKey);
         });
 
@@ -83,15 +245,17 @@ export default {
             if (e.key === 'Escape') {
                 showMemberDropdown.value = false;
                 showDateDropdown.value = false;
-
                 emit('cancel');
             }
         };
 
         const fetchMembers = async () => {
             if (membersLoaded.value) return;
+            const url = effectiveMembersUrl.value;
+            if (!url) return;
+
             try {
-                const resp = await fetch(props.membersUrl, {
+                const resp = await fetch(url, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
                 const data = await resp.json();
@@ -115,7 +279,7 @@ export default {
             const pos = e.target.selectionStart;
 
             // Check for # trigger → member dropdown (skip for personal projects - auto-assigned)
-            if (val[pos - 1] === '#' && !props.isPersonalProject) {
+            if (val[pos - 1] === '#' && !isEffectivePersonalProject.value) {
                 triggerStart.value = pos - 1;
                 memberSearch.value = '';
                 showMemberDropdown.value = true;
@@ -128,7 +292,6 @@ export default {
             // Check for @ trigger → date dropdown
             if (val[pos - 1] === '@') {
                 showDateDropdown.value = true;
-
                 showMemberDropdown.value = false;
                 updateDropDirection();
                 // Remove the @ from title
@@ -208,9 +371,47 @@ export default {
             }
         };
 
+        // Handle project selection change
+        const handleProjectChange = () => {
+            // Clear milestone selection when project changes
+            selectedMilestone.value = '';
+        };
+
+        // Handle milestone selection - focus input after selection
+        const handleMilestoneChange = () => {
+            if (selectedMilestone.value) {
+                nextTick(() => inputEl.value?.focus());
+            }
+        };
+
+        // Check if we can submit
+        const canSubmit = computed(() => {
+            if (!title.value.trim()) return false;
+            if (submitting.value) return false;
+
+            // For subtasks, we don't need project/milestone
+            if (props.parentTask) return true;
+
+            // Need effective milestone
+            const milestone = selectedMilestone.value || defaultMilestone.value;
+            if (!milestone && effectiveMilestones.value.length > 0) return false;
+
+            return true;
+        });
+
         const submit = async () => {
             const trimmedTitle = title.value.trim();
             if (!trimmedTitle || submitting.value) return;
+
+            // Validate required fields
+            if (!props.parentTask) {
+                const milestone = selectedMilestone.value || defaultMilestone.value;
+                if (!milestone && effectiveMilestones.value.length > 0) {
+                    // Focus milestone selector
+                    milestoneSelectEl.value?.focus();
+                    return;
+                }
+            }
 
             submitting.value = true;
 
@@ -234,8 +435,8 @@ export default {
 
                     // Set milestone
                     body.milestone = selectedMilestone.value || defaultMilestone.value;
-                    if (!body.milestone && props.milestones.length > 0) {
-                        body.milestone = props.milestones[0].id;
+                    if (!body.milestone && effectiveMilestones.value.length > 0) {
+                        body.milestone = effectiveMilestones.value[0].id;
                     }
 
                     // Column value inheritance
@@ -244,7 +445,7 @@ export default {
 
                     if (selectedDueDate.value) body.dueDate = selectedDueDate.value;
 
-                    const resp = await fetch(props.createUrl, {
+                    const resp = await fetch(effectiveCreateUrl.value, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                         body: JSON.stringify(body)
@@ -280,6 +481,7 @@ export default {
                 title.value = '';
                 selectedAssignee.value = null;
                 selectedDueDate.value = '';
+                // Keep project selection, reset milestone if multiple
                 if (showMilestoneSelect.value) {
                     selectedMilestone.value = defaultMilestone.value;
                 }
@@ -295,23 +497,80 @@ export default {
 
         // Computed placeholder based on project type
         const placeholder = computed(() => {
-            return props.isPersonalProject ? 'Task title... (@date, Assigned to you)' : 'Task title... (#assign, @date)';
+            return isEffectivePersonalProject.value ? 'Task title... (@date, Assigned to you)' : 'Task title... (#assign, @date)';
+        });
+
+        // Get selected project name for display
+        const selectedProjectName = computed(() => {
+            if (!selectedProject.value) return '';
+            const proj = props.availableProjects.find(p => p.id === selectedProject.value);
+            return proj?.name || '';
+        });
+
+        // Check if selected project has milestones
+        const selectedProjectHasMilestones = computed(() => {
+            if (!selectedProject.value) return true; // Assume yes until loaded
+            const proj = props.availableProjects.find(p => p.id === selectedProject.value);
+            return proj?.hasMilestones !== false;
         });
 
         return {
-            title, inputEl, dateInputEl, selectedAssignee, selectedDueDate, selectedMilestone,
+            title, inputEl, projectSelectEl, milestoneSelectEl, dateInputEl,
+            selectedAssignee, selectedDueDate, selectedMilestone, selectedProject,
             submitting, showMemberDropdown, showDateDropdown, dropUp, filteredMembers,
-            showMilestoneSelect, handleInput, handleKeydown, selectMember,
-            removeMember, quickDateOptions, selectQuickDate, selectCustomDate, removeDate, submit,
-            placeholder, isPersonalProject: props.isPersonalProject
+            showProjectSelector, showMilestoneSelect, effectiveMilestones, loadingMilestones,
+            handleInput, handleKeydown, handleProjectChange, handleMilestoneChange,
+            selectMember, removeMember, quickDateOptions, selectQuickDate, selectCustomDate, removeDate,
+            submit, canSubmit, placeholder, isEffectivePersonalProject,
+            selectedProjectName, selectedProjectHasMilestones,
+            availableProjects: props.availableProjects
         };
     },
 
     template: `
         <div class="quick-add-card bg-white rounded-lg shadow-sm border-2 border-primary-300 p-3" @click.stop>
+            <!-- Project & Milestone selectors (for multi-project context) -->
+            <div v-if="showProjectSelector || showMilestoneSelect" class="flex items-center gap-2 mb-2">
+                <!-- Project selector -->
+                <div v-if="showProjectSelector" class="flex-1">
+                    <select
+                        ref="projectSelectEl"
+                        v-model="selectedProject"
+                        @change="handleProjectChange"
+                        class="text-xs border border-gray-200 rounded px-2 py-1.5 w-full bg-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                    >
+                        <option value="" disabled>Select project...</option>
+                        <option v-for="p in availableProjects" :key="p.id" :value="p.id">
+                            {{ p.isPersonal ? '📋 ' : '' }}{{ p.name }}
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Milestone selector -->
+                <div v-if="showMilestoneSelect" class="flex-1">
+                    <div v-if="loadingMilestones" class="text-xs text-gray-400 px-2 py-1.5">Loading...</div>
+                    <select
+                        v-else
+                        ref="milestoneSelectEl"
+                        v-model="selectedMilestone"
+                        @change="handleMilestoneChange"
+                        class="text-xs border border-gray-200 rounded px-2 py-1.5 w-full bg-white focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                        :disabled="!selectedProject && showProjectSelector"
+                    >
+                        <option value="" disabled>Select milestone...</option>
+                        <option v-for="m in effectiveMilestones" :key="m.id" :value="m.id">{{ m.name }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- No milestones warning -->
+            <div v-if="selectedProject && !selectedProjectHasMilestones && !loadingMilestones" class="mb-2 text-xs text-amber-600 bg-amber-50 rounded px-2 py-1">
+                This project has no milestones. Create a milestone first.
+            </div>
+
             <div class="relative">
                 <div class="flex items-center flex-wrap gap-1" @click="$refs.inputEl?.focus()">
-                    <span v-if="selectedAssignee && !isPersonalProject" class="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-xs whitespace-nowrap">
+                    <span v-if="selectedAssignee && !isEffectivePersonalProject" class="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-xs whitespace-nowrap">
                         <span class="text-blue-400">assigned to</span> {{ selectedAssignee.fullName }}
                         <button type="button" class="hover:text-blue-900" @click.stop="removeMember">&times;</button>
                     </span>
@@ -333,7 +592,7 @@ export default {
                 </div>
 
                 <!-- Member dropdown (hidden for personal projects) -->
-                <div v-if="showMemberDropdown && !isPersonalProject" class="absolute z-20 left-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 max-h-40 overflow-y-auto" :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'">
+                <div v-if="showMemberDropdown && !isEffectivePersonalProject" class="absolute z-20 left-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 max-h-40 overflow-y-auto" :class="dropUp ? 'bottom-full mb-1' : 'top-full mt-1'">
                     <div v-if="filteredMembers.length === 0" class="px-3 py-2 text-xs text-gray-400">No members found</div>
                     <button
                         v-for="member in filteredMembers"
@@ -365,16 +624,6 @@ export default {
                 <input type="date" ref="dateInputEl" class="sr-only" tabindex="-1" @change="selectCustomDate" />
             </div>
 
-
-
-            <!-- Milestone select -->
-            <div v-if="showMilestoneSelect" class="mt-2">
-                <select v-model="selectedMilestone" class="text-xs border border-gray-200 rounded px-2 py-1 w-full bg-white">
-                    <option value="" disabled>Select milestone</option>
-                    <option v-for="m in milestones" :key="m.id" :value="m.id">{{ m.name }}</option>
-                </select>
-            </div>
-
             <!-- Footer -->
             <div class="mt-2 flex items-center justify-between">
                 <span class="text-[10px] text-gray-400">Enter / Esc</span>
@@ -384,7 +633,7 @@ export default {
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     <button type="button" class="text-xs text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded hover:bg-gray-100" @click="$emit('cancel')">Cancel</button>
-                    <button type="button" class="text-xs text-white bg-primary-600 hover:bg-primary-700 px-2.5 py-0.5 rounded disabled:opacity-50" :disabled="!title.trim() || submitting" @click="submit">Save</button>
+                    <button type="button" class="text-xs text-white bg-primary-600 hover:bg-primary-700 px-2.5 py-0.5 rounded disabled:opacity-50" :disabled="!canSubmit" @click="submit">Save</button>
                 </div>
             </div>
         </div>

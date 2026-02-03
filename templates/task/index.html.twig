@@ -3,6 +3,9 @@
 {% block title %}My Tasks - WorkFlow{% endblock %}
 
 {% block content %}
+{# Determine filtered project ID: only if exactly one project is filtered #}
+{% set filteredProjectId = filter.projectIds|length == 1 ? filter.projectIds|first : '' %}
+
 {% include 'task/_task_page.html.twig' with {
     pageTitle: 'My Tasks',
     pageDescription: 'All tasks assigned to you across all projects.',
@@ -21,6 +24,8 @@
     showHeader: true,
     showAddButton: true,
     canCreateTask: personalProject is defined and personalProject and personalProject.milestones|length > 0,
-    project: personalProject
+    project: personalProject,
+    availableProjects: editableProjects,
+    filteredProjectId: filteredProjectId
 } %}
 {% endblock %}

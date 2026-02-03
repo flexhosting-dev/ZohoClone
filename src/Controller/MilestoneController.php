@@ -29,6 +29,28 @@ class MilestoneController extends AbstractController
     ) {
     }
 
+    #[Route('/json', name: 'app_milestone_list_json', methods: ['GET'])]
+    public function listJson(string $projectId): JsonResponse
+    {
+        $project = $this->projectRepository->find($projectId);
+        if (!$project) {
+            return new JsonResponse(['error' => 'Project not found'], 404);
+        }
+
+        $this->denyAccessUnlessGranted('PROJECT_VIEW', $project);
+
+        $milestones = [];
+        foreach ($project->getMilestones() as $milestone) {
+            $milestones[] = [
+                'id' => $milestone->getId()->toString(),
+                'name' => $milestone->getName(),
+                'dueDate' => $milestone->getDueDate()?->format('Y-m-d'),
+            ];
+        }
+
+        return new JsonResponse(['milestones' => $milestones]);
+    }
+
     #[Route('/new', name: 'app_milestone_new', methods: ['GET', 'POST'])]
     public function new(Request $request, string $projectId): Response
     {

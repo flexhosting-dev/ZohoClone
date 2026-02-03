@@ -4,10 +4,14 @@
    - tasks: Task[] (flat list of all tasks)
    - milestones: list of Milestone entities
    - kanbanModeKey: localStorage key for mode persistence
+   - availableProjects: Project[] (optional, for multi-project quick-add)
+   - filteredProjectId: string (optional, single filtered project ID)
 #}
 
 {% set kanbanModeKey = kanbanModeKey|default('kanban_mode') %}
 {% set milestones = milestones|default([]) %}
+{% set availableProjects = availableProjects|default([]) %}
+{% set filteredProjectId = filteredProjectId|default('') %}
 {% set basePath = app.request.basePath %}
 
 <div
@@ -48,7 +52,8 @@
     data-vue-milestones='{{ milestones|map(m => {
         id: m.id ~ '',
         name: m.name,
-        dueDate: m.dueDate ? m.dueDate|date('Y-m-d') : null
+        dueDate: m.dueDate ? m.dueDate|date('Y-m-d') : null,
+        projectId: m.project ? m.project.id ~ '' : null
     })|json_encode|e('html_attr') }}'
     data-vue-mode-storage-key="{{ kanbanModeKey }}"
     data-vue-base-path="{{ basePath }}"
@@ -67,6 +72,14 @@
         name: m.name,
         dueDate: m.dueDate ? m.dueDate|date('Y-m-d') : null
     })|json_encode|e('html_attr') : '[]' }}'
+    data-vue-available-projects='{{ availableProjects|map(p => {
+        id: p.id ~ '',
+        name: p.name,
+        isPersonal: p.personal,
+        hasMilestones: p.milestones|length > 0
+    })|json_encode|e('html_attr') }}'
+    data-vue-filtered-project-id="{{ filteredProjectId }}"
+    data-vue-milestones-url-template="{{ path('app_milestone_list_json', {projectId: '__PROJECT_ID__'}) }}"
 >
     {# Loading fallback shown before Vue mounts #}
     <div class="flex items-center justify-center py-12">

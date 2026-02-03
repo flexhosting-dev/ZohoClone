@@ -67,6 +67,18 @@ export default {
         projectMilestones: {
             type: Array,
             default: () => []
+        },
+        availableProjects: {
+            type: Array,
+            default: () => []
+        },
+        filteredProjectId: {
+            type: String,
+            default: ''
+        },
+        milestonesUrlTemplate: {
+            type: String,
+            default: ''
         }
     },
 
@@ -146,6 +158,41 @@ export default {
         const quickAddMilestones = computed(() => {
             return props.projectMilestones.length > 0 ? props.projectMilestones : props.milestones;
         });
+
+        // Multi-project context detection
+        const isMultiProjectContext = computed(() => {
+            return props.availableProjects.length > 0 && !props.projectId;
+        });
+
+        // Compute default project ID for quick-add
+        const defaultProjectId = computed(() => {
+            // Priority: filtered project > localStorage > first available
+            if (props.filteredProjectId) {
+                return props.filteredProjectId;
+            }
+            try {
+                const saved = localStorage.getItem('quick_add_last_project');
+                if (saved && props.availableProjects.some(p => p.id === saved)) {
+                    return saved;
+                }
+            } catch (e) {}
+            return props.availableProjects.length > 0 ? props.availableProjects[0].id : '';
+        });
+
+        // Get project info from milestone column (for milestone kanban mode)
+        const getProjectFromMilestone = (milestoneId) => {
+            // In milestone mode, we can infer project from the milestone
+            // The milestone's project should be derivable from tasks in that column
+            const taskInCol = tasks.value.find(t => t.milestoneId === milestoneId);
+            if (taskInCol) {
+                // Find project in availableProjects that matches
+                const proj = props.availableProjects.find(p =>
+                    props.milestones.some(m => m.id === milestoneId)
+                );
+                return proj?.id || '';
+            }
+            return '';
+        };
 
         // Collapse state
         const COLLAPSE_KEY = 'kanban_collapsed_columns';
@@ -473,6 +520,11 @@ export default {
             return tasks.value.find(t => t.id === quickAddAfterTask.value) || null;
         });
 
+        // Computed for showing quick-add button
+        const canQuickAdd = computed(() => {
+            return props.createUrl || (props.availableProjects.length > 0 && props.milestonesUrlTemplate);
+        });
+
         return {
             tasks, currentMode, columns, tasksByColumn, hasMilestones,
             draggedTask, dragOverColumn, dropIndex, isUpdating,
@@ -482,7 +534,11 @@ export default {
             isTaskLoading, basePath,
             quickAddColumn, quickAddAfterTask, quickAddMilestones,
             openColumnQuickAdd, openSubtaskQuickAdd, closeQuickAdd,
-            handleColumnTaskCreated, handleSubtaskCreated, getParentTaskForQuickAdd
+            handleColumnTaskCreated, handleSubtaskCreated, getParentTaskForQuickAdd,
+            isMultiProjectContext, defaultProjectId, getProjectFromMilestone, canQuickAdd,
+            // Props needed in template
+            availableProjects: props.availableProjects,
+            milestonesUrlTemplate: props.milestonesUrlTemplate
         };
     },
 
@@ -503,7 +559,7 @@ export default {
                     <!-- Column header actions (right-aligned) -->
                     <div class="kanban-col-actions">
                         <button
-                            v-if="createUrl"
+                            v-if="canQuickAdd"
                             type="button"
                             class="kanban-col-add-btn inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/60 hover:bg-white text-gray-500 hover:text-primary-600 transition-colors"
                             title="Quick add task"
@@ -543,6 +599,10 @@ export default {
                                 :assign-url-template="assignUrlTemplate"
                                 :subtask-url-template="subtaskUrlTemplate"
                                 :is-personal-project="isPersonalProject"
+                                :available-projects="availableProjects"
+                                :default-project-id="defaultProjectId"
+                                :milestones-url-template="milestonesUrlTemplate"
+                                :is-multi-project="isMultiProjectContext"
                                 @task-created="(data) => handleColumnTaskCreated(data, col.value)"
                                 @cancel="closeQuickAdd"
                             />
@@ -575,6 +635,7 @@ export default {
                                     :subtask-url-template="subtaskUrlTemplate"
                                     :is-personal-project="isPersonalProject"
                                     :parent-task="task"
+                                    :is-multi-project="false"
                                     @task-created="(data) => handleSubtaskCreated(data, task)"
                                     @cancel="closeQuickAdd"
                                 />
