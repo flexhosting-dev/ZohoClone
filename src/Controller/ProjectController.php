@@ -43,11 +43,23 @@ class ProjectController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $projects = $this->projectRepository->findByUser($user);
+        $allProjects = $this->projectRepository->findByUser($user);
+
+        // Separate personal project from team projects
+        $personalProject = null;
+        $projects = [];
+        foreach ($allProjects as $project) {
+            if ($project->isPersonal() && $project->getOwner() === $user) {
+                $personalProject = $project;
+            } else {
+                $projects[] = $project;
+            }
+        }
 
         return $this->render('project/index.html.twig', [
             'page_title' => 'Projects',
             'projects' => $projects,
+            'personalProject' => $personalProject,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
             'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);
@@ -240,6 +252,12 @@ class ProjectController extends AbstractController
     #[IsGranted('PROJECT_DELETE', subject: 'project')]
     public function delete(Request $request, Project $project): Response
     {
+        // Prevent deletion of personal projects
+        if ($project->isPersonal()) {
+            $this->addFlash('error', 'Personal projects cannot be deleted.');
+            return $this->redirectToRoute('app_project_show', ['id' => $project->getId()]);
+        }
+
         if ($this->isCsrfTokenValid('delete' . $project->getId(), $request->request->get('_token'))) {
             $this->entityManager->remove($project);
             $this->entityManager->flush();

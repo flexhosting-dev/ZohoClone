@@ -21,6 +21,7 @@ use App\Enum\NotificationType;
 use App\Service\HtmlSanitizer;
 use App\Service\NotificationService;
 use App\Service\PermissionChecker;
+use App\Service\PersonalProjectService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -42,6 +43,7 @@ class TaskController extends AbstractController
         private readonly AttachmentRepository $attachmentRepository,
         private readonly NotificationService $notificationService,
         private readonly PermissionChecker $permissionChecker,
+        private readonly PersonalProjectService $personalProjectService,
     ) {
     }
 
@@ -113,6 +115,9 @@ class TaskController extends AbstractController
 
         $milestones = array_values($milestoneMap);
 
+        // Get user's personal project for default task creation
+        $personalProject = $this->projectRepository->findPersonalProjectForUser($user);
+
         return $this->render('task/index.html.twig', [
             'page_title' => 'My Tasks',
             'tasks' => $tasks,
@@ -123,6 +128,7 @@ class TaskController extends AbstractController
             'filter' => $filter,
             'userProjects' => $userProjects,
             'projectMembers' => $projectMembers,
+            'personalProject' => $personalProject,
             'recent_projects' => $this->projectRepository->findRecentForUser($user),
             'favourite_projects' => $this->projectRepository->findFavouritesForUser($user),
         ]);

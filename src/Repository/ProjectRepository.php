@@ -83,4 +83,17 @@ class ProjectRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Find the user's personal project.
+     */
+    public function findPersonalProjectForUser(User $user): ?Project
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.owner = :user')
+            ->andWhere('p.isPersonal = true')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

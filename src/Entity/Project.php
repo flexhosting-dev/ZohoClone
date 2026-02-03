@@ -50,6 +50,9 @@ class Project
     #[ORM\Column(options: ['default' => true])]
     private bool $isPublic = true;
 
+    #[ORM\Column(options: ['default' => false])]
+    private bool $isPersonal = false;
+
     /** @var Collection<int, ProjectMember> */
     #[ORM\OneToMany(targetEntity: ProjectMember::class, mappedBy: 'project', orphanRemoval: true, cascade: ['persist'])]
     private Collection $members;
@@ -151,6 +154,17 @@ class Project
     public function setIsPublic(bool $isPublic): static
     {
         $this->isPublic = $isPublic;
+        return $this;
+    }
+
+    public function isPersonal(): bool
+    {
+        return $this->isPersonal;
+    }
+
+    public function setIsPersonal(bool $isPersonal): static
+    {
+        $this->isPersonal = $isPersonal;
         return $this;
     }
 

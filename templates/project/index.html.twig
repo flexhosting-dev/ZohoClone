@@ -21,14 +21,29 @@
         </div>
     </div>
 
-    {% if projects|length > 0 %}
-        {# Project Grid #}
+    {# Personal Project Section #}
+    {% if personalProject is defined and personalProject %}
+    <div>
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Personal Workspace</h2>
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {% for project in projects %}
-                {% include 'project/_card.html.twig' with {project: project} %}
-            {% endfor %}
+            {% include 'project/_card.html.twig' with {project: personalProject} %}
         </div>
-    {% else %}
+    </div>
+    {% endif %}
+
+    {# Team Projects Section #}
+    {% if projects|length > 0 %}
+        <div>
+            {% if personalProject is defined and personalProject %}
+            <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Team Projects</h2>
+            {% endif %}
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {% for project in projects %}
+                    {% include 'project/_card.html.twig' with {project: project} %}
+                {% endfor %}
+            </div>
+        </div>
+    {% elseif not (personalProject is defined and personalProject) %}
         {% include 'components/_empty_state.html.twig' with {
             icon: 'folder',
             title: 'No projects',

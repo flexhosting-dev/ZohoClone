@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Form\RegistrationFormType;
 use App\Repository\UserRepository;
+use App\Service\PersonalProjectService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -42,7 +43,8 @@ class SecurityController extends AbstractController
         Request $request,
         UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $entityManager,
-        UserRepository $userRepository
+        UserRepository $userRepository,
+        PersonalProjectService $personalProjectService
     ): Response {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_dashboard');
@@ -58,6 +60,10 @@ class SecurityController extends AbstractController
             $user->setIsVerified(true);
 
             $entityManager->persist($user);
+            $entityManager->flush();
+
+            // Create personal project for new user
+            $personalProjectService->createPersonalProject($user);
             $entityManager->flush();
 
             $this->addFlash('success', 'Your account has been created. Please log in.');

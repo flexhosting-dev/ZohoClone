@@ -19,6 +19,8 @@
     showProjectFilter: true,
     storageKey: 'my_tasks_view',
     showHeader: true,
-    showAddButton: false
+    showAddButton: true,
+    canCreateTask: personalProject is defined and personalProject and personalProject.milestones|length > 0,
+    project: personalProject
 } %}
 {% endblock %}
