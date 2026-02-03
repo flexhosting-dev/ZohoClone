@@ -63,6 +63,10 @@ export default {
         isPersonalProject: {
             type: Boolean,
             default: false
+        },
+        projectMilestones: {
+            type: Array,
+            default: () => []
         }
     },
 
@@ -137,6 +141,11 @@ export default {
         });
 
         const hasMilestones = computed(() => props.milestones.length > 0);
+
+        // Use project-specific milestones for quick-add if available
+        const quickAddMilestones = computed(() => {
+            return props.projectMilestones.length > 0 ? props.projectMilestones : props.milestones;
+        });
 
         // Collapse state
         const COLLAPSE_KEY = 'kanban_collapsed_columns';
@@ -471,7 +480,7 @@ export default {
             handleDragStart, handleDragEnd, handleColumnDragOver,
             handleColumnDragLeave, handleColumnDrop, handleTaskClick,
             isTaskLoading, basePath,
-            quickAddColumn, quickAddAfterTask,
+            quickAddColumn, quickAddAfterTask, quickAddMilestones,
             openColumnQuickAdd, openSubtaskQuickAdd, closeQuickAdd,
             handleColumnTaskCreated, handleSubtaskCreated, getParentTaskForQuickAdd
         };
@@ -525,7 +534,7 @@ export default {
                             <QuickAddCard
                                 v-if="quickAddColumn === col.value"
                                 :project-id="projectId"
-                                :milestones="milestones"
+                                :milestones="quickAddMilestones"
                                 :column-value="col.value"
                                 :column-mode="currentMode"
                                 :base-path="basePath"
@@ -556,7 +565,7 @@ export default {
                                 <QuickAddCard
                                     v-if="quickAddAfterTask === task.id"
                                     :project-id="projectId"
-                                    :milestones="milestones"
+                                    :milestones="quickAddMilestones"
                                     :column-value="col.value"
                                     :column-mode="currentMode"
                                     :base-path="basePath"
