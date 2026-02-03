@@ -795,10 +795,15 @@
             // Update the original value
             input.dataset.original = value;
 
-            // Remove placeholder if it exists
+            // Remove placeholder and update text visibility
             const placeholder = input.parentElement.querySelector('.start-date-placeholder');
-            if (placeholder && value) {
-                placeholder.remove();
+            if (value) {
+                if (placeholder) placeholder.remove();
+                input.classList.remove('text-transparent');
+                input.classList.add('text-gray-900');
+            } else {
+                input.classList.remove('text-gray-900');
+                input.classList.add('text-transparent');
             }
 
             Toastr.success('Start date updated');
@@ -843,16 +848,19 @@
             // Update the original value
             input.dataset.original = value;
 
-            // Update styling for overdue
-            if (data.isOverdue) {
-                input.classList.add('text-red-600', 'font-medium');
-                input.classList.remove('text-gray-900');
+            // Update styling based on value and overdue status
+            input.classList.remove('text-transparent', 'text-gray-900', 'text-red-600', 'font-medium');
+            if (value) {
+                if (data.isOverdue) {
+                    input.classList.add('text-red-600', 'font-medium');
+                } else {
+                    input.classList.add('text-gray-900');
+                }
             } else {
-                input.classList.remove('text-red-600', 'font-medium');
-                input.classList.add('text-gray-900');
+                input.classList.add('text-transparent');
             }
 
-            // Remove placeholder if it exists
+            // Remove placeholder if value is set
             const placeholder = input.parentElement.querySelector('.due-date-placeholder');
             if (placeholder && value) {
                 placeholder.remove();

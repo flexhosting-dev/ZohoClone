@@ -95,24 +95,29 @@
                     </div>
 
                     {# Status Filter #}
-                    <div class="relative" x-data="{ open: false }">
-                        <button type="button" @click="open = !open" @click.away="open = false"
-                                class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <div class="relative" x-data="filterDropdown({{ filter.statuses|length }})">
+                        <button type="button" @click="toggle()"
+                                class="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
+                                :class="count > 0 ? 'border-primary-300 text-primary-700' : 'border-gray-300 text-gray-700'">
                             <span>Status</span>
-                            {% if filter.statuses|length > 0 %}
-                                <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.statuses|length }}</span>
-                            {% endif %}
+                            <span x-show="count > 0" x-cloak class="relative inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs font-semibold text-white bg-primary-600 rounded-full">
+                                <span x-text="count"></span>
+                                <svg x-show="count === applied && applied > 0" x-cloak class="absolute -top-1 -right-1 w-3 h-3 text-primary-600 bg-white rounded-full" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </span>
                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div x-show="open" x-transition class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        <div x-show="open" x-transition @click.outside="open = false" class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                             <div class="p-2 space-y-1">
                                 {% for status in ['todo', 'in_progress', 'in_review', 'completed'] %}
                                     {% set statusLabels = {'todo': 'To Do', 'in_progress': 'In Progress', 'in_review': 'In Review', 'completed': 'Completed'} %}
                                     <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
                                         <input type="checkbox" name="status_{{ status }}" value="{{ status }}"
                                                {% if status in filter.statuses|map(s => s.value) %}checked{% endif %}
+                                               @change="updateCount($el)"
                                                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
                                         <span class="text-sm text-gray-700">{{ statusLabels[status] }}</span>
                                     </label>
@@ -122,24 +127,29 @@
                     </div>
 
                     {# Priority Filter #}
-                    <div class="relative" x-data="{ open: false }">
-                        <button type="button" @click="open = !open" @click.away="open = false"
-                                class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <div class="relative" x-data="filterDropdown({{ filter.priorities|length }})">
+                        <button type="button" @click="toggle()"
+                                class="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
+                                :class="count > 0 ? 'border-primary-300 text-primary-700' : 'border-gray-300 text-gray-700'">
                             <span>Priority</span>
-                            {% if filter.priorities|length > 0 %}
-                                <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.priorities|length }}</span>
-                            {% endif %}
+                            <span x-show="count > 0" x-cloak class="relative inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs font-semibold text-white bg-primary-600 rounded-full">
+                                <span x-text="count"></span>
+                                <svg x-show="count === applied && applied > 0" x-cloak class="absolute -top-1 -right-1 w-3 h-3 text-primary-600 bg-white rounded-full" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </span>
                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div x-show="open" x-transition class="absolute left-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        <div x-show="open" x-transition @click.outside="open = false" class="absolute left-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                             <div class="p-2 space-y-1">
                                 {% for priority in ['high', 'medium', 'low', 'none'] %}
                                     {% set priorityLabels = {'none': 'None', 'low': 'Low', 'medium': 'Medium', 'high': 'High'} %}
                                     <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
                                         <input type="checkbox" name="priority_{{ priority }}" value="{{ priority }}"
                                                {% if priority in filter.priorities|map(p => p.value) %}checked{% endif %}
+                                               @change="updateCount($el)"
                                                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
                                         <span class="text-sm text-gray-700">{{ priorityLabels[priority] }}</span>
                                     </label>
@@ -149,18 +159,22 @@
                     </div>
 
                     {# Due Date Filter #}
-                    <div class="relative" x-data="{ open: false }">
-                        <button type="button" @click="open = !open" @click.away="open = false"
-                                class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <div class="relative" x-data="filterDropdown({{ filter.dueFilter ? 1 : 0 }})">
+                        <button type="button" @click="toggle()"
+                                class="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
+                                :class="count > 0 ? 'border-primary-300 text-primary-700' : 'border-gray-300 text-gray-700'">
                             <span>Due Date</span>
-                            {% if filter.dueFilter %}
-                                <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">1</span>
-                            {% endif %}
+                            <span x-show="count > 0" x-cloak class="relative inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs font-semibold text-white bg-primary-600 rounded-full">
+                                <span x-text="count"></span>
+                                <svg x-show="count === applied && applied > 0" x-cloak class="absolute -top-1 -right-1 w-3 h-3 text-primary-600 bg-white rounded-full" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </span>
                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div x-show="open" x-transition class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        <div x-show="open" x-transition @click.outside="open = false" class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                             <div class="p-2 space-y-1">
                                 {% for dueOption in [
                                     {'value': '', 'label': 'Any date'},
@@ -173,6 +187,7 @@
                                     <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
                                         <input type="radio" name="due" value="{{ dueOption.value }}"
                                                {% if filter.dueFilter == dueOption.value or (filter.dueFilter is null and dueOption.value == '') %}checked{% endif %}
+                                               @change="count = $el.value ? 1 : 0"
                                                class="border-gray-300 text-primary-600 focus:ring-primary-500">
                                         <span class="text-sm text-gray-700">{{ dueOption.label }}</span>
                                     </label>
@@ -183,24 +198,29 @@
 
                     {# Project Filter (only shown when showProjectFilter is true and multiple projects exist) #}
                     {% if showProjectFilter|default(true) and userProjects|length > 1 %}
-                    <div class="relative" x-data="{ open: false }">
-                        <button type="button" @click="open = !open" @click.away="open = false"
-                                class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <div class="relative" x-data="filterDropdown({{ filter.projectIds|length }})">
+                        <button type="button" @click="toggle()"
+                                class="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
+                                :class="count > 0 ? 'border-primary-300 text-primary-700' : 'border-gray-300 text-gray-700'">
                             <span>Project</span>
-                            {% if filter.projectIds|length > 0 %}
-                                <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.projectIds|length }}</span>
-                            {% endif %}
+                            <span x-show="count > 0" x-cloak class="relative inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs font-semibold text-white bg-primary-600 rounded-full">
+                                <span x-text="count"></span>
+                                <svg x-show="count === applied && applied > 0" x-cloak class="absolute -top-1 -right-1 w-3 h-3 text-primary-600 bg-white rounded-full" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </span>
                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div x-show="open" x-transition class="absolute left-0 mt-2 w-56 max-h-64 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        <div x-show="open" x-transition @click.outside="open = false" class="absolute left-0 mt-2 w-56 max-h-64 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                             <div class="p-2 space-y-1">
                                 {% for project in userProjects %}
                                     {% set projectIdStr = '' ~ project.id %}
                                     <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
                                         <input type="checkbox" name="project_{{ projectIdStr }}" value="{{ projectIdStr }}"
                                                {% if projectIdStr in filter.projectIds %}checked{% endif %}
+                                               @change="updateCount($el)"
                                                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
                                         <span class="text-sm text-gray-700 truncate">{{ project.name }}</span>
                                     </label>
@@ -212,24 +232,29 @@
 
                     {# Assignee Filter (only shown when multiple members exist) #}
                     {% if projectMembers|length > 1 %}
-                    <div class="relative" x-data="{ open: false }">
-                        <button type="button" @click="open = !open" @click.away="open = false"
-                                class="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <div class="relative" x-data="filterDropdown({{ filter.assigneeIds|length }})">
+                        <button type="button" @click="toggle()"
+                                class="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
+                                :class="count > 0 ? 'border-primary-300 text-primary-700' : 'border-gray-300 text-gray-700'">
                             <span>Assignee</span>
-                            {% if filter.assigneeIds|length > 0 %}
-                                <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">{{ filter.assigneeIds|length }}</span>
-                            {% endif %}
+                            <span x-show="count > 0" x-cloak class="relative inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs font-semibold text-white bg-primary-600 rounded-full">
+                                <span x-text="count"></span>
+                                <svg x-show="count === applied && applied > 0" x-cloak class="absolute -top-1 -right-1 w-3 h-3 text-primary-600 bg-white rounded-full" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </span>
                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
-                        <div x-show="open" x-transition class="absolute left-0 mt-2 w-64 max-h-64 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        <div x-show="open" x-transition @click.outside="open = false" class="absolute left-0 mt-2 w-64 max-h-64 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                             <div class="p-2 space-y-1">
                                 {% for member in projectMembers %}
                                     {% set memberIdStr = '' ~ member.id %}
                                     <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
                                         <input type="checkbox" name="assignee_{{ memberIdStr }}" value="{{ memberIdStr }}"
                                                {% if memberIdStr in filter.assigneeIds %}checked{% endif %}
+                                               @change="updateCount($el)"
                                                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
                                         <span class="inline-flex h-6 w-6 items-center justify-center rounded-full overflow-hidden flex-shrink-0">
                                             {% if member.avatar %}
@@ -327,6 +352,24 @@
 </div>
 
 <script>
+// Filter dropdown Alpine.js component
+function filterDropdown(appliedCount) {
+    return {
+        open: false,
+        count: appliedCount,
+        applied: appliedCount,
+        toggle() {
+            this.open = !this.open;
+        },
+        updateCount(el) {
+            // Find the dropdown container and count checked checkboxes
+            const dropdown = el.closest('[x-data]');
+            const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+            this.count = Array.from(checkboxes).filter(cb => cb.checked).length;
+        }
+    };
+}
+
 (function() {
     const form = document.getElementById('task-filter-form');
     if (!form) return;

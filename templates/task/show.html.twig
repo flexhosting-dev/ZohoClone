@@ -29,7 +29,10 @@
                     {% else %}
                     <h1 class="text-2xl font-bold text-gray-900 px-1 -mx-1">{{ task.title }}</h1>
                     {% endif %}
-                    <p class="mt-1 text-sm text-gray-500">
+                    <p class="mt-1 text-sm text-gray-500 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                        </svg>
                         {{ project.name }} / {{ task.milestone.name }}
                     </p>
                     {% if task.parent %}
@@ -210,7 +213,7 @@
                         {% if canEdit %}
                         <div class="relative">
                             <input type="date"
-                                   class="start-date-input text-sm border-0 p-0 bg-transparent cursor-pointer hover:text-primary-600 focus:ring-0 text-gray-900"
+                                   class="start-date-input text-sm border-0 p-0 bg-transparent cursor-pointer hover:text-primary-600 focus:ring-0 {{ task.startDate ? 'text-gray-900' : 'text-transparent' }}"
                                    value="{{ task.startDate ? task.startDate|date('Y-m-d') : '' }}"
                                    data-original="{{ task.startDate ? task.startDate|date('Y-m-d') : '' }}"
                                    data-endpoint="{{ path('app_task_update_start_date', {id: task.id}) }}"
@@ -231,7 +234,7 @@
                         {% if canEdit %}
                         <div class="relative">
                             <input type="date"
-                                   class="due-date-input text-sm border-0 p-0 bg-transparent cursor-pointer hover:text-primary-600 focus:ring-0 {{ task.isOverdue ? 'text-red-600 font-medium' : 'text-gray-900' }}"
+                                   class="due-date-input text-sm border-0 p-0 bg-transparent cursor-pointer hover:text-primary-600 focus:ring-0 {{ task.dueDate ? (task.isOverdue ? 'text-red-600 font-medium' : 'text-gray-900') : 'text-transparent' }}"
                                    value="{{ task.dueDate ? task.dueDate|date('Y-m-d') : '' }}"
                                    data-original="{{ task.dueDate ? task.dueDate|date('Y-m-d') : '' }}"
                                    data-endpoint="{{ path('app_task_update_due_date', {id: task.id}) }}"
@@ -252,7 +255,7 @@
                     </dd>
                 </div>
                 {# Milestone - Editable only if canEdit #}
-                <div>
+                <div class="col-span-3">
                     <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Milestone</dt>
                     <dd class="mt-1">
                         {% if canEdit %}
