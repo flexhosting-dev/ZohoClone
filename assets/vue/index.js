@@ -42,18 +42,25 @@ export function autoMountVueComponents(components) {
                 const propName = key.replace('vue', '').replace(/^[A-Z]/, c => c.toLowerCase());
                 let value = element.dataset[key];
 
-                // Try to parse JSON values
-                try {
-                    value = JSON.parse(value);
-                    // Convert object with numeric keys to array (Twig |map sometimes produces this)
-                    if (value && typeof value === 'object' && !Array.isArray(value)) {
-                        const keys = Object.keys(value);
-                        if (keys.length > 0 && keys.every(k => /^\d+$/.test(k))) {
-                            value = Object.values(value);
+                // Handle boolean strings explicitly
+                if (value === 'true') {
+                    value = true;
+                } else if (value === 'false') {
+                    value = false;
+                } else {
+                    // Try to parse JSON values
+                    try {
+                        value = JSON.parse(value);
+                        // Convert object with numeric keys to array (Twig |map sometimes produces this)
+                        if (value && typeof value === 'object' && !Array.isArray(value)) {
+                            const keys = Object.keys(value);
+                            if (keys.length > 0 && keys.every(k => /^\d+$/.test(k))) {
+                                value = Object.values(value);
+                            }
                         }
+                    } catch (e) {
+                        // Keep as string if not valid JSON
                     }
-                } catch (e) {
-                    // Keep as string if not valid JSON
                 }
 
                 props[propName] = value;

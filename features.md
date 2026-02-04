@@ -483,6 +483,46 @@ Add a full-featured datatable view for tasks with spreadsheet-like capabilities:
 - Add tags
 - Delete (with confirmation)
 
+#### 7. Subtask Tree View
+
+**Tree Structure:**
+- Tasks with subtasks display a `[+]` toggle in the Title column
+- Clicking `[+]` expands to show child tasks as indented rows
+- Toggle changes to `[-]` when expanded (click to collapse)
+- Tree lines (│, ├, └) show hierarchical relationships
+- Unlimited nesting depth supported
+
+**Visual Example:**
+```
+[+] Parent Task 1
+[-] Parent Task 2
+ │  ├── Subtask 2.1
+ │  │   └── Sub-subtask 2.1.1
+ │  └── Subtask 2.2
+[+] Parent Task 3
+    Task 4 (no children)
+```
+
+**Tree Behavior:**
+- Expand/collapse state persisted to localStorage per user
+- "Expand All" / "Collapse All" buttons in table toolbar
+- Keyboard: Right arrow expands, Left arrow collapses
+- Indent level: 24px per depth level
+- Tree lines use CSS borders (`:before` pseudo-elements)
+
+**Interaction with Other Features:**
+- **Grouping**: Tree hierarchy shown within each group
+- **Sorting**: Subtasks stay under their parent, sorted among siblings
+- **Search**: When a subtask matches, auto-expand parents to show it
+- **Quick Add**: Option to add subtask via row context menu or `Tab` from parent
+- **Bulk Select**: Option to "Select with children" for parent tasks
+- **Drag & Drop**: Drag tasks to reparent (drop on task to make it child)
+
+**Performance:**
+- Lazy load children on first expand (if not already loaded)
+- Virtual scrolling accounts for expanded/collapsed state
+- Cache expanded subtasks to avoid re-fetching
+
 ### Implementation Phases
 
 1. **Basic Table Structure**
@@ -522,9 +562,15 @@ Add a full-featured datatable view for tasks with spreadsheet-like capabilities:
    - Connect to filter panel
    - Highlight matches
 
-8. **Performance**
+8. **Subtask Tree View**
+   - Expand/collapse toggles (+/-)
+   - Tree lines and indentation CSS
+   - Lazy load children on expand
+   - Persist expand state
+
+9. **Performance**
    - Virtual scrolling for large lists
-   - Lazy load groups
+   - Lazy load groups and subtrees
    - Debounced updates
 
 ### Files Affected
@@ -541,19 +587,21 @@ Add a full-featured datatable view for tasks with spreadsheet-like capabilities:
 - New: `assets/vue/components/TaskTable/TaskRow.js`
 - New: `assets/vue/components/TaskTable/EditableCell.js`
 - New: `assets/vue/components/TaskTable/GroupRow.js`
+- New: `assets/vue/components/TaskTable/TreeToggle.js` - Expand/collapse +/- control
 - New: `assets/vue/components/TaskTable/BulkActionBar.js`
 - New: `assets/vue/components/TaskTable/ColumnConfig.js`
 - New: `templates/task/_table_vue.html.twig` - Mount point
 - Modified: `templates/project/show.html.twig` - Add Table view option
-- New: `assets/css/task-table.css` - Table-specific styles
+- New: `assets/css/task-table.css` - Table-specific styles (includes tree lines)
 
 ### Accessibility
 
 - Full keyboard navigation
-- ARIA roles (grid, row, gridcell, columnheader)
-- Screen reader announcements for edits
+- ARIA roles (grid, row, gridcell, columnheader, treegrid for subtask view)
+- `aria-expanded` on tree toggles
+- Screen reader announcements for edits and expand/collapse
 - Focus management when editing
-- High contrast support
+- High contrast support for tree lines
 
 ### Mobile Considerations
 

@@ -231,6 +231,34 @@ class Project
         return $this->members->count();
     }
 
+    public function getMemberByUser(User $user): ?ProjectMember
+    {
+        foreach ($this->members as $member) {
+            if ($member->getUser() === $user) {
+                return $member;
+            }
+        }
+        return null;
+    }
+
+    public function isUserViewer(User $user): bool
+    {
+        // Owner always has full access
+        if ($this->owner === $user) {
+            return false;
+        }
+
+        $member = $this->getMemberByUser($user);
+
+        // If not a member but project is public, they have view-only access
+        if (!$member) {
+            return $this->isPublic;
+        }
+
+        // Check if their role is viewer
+        return $member->getRole()->getSlug() === 'project-viewer';
+    }
+
     public function getMilestoneCount(): int
     {
         return $this->milestones->count();

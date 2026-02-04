@@ -22,6 +22,7 @@ use App\Service\HtmlSanitizer;
 use App\Service\NotificationService;
 use App\Service\PermissionChecker;
 use App\Service\PersonalProjectService;
+use App\Security\Voter\TaskVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -352,7 +353,7 @@ class TaskController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
         $recentProjects = $this->projectRepository->findByUser($user);
-        $canEdit = $this->isGranted('PROJECT_EDIT', $project);
+        $canEdit = $this->isGranted(TaskVoter::EDIT, $task);
         $canComment = $this->permissionChecker->hasPermission($user, 'comment.create', $task);
 
         $taskAttachments = $this->serializeAttachments(
@@ -592,7 +593,7 @@ class TaskController extends AbstractController
     {
         $project = $task->getProject();
         $this->denyAccessUnlessGranted('PROJECT_VIEW', $project);
-        $canEdit = $this->isGranted('PROJECT_EDIT', $project);
+        $canEdit = $this->isGranted(TaskVoter::EDIT, $task);
 
         /** @var User $user */
         $user = $this->getUser();
@@ -1085,6 +1086,38 @@ class TaskController extends AbstractController
                 'depth' => $subtask->getDepth(),
             ],
         ]);
+    }
+
+    #[Route('/tasks/{id}/subtasks/reorder', name: 'app_task_subtasks_reorder', methods: ['POST'])]
+    public function reorderSubtasks(Request $request, Task $parentTask): JsonResponse
+    {
+        $project = $parentTask->getProject();
+        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
+
+        $data = json_decode($request->getContent(), true);
+        $subtaskIds = $data['subtaskIds'] ?? [];
+
+        if (!is_array($subtaskIds)) {
+            return $this->json(['error' => 'subtaskIds must be an array'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Get all subtasks for this parent and map by ID
+        $subtasks = $parentTask->getSubtasks();
+        $subtaskMap = [];
+        foreach ($subtasks as $subtask) {
+            $subtaskMap[$subtask->getId()->toString()] = $subtask;
+        }
+
+        // Update position for each subtask based on array index
+        foreach ($subtaskIds as $position => $subtaskId) {
+            if (isset($subtaskMap[$subtaskId])) {
+                $subtaskMap[$subtaskId]->setPosition($position);
+            }
+        }
+
+        $this->entityManager->flush();
+
+        return $this->json(['success' => true]);
     }
 
     #[Route('/projects/{projectId}/tasks/create-panel', name: 'app_task_create_panel', methods: ['GET'])]

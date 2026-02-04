@@ -100,9 +100,9 @@ class PermissionChecker
         return match (true) {
             $subject instanceof Project => $subject,
             $subject instanceof Milestone => $subject->getProject(),
-            $subject instanceof Task => $subject->getMilestone()->getProject(),
-            $subject instanceof TaskChecklist => $subject->getTask()->getMilestone()->getProject(),
-            $subject instanceof Comment => $subject->getTask()->getMilestone()->getProject(),
+            $subject instanceof Task => $subject->getProject(),
+            $subject instanceof TaskChecklist => $subject->getTask()->getProject(),
+            $subject instanceof Comment => $subject->getTask()->getProject(),
             default => null,
         };
     }

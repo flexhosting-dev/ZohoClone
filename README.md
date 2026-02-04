@@ -23,6 +23,7 @@ cd ZohoClone
 
 ```bash
 composer install
+npm install
 ```
 
 ### 3. Configure Environment
@@ -64,12 +65,12 @@ php -r "echo bin2hex(random_bytes(16));"
 ```bash
 php bin/console doctrine:database:create
 php bin/console doctrine:migrations:migrate --no-interaction
+php bin/console doctrine:fixtures:load --no-interaction  # Optional: Load sample data
 ```
 
 ### 5. Build Assets
 
 ```bash
-npm install
 npm run build
 ```
 
@@ -160,24 +161,103 @@ Leave empty to allow all Google accounts.
 
 ## Features
 
-- **Projects**: Create and manage projects with descriptions, colors, and team members
-- **Milestones**: Set project milestones with due dates
-- **Tasks**: Create tasks with priorities, due dates, tags, checklists, and comments
-- **Kanban Board**: Drag-and-drop task management by status or priority
-- **Team Collaboration**: Assign tasks to team members, add comments
-- **Activity Feed**: Track all project activities
-- **Google OAuth**: Sign in with Google account
+### Projects
+- Create and manage team projects with descriptions and colors
+- Personal project automatically created for each user
+- Favourite projects for quick sidebar access
+- Hide projects from main view (per-user preference)
+- Recent projects tracked automatically
+- Public and private visibility settings
+- Project overview dashboard with key metrics
+
+### Milestones
+- Organize tasks into milestones with target dates
+- Progress tracking per milestone
+- Milestone targets and deadlines
+
+### Tasks
+- Full task management with rich text descriptions
+- Priority levels (None, Low, Medium, High)
+- Status workflow (To Do, In Progress, In Review, Completed)
+- Start and due dates with overdue highlighting
+- Multi-user task assignments
+- Subtasks with unlimited nesting depth and parent chain navigation
+- Task checklists with progress tracking
+- Tags with customizable colors (price tag style UI)
+- File attachments with drag-and-drop upload
+- Comments with @mentions and rich text editor
+
+### Kanban Board
+- Vue.js powered drag-and-drop kanban
+- Multiple grouping modes: Status, Priority, or Milestone
+- Collapsible columns with smooth animations
+- Quick-add cards for tasks and subtasks
+- Smart input with `#assign` and `@date` shortcuts
+- Per-card loading spinners during operations
+- Automatic position persistence
+
+### Task Panel
+- Slide-out panel for quick task editing
+- Inline editing for all fields
+- Stacking navigation for subtasks
+- Real-time sync with kanban board
+- Activity log with lazy loading
+
+### Task Filters
+- Filter by status, priority, assignee, milestone
+- Due date presets (Overdue, Today, This Week, Custom Range)
+- Search by title and description
+- URL-persisted filters for sharing
+- Active filter chips with quick removal
+- Alpine.js powered filter dropdowns
+
+### My Tasks & All Tasks
+- Dedicated pages for personal and team-wide task views
+- Shared task components across views
+- Assignee filtering
+
+### Notifications
+- In-app notification bell with unread count
+- Task assignments, comments, @mentions, due dates
+- Mark as read functionality
+- Configurable notification preferences
+
+### Team Collaboration
+- Invite team members to projects
+- Role-based access control (Owner, Manager, Member, Viewer)
+- Granular permission system
+- Project activity feed
+- Comment threads with @mentions
+
+### User Profile & Settings
+- Profile management with avatar upload and cropping
+- Notification preferences
+- Centralized settings hub
+
+### Admin Features
+- User management
+- Role management with customizable permissions
+- Permission-based UI visibility
+
+### Authentication
+- Email/password login
+- Google OAuth integration
+- Remember me functionality
+- Access denied handling
 
 ## Development
 
 ### Running Locally
 
 ```bash
-# Start PHP dev server
+# Start Symfony dev server
 symfony serve
 
 # Or use PHP built-in server
 php -S localhost:8000 -t public/
+
+# Or with Docker
+docker-compose up -d
 ```
 
 ### Watch Assets
@@ -190,6 +270,16 @@ npm run watch
 
 ```bash
 php bin/phpunit
+```
+
+### Code Quality
+
+```bash
+# PHP CS Fixer
+./vendor/bin/php-cs-fixer fix
+
+# PHPStan static analysis
+./vendor/bin/phpstan analyse
 ```
 
 ## Troubleshooting
@@ -209,6 +299,9 @@ php bin/console doctrine:database:create --if-not-exists
 
 # Re-run migrations
 php bin/console doctrine:migrations:migrate --no-interaction
+
+# Validate schema
+php bin/console doctrine:schema:validate
 ```
 
 ### Permission Issues
@@ -217,6 +310,25 @@ php bin/console doctrine:migrations:migrate --no-interaction
 chmod -R 775 var/
 chown -R www-data:www-data var/
 ```
+
+### Asset Issues
+
+```bash
+# Rebuild assets
+rm -rf public/build/*
+npm run build
+
+# Clear asset cache
+php bin/console assets:install
+```
+
+## Tech Stack
+
+- **Backend**: Symfony 7, PHP 8.2+
+- **Database**: MySQL/MariaDB with Doctrine ORM
+- **Frontend**: Twig templates, Tailwind CSS, Vue.js components, Alpine.js
+- **Assets**: Webpack Encore
+- **Authentication**: Symfony Security with OAuth support
 
 ## License
 

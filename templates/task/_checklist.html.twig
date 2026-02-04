@@ -34,7 +34,7 @@
     {# Checklist Items List #}
     <div class="checklist-items space-y-1" data-task-id="{{ task.id }}">
         {% for item in task.checklistItems %}
-            <div class="checklist-item group flex items-center gap-2 p-2 rounded-md hover:bg-gray-50" data-item-id="{{ item.id }}">
+            <div class="checklist-item group flex items-center gap-2 p-2 rounded-md hover:bg-gray-50" data-item-id="{{ item.id }}" draggable="true">
                 <div class="checklist-drag-handle cursor-grab text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />

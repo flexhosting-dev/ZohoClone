@@ -2,6 +2,7 @@
 
 namespace App\Security\Voter;
 
+use App\Entity\Task;
 use App\Entity\TaskChecklist;
 use App\Entity\User;
 use App\Enum\Permission;
@@ -24,6 +25,11 @@ class ChecklistVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
+        // For VIEW, CREATE and EDIT, also accept Task as subject (for list/create/reorder operations)
+        if (in_array($attribute, [self::VIEW, self::CREATE, self::EDIT]) && $subject instanceof Task) {
+            return true;
+        }
+
         return in_array($attribute, [
             self::VIEW,
             self::CREATE,
@@ -43,6 +49,8 @@ class ChecklistVoter extends Voter
 
         $permission = $this->mapAttributeToPermission($attribute);
 
+        // Subject can be either TaskChecklist or Task (for create/reorder)
+        // PermissionChecker handles both via getProjectFromSubject()
         return $this->permissionChecker->hasPermission($user, $permission, $subject);
     }
 

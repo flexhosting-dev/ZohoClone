@@ -65,6 +65,7 @@ class Task
 
     /** @var Collection<int, Task> */
     #[ORM\OneToMany(targetEntity: Task::class, mappedBy: 'parent', orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $subtasks;
 
     /** @var Collection<int, TaskAssignee> */

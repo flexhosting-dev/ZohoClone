@@ -21,6 +21,10 @@ export default {
         const basePath = props.basePath || window.BASE_PATH || '';
         const inputEl = ref(null);
 
+        // Drag and drop state
+        const draggedItem = ref(null);
+        const dragOverIndex = ref(null);
+
         // Smart input state
         const selectedAssignee = ref(null);
         const selectedDueDate = ref('');
@@ -290,12 +294,110 @@ export default {
             return (first + last).toUpperCase() || user.fullName?.[0]?.toUpperCase() || '?';
         };
 
+        // Drag and drop handlers
+        const handleDragStart = (event, item) => {
+            draggedItem.value = item;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', item.id);
+            setTimeout(() => {
+                event.target.classList.add('dragging');
+            }, 0);
+        };
+
+        const handleDragEnd = (event) => {
+            event.target.classList.remove('dragging');
+            draggedItem.value = null;
+            dragOverIndex.value = null;
+        };
+
+        const handleDragOver = (event, index) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            dragOverIndex.value = index;
+        };
+
+        const handleDragLeave = (event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+                dragOverIndex.value = null;
+            }
+        };
+
+        const handleDrop = async (event, targetIndex) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const dragged = draggedItem.value;
+            if (!dragged || saving.value) return;
+
+            draggedItem.value = null;
+            dragOverIndex.value = null;
+
+            const draggedId = dragged.id;
+            const currentIndex = subtasks.value.findIndex(s => s.id === draggedId);
+
+            if (currentIndex === -1 || currentIndex === targetIndex) {
+                return;
+            }
+
+            // Reorder items locally
+            const itemsCopy = [...subtasks.value];
+            const [removed] = itemsCopy.splice(currentIndex, 1);
+
+            let insertIndex = targetIndex;
+            if (currentIndex < targetIndex) {
+                insertIndex = targetIndex - 1;
+            }
+            itemsCopy.splice(insertIndex, 0, removed);
+            subtasks.value = itemsCopy;
+
+            // Persist to server
+            await saveOrder();
+        };
+
+        const saveOrder = async () => {
+            if (saving.value) return;
+            saving.value = true;
+            const subtaskIds = subtasks.value.map(s => s.id);
+
+            try {
+                const response = await fetch(`${basePath}/tasks/${props.taskId}/subtasks/reorder`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ subtaskIds })
+                });
+
+                if (response.ok) {
+                    if (typeof Toastr !== 'undefined') {
+                        Toastr.success('Subtasks Reordered', 'Order updated');
+                    }
+                } else {
+                    console.error('Failed to save subtask order');
+                    if (typeof Toastr !== 'undefined') {
+                        Toastr.error('Reorder Failed', 'Could not save new order');
+                    }
+                }
+            } catch (err) {
+                console.error('Error saving subtask order:', err);
+                if (typeof Toastr !== 'undefined') {
+                    Toastr.error('Reorder Failed', 'Could not save new order');
+                }
+            } finally {
+                saving.value = false;
+            }
+        };
+
         return {
             subtasks, newTitle, saving, error, completedCount, addSubtask, handleKeydown, handleInput,
             openSubtask, statusClass, basePath, inputEl,
             selectedAssignee, selectedDueDate, showMemberDropdown, showDateDropdown, dropUp, scrollInputIntoView,
             filteredMembers, selectMember, removeMember, quickDateOptions, selectQuickDate, selectCustomDate, removeDate, dateInputEl,
-            isOverdue, formatDisplayDate, getInitials
+            isOverdue, formatDisplayDate, getInitials,
+            // Drag and drop
+            draggedItem, dragOverIndex,
+            handleDragStart, handleDragEnd, handleDragOver, handleDragLeave, handleDrop
         };
     },
 
@@ -313,9 +415,26 @@ export default {
             </div>
 
             <div class="space-y-1">
-                <div v-for="subtask in subtasks" :key="subtask.id"
-                     class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer group"
+                <div v-for="(subtask, index) in subtasks" :key="subtask.id"
+                     class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer group transition-all"
+                     :class="{
+                         'opacity-50': draggedItem && draggedItem.id === subtask.id,
+                         'border-t-2 border-primary-500': dragOverIndex === index && draggedItem && draggedItem.id !== subtask.id
+                     }"
+                     :draggable="canEdit"
+                     @dragstart="canEdit && handleDragStart($event, subtask)"
+                     @dragend="handleDragEnd"
+                     @dragover="canEdit && handleDragOver($event, index)"
+                     @dragleave="handleDragLeave"
+                     @drop="canEdit && handleDrop($event, index)"
                      @click="openSubtask(subtask)">
+                    <!-- Drag Handle -->
+                    <div v-if="canEdit" class="cursor-grab text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity select-none flex-shrink-0" @click.stop>
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                        </svg>
+                    </div>
+
                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
                           :class="statusClass(subtask.status)">
                         {{ subtask.status?.label || 'To Do' }}
@@ -357,6 +476,16 @@ export default {
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                     </svg>
                 </div>
+
+                <!-- Drop zone at end of list -->
+                <div
+                    v-if="canEdit && subtasks.length > 0 && draggedItem"
+                    class="h-8 rounded-md transition-all"
+                    :class="{ 'border-t-2 border-primary-500 bg-primary-50': dragOverIndex === subtasks.length }"
+                    @dragover="handleDragOver($event, subtasks.length)"
+                    @dragleave="handleDragLeave"
+                    @drop="handleDrop($event, subtasks.length)"
+                ></div>
             </div>
 
             <div v-if="subtasks.length === 0 && !canEdit" class="text-sm text-gray-400 italic py-4">No subtasks yet</div>

@@ -1,0 +1,40 @@
+<li class="py-2" data-project-id="{{ project.id }}">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center">
+            {% if task.subtaskCount > 0 %}
+                <button type="button" class="mr-1 p-0.5 text-gray-400 hover:text-gray-600"
+                        onclick="toggleSubtasks(this,'{{ task.id }}','{{ milestone.id }}','{{ project.id }}')">
+                    <svg class="subtask-chevron h-3.5 w-3.5 transition-transform duration-150" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
+                    </svg>
+                </button>
+            {% endif %}
+            <span class="inline-flex items-center justify-center h-6 w-6 rounded-full text-xs
+                {% if task.status.value == 'completed' %}bg-green-100 text-green-700
+                {% elseif task.status.value == 'in_progress' %}bg-blue-100 text-blue-700
+                {% elseif task.status.value == 'in_review' %}bg-yellow-100 text-yellow-700
+                {% else %}bg-gray-100 text-gray-700{% endif %}">
+                {% if task.status.value == 'completed' %}
+                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                {% else %}
+                    <span class="w-2 h-2 rounded-full bg-current"></span>
+                {% endif %}
+            </span>
+            <span class="ml-3 text-sm {{ task.status.value == 'completed' ? 'text-gray-500 line-through' : 'text-gray-900' }}">
+                {{ task.title }}
+                {% if task.subtaskCount > 0 %}
+                    <span class="ml-1.5 text-xs text-gray-400">({{ task.completedSubtaskCount }}/{{ task.subtaskCount }})</span>
+                {% endif %}
+            </span>
+        </div>
+        <span class="text-xs font-medium px-2 py-0.5 rounded-full
+            {% if task.priority.value == 'high' %}bg-red-100 text-red-700
+            {% elseif task.priority.value == 'medium' %}bg-yellow-100 text-yellow-700
+            {% elseif task.priority.value == 'low' %}bg-blue-100 text-blue-700
+            {% else %}bg-gray-100 text-gray-700{% endif %}">
+            {{ task.priority.label }}
+        </span>
+    </div>
+</li>

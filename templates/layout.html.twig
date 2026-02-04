@@ -1315,15 +1315,17 @@
             const data = await response.json();
             const item = data.item;
 
-            // Remove "No checklist items" message if present
-            const noMsg = document.querySelector('.no-checklist-msg');
-            if (noMsg) noMsg.remove();
-
             // Add the new item to the list
-            const checklistItems = document.querySelector('.checklist-items');
+            const checklistContainer = input.closest('.checklist-container');
+            const checklistItems = checklistContainer.querySelector('.checklist-items');
+
+            // Remove "No checklist items" message if present
+            const noMsg = checklistContainer.querySelector('.no-checklist-msg');
+            if (noMsg) noMsg.remove();
             const itemEl = document.createElement('div');
             itemEl.className = 'checklist-item group flex items-center gap-2 p-2 rounded-md hover:bg-gray-50';
             itemEl.dataset.itemId = item.id;
+            itemEl.draggable = true;
             itemEl.innerHTML = `
                 <div class="checklist-drag-handle cursor-grab text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -1347,7 +1349,7 @@
             checklistItems.appendChild(itemEl);
 
             // Update progress
-            updateChecklistProgress();
+            updateChecklistProgress(checklistContainer);
 
             input.disabled = false;
             input.focus();
@@ -1393,7 +1395,7 @@
             checkbox.disabled = false;
 
             // Update progress
-            updateChecklistProgress();
+            updateChecklistProgress(checkbox.closest('.checklist-container'));
         } catch (error) {
             console.error('Error toggling checklist item:', error);
             checkbox.checked = !checkbox.checked;
@@ -1468,6 +1470,8 @@
     // Delete checklist item
     async function deleteChecklistItem(taskId, itemId, btn) {
         const itemEl = btn.closest('.checklist-item');
+        const checklistContainer = itemEl.closest('.checklist-container');
+        const checklistItems = checklistContainer.querySelector('.checklist-items');
         itemEl.style.opacity = '0.5';
 
         try {
@@ -1483,7 +1487,6 @@
             itemEl.remove();
 
             // Show "No checklist items" if empty
-            const checklistItems = document.querySelector('.checklist-items');
             if (checklistItems.querySelectorAll('.checklist-item').length === 0) {
                 const noMsg = document.createElement('p');
                 noMsg.className = 'no-checklist-msg text-sm text-gray-400 italic py-4';
@@ -1492,7 +1495,7 @@
             }
 
             // Update progress
-            updateChecklistProgress();
+            updateChecklistProgress(checklistContainer);
 
             Toastr.success('Checklist item deleted');
         } catch (error) {
@@ -1503,18 +1506,22 @@
     }
 
     // Update checklist progress bar
-    function updateChecklistProgress() {
-        const checklistItems = document.querySelector('.checklist-items');
+    function updateChecklistProgress(container) {
+        // Find the container - either passed in or find first one
+        const checklistContainer = container || document.querySelector('.checklist-container');
+        if (!checklistContainer) return;
+
+        const checklistItems = checklistContainer.querySelector('.checklist-items');
         if (!checklistItems) return;
 
         const items = checklistItems.querySelectorAll('.checklist-item');
         const totalCount = items.length;
         const completedCount = checklistItems.querySelectorAll('.checklist-checkbox:checked').length;
 
-        const progressContainer = document.querySelector('.checklist-progress');
-        const progressText = document.querySelector('.checklist-progress-text');
-        const progressBar = document.querySelector('.checklist-progress-bar');
-        const countSpan = document.querySelector('.checklist-count');
+        const progressContainer = checklistContainer.querySelector('.checklist-progress');
+        const progressText = checklistContainer.querySelector('.checklist-progress-text');
+        const progressBar = checklistContainer.querySelector('.checklist-progress-bar');
+        const countSpan = checklistContainer.querySelector('.checklist-count');
 
         if (progressContainer) {
             if (totalCount === 0) {
@@ -1587,7 +1594,8 @@
 
         e.preventDefault();
 
-        const checklistContainer = document.querySelector('.checklist-items');
+        const checklistContainer = targetItem.closest('.checklist-items');
+        if (!checklistContainer) return;
         const taskId = checklistContainer.dataset.taskId;
         const movedItem = draggedChecklistItem;
 

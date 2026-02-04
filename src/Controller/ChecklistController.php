@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\TaskChecklist;
 use App\Repository\TaskRepository;
 use App\Repository\TaskChecklistRepository;
+use App\Security\Voter\ChecklistVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -29,8 +30,7 @@ class ChecklistController extends AbstractController
             return $this->json(['error' => 'Task not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $project = $task->getProject();
-        $this->denyAccessUnlessGranted('PROJECT_VIEW', $project);
+        $this->denyAccessUnlessGranted(ChecklistVoter::VIEW, $task);
 
         $items = $this->checklistRepository->findByTask($task);
 
@@ -49,8 +49,7 @@ class ChecklistController extends AbstractController
             return $this->json(['error' => 'Task not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $project = $task->getProject();
-        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
+        $this->denyAccessUnlessGranted(ChecklistVoter::CREATE, $task);
 
         $data = json_decode($request->getContent(), true);
         $title = trim($data['title'] ?? '');
@@ -82,18 +81,12 @@ class ChecklistController extends AbstractController
     #[Route('/tasks/{taskId}/checklists/{itemId}/toggle', name: 'app_checklist_toggle', methods: ['POST'])]
     public function toggle(string $taskId, string $itemId): JsonResponse
     {
-        $task = $this->taskRepository->find($taskId);
-        if (!$task) {
-            return $this->json(['error' => 'Task not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        $project = $task->getProject();
-        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
-
         $item = $this->checklistRepository->find($itemId);
         if (!$item || $item->getTask()->getId()->toString() !== $taskId) {
             return $this->json(['error' => 'Checklist item not found'], Response::HTTP_NOT_FOUND);
         }
+
+        $this->denyAccessUnlessGranted(ChecklistVoter::TOGGLE, $item);
 
         $item->toggle();
         $this->entityManager->flush();
@@ -107,18 +100,12 @@ class ChecklistController extends AbstractController
     #[Route('/tasks/{taskId}/checklists/{itemId}', name: 'app_checklist_update', methods: ['PATCH'])]
     public function update(Request $request, string $taskId, string $itemId): JsonResponse
     {
-        $task = $this->taskRepository->find($taskId);
-        if (!$task) {
-            return $this->json(['error' => 'Task not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        $project = $task->getProject();
-        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
-
         $item = $this->checklistRepository->find($itemId);
         if (!$item || $item->getTask()->getId()->toString() !== $taskId) {
             return $this->json(['error' => 'Checklist item not found'], Response::HTTP_NOT_FOUND);
         }
+
+        $this->denyAccessUnlessGranted(ChecklistVoter::EDIT, $item);
 
         $data = json_decode($request->getContent(), true);
 
@@ -144,18 +131,12 @@ class ChecklistController extends AbstractController
     #[Route('/tasks/{taskId}/checklists/{itemId}', name: 'app_checklist_delete', methods: ['DELETE'])]
     public function delete(string $taskId, string $itemId): JsonResponse
     {
-        $task = $this->taskRepository->find($taskId);
-        if (!$task) {
-            return $this->json(['error' => 'Task not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        $project = $task->getProject();
-        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
-
         $item = $this->checklistRepository->find($itemId);
         if (!$item || $item->getTask()->getId()->toString() !== $taskId) {
             return $this->json(['error' => 'Checklist item not found'], Response::HTTP_NOT_FOUND);
         }
+
+        $this->denyAccessUnlessGranted(ChecklistVoter::DELETE, $item);
 
         $this->entityManager->remove($item);
         $this->entityManager->flush();
@@ -171,8 +152,7 @@ class ChecklistController extends AbstractController
             return $this->json(['error' => 'Task not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $project = $task->getProject();
-        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
+        $this->denyAccessUnlessGranted(ChecklistVoter::EDIT, $task);
 
         $data = json_decode($request->getContent(), true);
         $itemIds = $data['itemIds'] ?? [];
