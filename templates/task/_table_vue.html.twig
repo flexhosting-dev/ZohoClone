@@ -73,6 +73,8 @@
     data-vue-create-url="{{ project is defined and project ? path('app_task_create_json', {projectId: project.id}) : '' }}"
     data-vue-storage-key="{{ storageKey|default('task_table') }}"
     data-vue-children-url-template="{{ path('app_task_children', {id: '__TASK_ID__'}) }}"
+    data-vue-bulk-update-url="{{ path('app_task_bulk_update') }}"
+    data-vue-bulk-delete-url="{{ path('app_task_bulk_delete') }}"
 >
     {# Loading fallback shown before Vue mounts #}
     <div class="flex items-center justify-center py-12">

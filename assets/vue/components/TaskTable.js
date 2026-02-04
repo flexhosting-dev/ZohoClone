@@ -66,6 +66,14 @@ export default {
         childrenUrlTemplate: {
             type: String,
             default: ''
+        },
+        bulkUpdateUrl: {
+            type: String,
+            default: ''
+        },
+        bulkDeleteUrl: {
+            type: String,
+            default: ''
         }
     },
 
@@ -1012,11 +1020,15 @@ export default {
 
         const handleBulkUpdate = async (updates) => {
             if (selectedIds.value.size === 0 || isBulkUpdating.value) return;
+            if (!props.bulkUpdateUrl) {
+                console.error('Bulk update URL not configured');
+                return;
+            }
 
             isBulkUpdating.value = true;
 
             try {
-                const response = await fetch('/tasks/bulk-update', {
+                const response = await fetch(props.bulkUpdateUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1071,11 +1083,15 @@ export default {
 
         const handleBulkDelete = async () => {
             if (selectedIds.value.size === 0 || isBulkUpdating.value) return;
+            if (!props.bulkDeleteUrl) {
+                console.error('Bulk delete URL not configured');
+                return;
+            }
 
             isBulkUpdating.value = true;
 
             try {
-                const response = await fetch('/tasks/bulk-delete', {
+                const response = await fetch(props.bulkDeleteUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
