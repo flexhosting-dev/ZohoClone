@@ -17,17 +17,17 @@
     data-vue-component="TaskTable"
     data-vue-initial-tasks='{{ tasks|map(task => {
         id: task.id ~ '',
-        title: task.title,
-        status: { value: task.status.value, label: task.status.label },
-        priority: { value: task.priority.value, label: task.priority.label },
+        title: task.title|default(''),
+        status: { value: task.status ? task.status.value : 'todo', label: task.status ? task.status.label : 'To Do' },
+        priority: { value: task.priority ? task.priority.value : 'none', label: task.priority ? task.priority.label : 'None' },
         milestoneId: task.milestone ? task.milestone.id ~ '' : null,
-        projectName: task.project.name,
+        projectName: task.project ? task.project.name|default('') : '',
         dueDate: task.dueDate ? task.dueDate|date('Y-m-d') : null,
         startDate: task.startDate ? task.startDate|date('Y-m-d') : null,
-        position: task.position,
+        position: task.position|default(0),
         depth: task.depth|default(0),
         parentId: task.parent ? task.parent.id ~ '' : null,
-        parentChain: task.parentChain,
+        parentChain: task.parentChain|default(''),
         commentCount: task.commentCount|default(0),
         checklistCount: task.checklistCount|default(0),
         completedChecklistCount: task.completedChecklistCount|default(0),
@@ -35,23 +35,23 @@
         completedSubtaskCount: task.completedSubtaskCount|default(0),
         assignees: task.assignees|map(a => {
             id: a.id ~ '',
-            user: {
+            user: a.user ? {
                 id: a.user.id ~ '',
-                firstName: a.user.firstName,
-                lastName: a.user.lastName,
-                fullName: a.user.fullName,
+                firstName: a.user.firstName|default(''),
+                lastName: a.user.lastName|default(''),
+                fullName: a.user.fullName|default('Unknown'),
                 avatar: a.user.avatar ? basePath ~ '/uploads/avatars/' ~ a.user.avatar : null
-            }
-        }),
+            } : null
+        })|filter(a => a.user is not null),
         tags: task.tags|map(t => {
             id: t.id ~ '',
-            name: t.name,
-            color: t.color
+            name: t.name|default(''),
+            color: t.color|default('#6b7280')
         })
     })|json_encode|e('html_attr') }}'
     data-vue-milestones='{{ milestones|map(m => {
         id: m.id ~ '',
-        name: m.name,
+        name: m.name|default(''),
         dueDate: m.dueDate ? m.dueDate|date('Y-m-d') : null,
         projectId: m.project ? m.project.id ~ '' : null
     })|json_encode|e('html_attr') }}'
