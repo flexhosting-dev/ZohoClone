@@ -66,9 +66,9 @@
                     <button type="button" onclick="showTaskView(0)" id="task-view-btn-0"
                             class="task-view-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-white text-primary-600 shadow-sm">
                         <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0 1 12 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 1.5v-1.5m0 0c0-.621.504-1.125 1.125-1.125m0 0h7.5" />
                         </svg>
-                        List
+                        Table
                     </button>
                     <button type="button" onclick="showTaskView(1)" id="task-view-btn-1"
                             class="task-view-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">
@@ -76,13 +76,6 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z" />
                         </svg>
                         Kanban
-                    </button>
-                    <button type="button" onclick="showTaskView(2)" id="task-view-btn-2"
-                            class="task-view-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">
-                        <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0 1 12 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 1.5v-1.5m0 0c0-.621.504-1.125 1.125-1.125m0 0h7.5" />
-                        </svg>
-                        Table
                     </button>
                 </div>
 
@@ -137,11 +130,15 @@
             {% endif %}
         </div>
 
-        {# List View #}
+        {# Table View #}
         <div id="task-view-panel-0" class="task-view-panel">
-            {% include 'task/_list.html.twig' with {
+            {% include 'task/_table_vue.html.twig' with {
                 tasks: tasks,
-                project: project|default(null)
+                milestones: milestones|default([]),
+                members: projectMembers|default([]),
+                canEdit: canEdit|default(false),
+                project: project|default(null),
+                storageKey: storageKey ~ '_table'
             } %}
         </div>
 
@@ -153,18 +150,6 @@
                 kanbanModeKey: kanbanModeKey|default('kanban_mode'),
                 availableProjects: availableProjects|default([]),
                 filteredProjectId: filteredProjectId|default('')
-            } %}
-        </div>
-
-        {# Table View #}
-        <div id="task-view-panel-2" class="task-view-panel hidden">
-            {% include 'task/_table_vue.html.twig' with {
-                tasks: tasks,
-                milestones: milestones|default([]),
-                members: projectMembers|default([]),
-                canEdit: canEdit|default(false),
-                project: project|default(null),
-                storageKey: storageKey ~ '_table'
             } %}
         </div>
     {% else %}
@@ -216,7 +201,7 @@
         }
 
         // Remount Vue components when switching to table view
-        if (index === 2 && typeof window.mountVueComponents === 'function') {
+        if (index === 0 && typeof window.mountVueComponents === 'function') {
             setTimeout(function() { window.mountVueComponents(); }, 0);
         }
 
@@ -265,7 +250,9 @@
         try {
             const savedView = localStorage.getItem(storageKey);
             if (savedView !== null) {
-                showTaskView(parseInt(savedView), false);
+                const viewIndex = parseInt(savedView);
+                // Only 2 views now: 0=Table, 1=Kanban
+                showTaskView(viewIndex <= 1 ? viewIndex : 0, false);
             }
         } catch (e) {}
     }
