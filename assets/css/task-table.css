@@ -9,27 +9,6 @@
     table-layout: fixed;
 }
 
-/* Responsive column hiding */
-@media (max-width: 1024px) {
-    .task-table-container th:nth-child(n+6),
-    .task-table-container td:nth-child(n+6) {
-        display: none;
-    }
-}
-
-@media (max-width: 768px) {
-    .task-table-container th:nth-child(n+5),
-    .task-table-container td:nth-child(n+5) {
-        display: none;
-    }
-}
-
-@media (max-width: 640px) {
-    .task-table-container th:nth-child(n+4),
-    .task-table-container td:nth-child(n+4) {
-        display: none;
-    }
-}
 
 /* Tree lines for subtasks */
 .task-table-row-child {

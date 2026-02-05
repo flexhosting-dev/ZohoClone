@@ -20,7 +20,7 @@ export default {
 
         // Filter out checkbox column from configuration
         const configurableColumns = computed(() => {
-            return props.columns.filter(col => col.key !== 'checkbox');
+            return props.columns.filter(col => col.key !== 'checkbox' && col.key !== 'title');
         });
 
         const toggleDropdown = () => {
@@ -91,12 +91,12 @@ export default {
         };
 
         onMounted(() => {
-            document.addEventListener('click', handleClickOutside);
+            document.addEventListener('mousedown', handleClickOutside);
             document.addEventListener('keydown', handleKeydown);
         });
 
         onUnmounted(() => {
-            document.removeEventListener('click', handleClickOutside);
+            document.removeEventListener('mousedown', handleClickOutside);
             document.removeEventListener('keydown', handleKeydown);
         });
 

@@ -176,6 +176,7 @@ export default {
         };
 
         const toggleColumnVisibility = (columnKey) => {
+            if (columnKey === 'title') return;
             const col = columns.value.find(c => c.key === columnKey);
             if (col) {
                 col.visible = !col.visible;
@@ -184,6 +185,8 @@ export default {
         };
 
         const reorderColumns = (fromIndex, toIndex) => {
+            const titleIndex = columns.value.findIndex(c => c.key === 'title');
+            if (fromIndex === titleIndex || toIndex === titleIndex) return;
             const newColumns = [...columns.value];
             const [moved] = newColumns.splice(fromIndex, 1);
             newColumns.splice(toIndex, 0, moved);
@@ -1510,7 +1513,7 @@ export default {
 
                             <!-- Task Row -->
                             <TaskRow
-                                v-else
+                                v-if="item.type === 'task'"
                                 :task="item.task"
                                 :columns="columns"
                                 :base-path="basePath"
