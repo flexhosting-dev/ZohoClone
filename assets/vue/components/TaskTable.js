@@ -1519,6 +1519,12 @@ export default {
         const subtaskQuickAddRef = ref(null);
         const isCreatingSubtask = ref(false);
 
+        // Inline add above/below state
+        const inlineAddAboveTaskId = ref(null);
+        const inlineAddBelowTaskId = ref(null);
+        const inlineAddRowRef = ref(null);
+        const isCreatingInlineTask = ref(false);
+
         const handleContextAddSubtask = async (task) => {
             if (!props.subtaskUrlTemplate) {
                 console.warn('No subtask URL template configured');
@@ -1598,6 +1604,131 @@ export default {
                 }
             } finally {
                 isCreatingSubtask.value = false;
+            }
+        };
+
+        // Inline add above/below handlers
+        const handleContextAddAbove = async (task) => {
+            // Clear any other inline add states
+            subtaskQuickAddParentId.value = null;
+            inlineAddBelowTaskId.value = null;
+            inlineAddAboveTaskId.value = task.id;
+
+            await nextTick();
+            if (inlineAddRowRef.value && inlineAddRowRef.value.focus) {
+                inlineAddRowRef.value.focus();
+            }
+        };
+
+        const handleContextAddBelow = async (task) => {
+            // Clear any other inline add states
+            subtaskQuickAddParentId.value = null;
+            inlineAddAboveTaskId.value = null;
+            inlineAddBelowTaskId.value = task.id;
+
+            await nextTick();
+            if (inlineAddRowRef.value && inlineAddRowRef.value.focus) {
+                inlineAddRowRef.value.focus();
+            }
+        };
+
+        const cancelInlineAdd = () => {
+            inlineAddAboveTaskId.value = null;
+            inlineAddBelowTaskId.value = null;
+        };
+
+        const saveInlineAdd = async (formData, continueAdding = false) => {
+            const title = formData.title?.trim();
+            if (!title || isCreatingInlineTask.value) return;
+
+            if (!props.createUrl) {
+                console.warn('No create URL configured');
+                cancelInlineAdd();
+                return;
+            }
+
+            const targetTaskId = inlineAddAboveTaskId.value || inlineAddBelowTaskId.value;
+            const isAbove = !!inlineAddAboveTaskId.value;
+            const targetTask = tasks.value.find(t => t.id === targetTaskId);
+
+            if (!targetTask) {
+                cancelInlineAdd();
+                return;
+            }
+
+            // Determine milestone (use target task's milestone if not specified)
+            let milestoneId = formData.milestone || targetTask.milestoneId;
+            if (!milestoneId && props.milestones.length > 0) {
+                milestoneId = props.milestones[0].id;
+            }
+
+            if (!milestoneId) {
+                if (typeof Toastr !== 'undefined') {
+                    Toastr.error('Cannot Create Task', 'A milestone is required');
+                }
+                return;
+            }
+
+            // Calculate position
+            const targetPosition = targetTask.position ?? 0;
+            const newPosition = isAbove ? targetPosition - 0.5 : targetPosition + 0.5;
+
+            isCreatingInlineTask.value = true;
+
+            try {
+                const response = await fetch(props.createUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        title,
+                        milestone: milestoneId,
+                        status: formData.status || 'todo',
+                        priority: formData.priority || 'none',
+                        dueDate: formData.dueDate || null,
+                        startDate: formData.startDate || null,
+                        assignees: formData.assignees || [],
+                        position: newPosition,
+                        parentId: targetTask.parentId || null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to create task');
+                }
+
+                // Add the new task to the list
+                const newTask = data.task;
+                newTask.assignees = newTask.assignees || [];
+                newTask.tags = newTask.tags || [];
+
+                // Find the index of the target task and insert at the right position
+                const targetIndex = tasks.value.findIndex(t => t.id === targetTaskId);
+                if (targetIndex !== -1) {
+                    const insertIndex = isAbove ? targetIndex : targetIndex + 1;
+                    tasks.value.splice(insertIndex, 0, newTask);
+                } else {
+                    tasks.value.push(newTask);
+                }
+
+                if (typeof Toastr !== 'undefined') {
+                    Toastr.success('Task Created', `"${title}" created successfully`);
+                }
+
+                if (!continueAdding) {
+                    cancelInlineAdd();
+                }
+            } catch (error) {
+                console.error('Error creating task:', error);
+                if (typeof Toastr !== 'undefined') {
+                    Toastr.error('Create Failed', error.message || 'Could not create task');
+                }
+            } finally {
+                isCreatingInlineTask.value = false;
             }
         };
 
@@ -1920,6 +2051,15 @@ export default {
             isCreatingSubtask,
             cancelSubtaskQuickAdd,
             saveSubtaskQuickAdd,
+            // Inline add above/below
+            inlineAddAboveTaskId,
+            inlineAddBelowTaskId,
+            inlineAddRowRef,
+            isCreatingInlineTask,
+            handleContextAddAbove,
+            handleContextAddBelow,
+            cancelInlineAdd,
+            saveInlineAdd,
             // Confirm dialog
             confirmDialogRef
         };
@@ -2081,6 +2221,25 @@ export default {
                                 @cancel="cancelQuickAdd"
                             />
 
+                            <!-- Inline Add Above Row -->
+                            <QuickAddRow
+                                v-if="item.type === 'task' && inlineAddAboveTaskId === item.task.id"
+                                ref="inlineAddRowRef"
+                                :columns="columns"
+                                :status-options="statusOptions"
+                                :priority-options="priorityOptions"
+                                :milestone-options="milestoneOptions"
+                                :members="members"
+                                :default-status="'todo'"
+                                :default-priority="'none'"
+                                :default-milestone="item.task.milestoneId || ''"
+                                :is-creating="isCreatingInlineTask"
+                                :depth="item.task.displayDepth || 0"
+                                :placeholder="'New task...'"
+                                @save="saveInlineAdd"
+                                @cancel="cancelInlineAdd"
+                            />
+
                             <!-- Task Row -->
                             <TaskRow
                                 v-if="item.type === 'task'"
@@ -2109,6 +2268,25 @@ export default {
                                 @cancel-edit="cancelEditing"
                                 @assignee-change="handleAssigneeChange"
                                 @contextmenu="handleRowContextMenu"
+                            />
+
+                            <!-- Inline Add Below Row -->
+                            <QuickAddRow
+                                v-if="item.type === 'task' && inlineAddBelowTaskId === item.task.id"
+                                ref="inlineAddRowRef"
+                                :columns="columns"
+                                :status-options="statusOptions"
+                                :priority-options="priorityOptions"
+                                :milestone-options="milestoneOptions"
+                                :members="members"
+                                :default-status="'todo'"
+                                :default-priority="'none'"
+                                :default-milestone="item.task.milestoneId || ''"
+                                :is-creating="isCreatingInlineTask"
+                                :depth="item.task.displayDepth || 0"
+                                :placeholder="'New task...'"
+                                @save="saveInlineAdd"
+                                @cancel="cancelInlineAdd"
                             />
 
                             <!-- Subtask Quick Add Row (appears below parent task) -->
@@ -2196,6 +2374,8 @@ export default {
                 @set-due-date="handleContextSetDueDate"
                 @set-milestone="handleContextSetMilestone"
                 @add-subtask="handleContextAddSubtask"
+                @add-above="handleContextAddAbove"
+                @add-below="handleContextAddBelow"
                 @duplicate="handleContextDuplicate"
                 @delete="handleContextDelete"
             />

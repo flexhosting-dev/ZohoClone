@@ -60,6 +60,8 @@ export default {
         'set-due-date',
         'set-milestone',
         'add-subtask',
+        'add-above',
+        'add-below',
         'duplicate',
         'delete'
     ],
@@ -284,6 +286,16 @@ export default {
             emit('close');
         };
 
+        const handleAddAbove = () => {
+            emit('add-above', singleTask.value);
+            emit('close');
+        };
+
+        const handleAddBelow = () => {
+            emit('add-below', singleTask.value);
+            emit('close');
+        };
+
         const handleDuplicate = () => {
             emit('duplicate', singleTask.value);
             emit('close');
@@ -335,6 +347,8 @@ export default {
             handleSetDueDate,
             handleSetMilestone,
             handleAddSubtask,
+            handleAddAbove,
+            handleAddBelow,
             handleDuplicate,
             handleDelete
         };
@@ -592,6 +606,32 @@ export default {
 
                 <!-- Separator -->
                 <div v-if="canEdit && !isMultiSelect && (canAddSubtask || canDuplicate)" class="border-t border-gray-100 my-1"></div>
+
+                <!-- Add Above (single task only) -->
+                <button
+                    v-if="canEdit && !isMultiSelect"
+                    type="button"
+                    @click="handleAddAbove"
+                    class="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    role="menuitem">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                    </svg>
+                    Add Above
+                </button>
+
+                <!-- Add Below (single task only) -->
+                <button
+                    v-if="canEdit && !isMultiSelect"
+                    type="button"
+                    @click="handleAddBelow"
+                    class="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    role="menuitem">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                    </svg>
+                    Add Below
+                </button>
 
                 <!-- Add Subtask (single task only) -->
                 <button
