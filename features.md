@@ -1099,6 +1099,14 @@ See Feature #10 below for full specification.
 - Filter by multiple criteria
 - Saved searches/filters
 
+### Dark Mode
+- System preference detection (`prefers-color-scheme`)
+- Manual toggle in user settings (Light / Dark / System)
+- Persist preference to user profile
+- CSS custom properties for theme colors
+- Smooth transition between themes
+- Ensure sufficient contrast ratios for accessibility
+
 ---
 
 ## 9. Customizable Task Statuses
