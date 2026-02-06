@@ -5,11 +5,12 @@ import ColumnConfig from './TaskTable/ColumnConfig.js';
 import GroupRow from './TaskTable/GroupRow.js';
 import BulkActionBar from './TaskTable/BulkActionBar.js';
 import QuickAddRow from './TaskTable/QuickAddRow.js';
+import ContextMenu from './TaskTable/ContextMenu.js';
 
 export default {
     name: 'TaskTable',
 
-    components: { TableHeader, TaskRow, ColumnConfig, GroupRow, BulkActionBar, QuickAddRow },
+    components: { TableHeader, TaskRow, ColumnConfig, GroupRow, BulkActionBar, QuickAddRow, ContextMenu },
 
     props: {
         initialTasks: {
@@ -77,6 +78,14 @@ export default {
             default: ''
         },
         assigneesUrlTemplate: {
+            type: String,
+            default: ''
+        },
+        duplicateUrlTemplate: {
+            type: String,
+            default: ''
+        },
+        subtaskUrlTemplate: {
             type: String,
             default: ''
         }
@@ -1213,6 +1222,240 @@ export default {
         // Table ref for keyboard navigation
         const tableRef = ref(null);
 
+        // Context menu state
+        const contextMenu = ref({
+            visible: false,
+            x: 0,
+            y: 0,
+            tasks: []
+        });
+
+        // Long press timer for mobile
+        let longPressTimer = null;
+
+        // Show context menu
+        const showContextMenu = (task, event) => {
+            // If task is in current selection, use selection
+            // Otherwise, use just this task
+            let contextTasks = [];
+            if (selectedIds.value.has(task.id)) {
+                contextTasks = tasks.value.filter(t => selectedIds.value.has(t.id));
+            } else {
+                contextTasks = [task];
+            }
+
+            contextMenu.value = {
+                visible: true,
+                x: event.clientX,
+                y: event.clientY,
+                tasks: contextTasks
+            };
+        };
+
+        // Hide context menu
+        const hideContextMenu = () => {
+            contextMenu.value.visible = false;
+        };
+
+        // Handle row context menu (right-click)
+        const handleRowContextMenu = (task, event) => {
+            showContextMenu(task, event);
+        };
+
+        // Context menu action handlers
+        const handleContextEdit = (task) => {
+            if (typeof window.openTaskPanel === 'function') {
+                window.openTaskPanel(task.id);
+            }
+        };
+
+        const handleContextCopyLink = (task) => {
+            const url = `${window.location.origin}/tasks/${task.id}`;
+            navigator.clipboard.writeText(url).then(() => {
+                if (typeof Toastr !== 'undefined') {
+                    Toastr.success('Link Copied', 'Task link copied to clipboard');
+                }
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        };
+
+        const handleContextSetStatus = async (contextTasks, status) => {
+            if (contextTasks.length === 1) {
+                await saveInlineEdit(contextTasks[0].id, 'status', status);
+            } else {
+                // Bulk update
+                const taskIds = contextTasks.map(t => t.id);
+                selectedIds.value = new Set(taskIds);
+                await handleBulkUpdate({ status });
+            }
+        };
+
+        const handleContextSetPriority = async (contextTasks, priority) => {
+            if (contextTasks.length === 1) {
+                await saveInlineEdit(contextTasks[0].id, 'priority', priority);
+            } else {
+                // Bulk update
+                const taskIds = contextTasks.map(t => t.id);
+                selectedIds.value = new Set(taskIds);
+                await handleBulkUpdate({ priority });
+            }
+        };
+
+        const handleContextAssignTo = async (contextTasks, userId) => {
+            // For single task, toggle assignee
+            if (contextTasks.length === 1) {
+                const task = contextTasks[0];
+                const currentAssigneeIds = new Set((task.assignees || []).map(a => a.user?.id || a.id));
+                const action = currentAssigneeIds.has(userId) ? 'remove' : 'add';
+                await handleAssigneeChange(task.id, userId, action);
+            } else {
+                // For multiple tasks, add assignee to all
+                for (const task of contextTasks) {
+                    const currentAssigneeIds = new Set((task.assignees || []).map(a => a.user?.id || a.id));
+                    if (!currentAssigneeIds.has(userId)) {
+                        await handleAssigneeChange(task.id, userId, 'add');
+                    }
+                }
+            }
+        };
+
+        const handleContextSetDueDate = (task) => {
+            // Start inline editing for due date
+            editingCell.value = { taskId: task.id, field: 'dueDate' };
+        };
+
+        const handleContextSetMilestone = async (contextTasks, milestoneId) => {
+            if (contextTasks.length === 1) {
+                await saveInlineEdit(contextTasks[0].id, 'milestone', milestoneId);
+            } else {
+                // Bulk update
+                const taskIds = contextTasks.map(t => t.id);
+                selectedIds.value = new Set(taskIds);
+                await handleBulkUpdate({ milestone: milestoneId });
+            }
+        };
+
+        const handleContextAddSubtask = async (task) => {
+            if (!props.subtaskUrlTemplate) {
+                console.warn('No subtask URL template configured');
+                return;
+            }
+
+            // Prompt for subtask title
+            const title = prompt('Enter subtask title:');
+            if (!title || !title.trim()) return;
+
+            const url = props.subtaskUrlTemplate.replace('__TASK_ID__', task.id);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ title: title.trim() })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to create subtask');
+                }
+
+                // Add the new subtask to tasks
+                const newSubtask = data.subtask;
+                tasks.value.push(newSubtask);
+
+                // Expand parent to show subtask
+                expandedIds.value.add(task.id);
+                expandedIds.value = new Set(expandedIds.value);
+                saveExpandedState();
+
+                // Update parent's subtask count
+                const parent = tasks.value.find(t => t.id === task.id);
+                if (parent) {
+                    parent.subtaskCount = (parent.subtaskCount || 0) + 1;
+                }
+
+                if (typeof Toastr !== 'undefined') {
+                    Toastr.success('Subtask Created', `"${title}" created successfully`);
+                }
+            } catch (error) {
+                console.error('Error creating subtask:', error);
+                if (typeof Toastr !== 'undefined') {
+                    Toastr.error('Create Failed', error.message || 'Could not create subtask');
+                }
+            }
+        };
+
+        const handleContextDuplicate = async (task) => {
+            if (!props.duplicateUrlTemplate) {
+                console.warn('No duplicate URL template configured');
+                return;
+            }
+
+            const url = props.duplicateUrlTemplate.replace('__TASK_ID__', task.id);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to duplicate task');
+                }
+
+                // Add the duplicate task to the list
+                const newTask = data.task;
+                newTask.assignees = newTask.assignees || [];
+                newTask.tags = newTask.tags || [];
+                tasks.value.push(newTask);
+
+                if (typeof Toastr !== 'undefined') {
+                    Toastr.success('Task Duplicated', `"${newTask.title}" created`);
+                }
+            } catch (error) {
+                console.error('Error duplicating task:', error);
+                if (typeof Toastr !== 'undefined') {
+                    Toastr.error('Duplicate Failed', error.message || 'Could not duplicate task');
+                }
+            }
+        };
+
+        const handleContextDelete = async (contextTasks) => {
+            const count = contextTasks.length;
+            const message = count === 1
+                ? `Delete "${contextTasks[0].title}"?`
+                : `Delete ${count} tasks?`;
+
+            if (!confirm(message)) return;
+
+            if (count === 1) {
+                // Single task delete
+                const taskIds = [contextTasks[0].id];
+                selectedIds.value = new Set(taskIds);
+                await handleBulkDelete();
+            } else {
+                // Bulk delete
+                const taskIds = contextTasks.map(t => t.id);
+                selectedIds.value = new Set(taskIds);
+                await handleBulkDelete();
+            }
+        };
+
+        // Check if task can have subtasks (depth < 3)
+        const canAddSubtaskTo = (task) => {
+            return (task.depth || 0) < 2;
+        };
+
         // Global keyboard shortcuts
         const handleGlobalKeydown = (event) => {
             // Ctrl/Cmd + F to focus search
@@ -1226,12 +1469,28 @@ export default {
                 }
             }
 
-            // Escape to cancel editing or clear selection
+            // Escape to close context menu, cancel editing, or clear selection
             if (event.key === 'Escape') {
-                if (editingCell.value) {
+                if (contextMenu.value.visible) {
+                    hideContextMenu();
+                } else if (editingCell.value) {
                     cancelEditing();
                 } else if (selectedIds.value.size > 0) {
                     clearSelection();
+                }
+            }
+
+            // Shift+F10 or context menu key to open context menu on focused row
+            if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+                const focusedRow = document.activeElement?.closest('tr[data-task-id]');
+                if (focusedRow) {
+                    const taskId = focusedRow.getAttribute('data-task-id');
+                    const task = tasks.value.find(t => t.id === taskId);
+                    if (task) {
+                        event.preventDefault();
+                        const rect = focusedRow.getBoundingClientRect();
+                        showContextMenu(task, { clientX: rect.left + 50, clientY: rect.bottom });
+                    }
                 }
             }
         };
@@ -1370,7 +1629,22 @@ export default {
             canEdit: props.canEdit,
             milestones: props.milestones,
             members: props.members,
-            createUrl: props.createUrl
+            createUrl: props.createUrl,
+            // Context menu
+            contextMenu,
+            hideContextMenu,
+            handleRowContextMenu,
+            handleContextEdit,
+            handleContextCopyLink,
+            handleContextSetStatus,
+            handleContextSetPriority,
+            handleContextAssignTo,
+            handleContextSetDueDate,
+            handleContextSetMilestone,
+            handleContextAddSubtask,
+            handleContextDuplicate,
+            handleContextDelete,
+            canAddSubtaskTo
         };
     },
 
@@ -1555,6 +1829,7 @@ export default {
                                 @save-edit="saveInlineEdit"
                                 @cancel-edit="cancelEditing"
                                 @assignee-change="handleAssigneeChange"
+                                @contextmenu="handleRowContextMenu"
                             />
                         </template>
 
@@ -1598,6 +1873,32 @@ export default {
                 @clear-selection="clearSelection"
                 @bulk-update="handleBulkUpdate"
                 @bulk-delete="handleBulkDelete"
+            />
+
+            <!-- Context Menu -->
+            <ContextMenu
+                :visible="contextMenu.visible"
+                :x="contextMenu.x"
+                :y="contextMenu.y"
+                :tasks="contextMenu.tasks"
+                :status-options="statusOptions"
+                :priority-options="priorityOptions"
+                :milestone-options="milestoneOptions"
+                :members="members"
+                :can-edit="canEdit"
+                :can-add-subtask="contextMenu.tasks.length === 1 && canAddSubtaskTo(contextMenu.tasks[0])"
+                :can-duplicate="contextMenu.tasks.length === 1"
+                @close="hideContextMenu"
+                @edit="handleContextEdit"
+                @copy-link="handleContextCopyLink"
+                @set-status="handleContextSetStatus"
+                @set-priority="handleContextSetPriority"
+                @assign-to="handleContextAssignTo"
+                @set-due-date="handleContextSetDueDate"
+                @set-milestone="handleContextSetMilestone"
+                @add-subtask="handleContextAddSubtask"
+                @duplicate="handleContextDuplicate"
+                @delete="handleContextDelete"
             />
         </div>
     `

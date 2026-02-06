@@ -1514,6 +1514,105 @@ class TaskController extends AbstractController
         ]);
     }
 
+    #[Route('/tasks/{id}/duplicate', name: 'app_task_duplicate', methods: ['POST'])]
+    public function duplicate(Request $request, Task $task): JsonResponse
+    {
+        $project = $task->getProject();
+        $this->denyAccessUnlessGranted('PROJECT_EDIT', $project);
+
+        /** @var User $user */
+        $user = $this->getUser();
+
+        // Create duplicate task
+        $duplicate = new Task();
+        $duplicate->setTitle($task->getTitle() . ' (Copy)');
+        $duplicate->setDescription($task->getDescription());
+        $duplicate->setMilestone($task->getMilestone());
+        $duplicate->setStatus($task->getStatus());
+        $duplicate->setPriority($task->getPriority());
+        $duplicate->setDueDate($task->getDueDate());
+        $duplicate->setStartDate($task->getStartDate());
+
+        // Set position after the original task
+        $duplicate->setPosition($task->getPosition() + 1);
+
+        $this->entityManager->persist($duplicate);
+
+        // Copy assignees
+        $basePath = $request->getBasePath();
+        $assigneesData = [];
+        foreach ($task->getAssignees() as $originalAssignee) {
+            $assignee = new TaskAssignee();
+            $assignee->setTask($duplicate);
+            $assignee->setUser($originalAssignee->getUser());
+            $assignee->setAssignedBy($user);
+            $this->entityManager->persist($assignee);
+            $duplicate->addAssignee($assignee);
+
+            $assigneesData[] = [
+                'id' => $assignee->getId()->toString(),
+                'user' => [
+                    'id' => $originalAssignee->getUser()->getId()->toString(),
+                    'firstName' => $originalAssignee->getUser()->getFirstName(),
+                    'lastName' => $originalAssignee->getUser()->getLastName(),
+                    'fullName' => $originalAssignee->getUser()->getFullName(),
+                    'avatar' => $originalAssignee->getUser()->getAvatar() ? $basePath . '/uploads/avatars/' . $originalAssignee->getUser()->getAvatar() : null,
+                ],
+            ];
+        }
+
+        // Copy tags
+        $tagsData = [];
+        foreach ($task->getTags() as $tag) {
+            $duplicate->addTag($tag);
+            $tagsData[] = [
+                'id' => $tag->getId()->toString(),
+                'name' => $tag->getName(),
+                'color' => $tag->getColor(),
+            ];
+        }
+
+        $this->activityService->logTaskCreated(
+            $project,
+            $user,
+            $duplicate->getId(),
+            $duplicate->getTitle()
+        );
+
+        $this->entityManager->flush();
+
+        return $this->json([
+            'success' => true,
+            'task' => [
+                'id' => $duplicate->getId()->toString(),
+                'title' => $duplicate->getTitle(),
+                'status' => [
+                    'value' => $duplicate->getStatus()->value,
+                    'label' => $duplicate->getStatus()->label(),
+                ],
+                'priority' => [
+                    'value' => $duplicate->getPriority()->value,
+                    'label' => $duplicate->getPriority()->label(),
+                ],
+                'milestoneId' => $duplicate->getMilestone() ? $duplicate->getMilestone()->getId()->toString() : null,
+                'dueDate' => $duplicate->getDueDate()?->format('Y-m-d'),
+                'startDate' => $duplicate->getStartDate()?->format('Y-m-d'),
+                'position' => $duplicate->getPosition(),
+                'projectName' => $project->getName(),
+                'assignees' => $assigneesData,
+                'tags' => $tagsData,
+                'commentCount' => 0,
+                'checklistCount' => 0,
+                'completedChecklistCount' => 0,
+                'subtaskCount' => 0,
+                'completedSubtaskCount' => 0,
+                'parentId' => null,
+                'parentChain' => null,
+                'depth' => 0,
+            ],
+        ]);
+    }
+
     #[Route('/tasks/bulk-delete', name: 'app_task_bulk_delete', methods: ['POST'])]
     public function bulkDelete(Request $request): JsonResponse
     {

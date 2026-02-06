@@ -1,4 +1,4 @@
-import { ref, computed, nextTick, watch } from 'vue';
+import { ref, computed, nextTick, watch, onUnmounted } from 'vue';
 
 export default {
     name: 'TaskRow',
@@ -74,7 +74,7 @@ export default {
         }
     },
 
-    emits: ['click', 'select', 'toggle-expand', 'cell-click', 'save-edit', 'cancel-edit', 'assignee-change'],
+    emits: ['click', 'select', 'toggle-expand', 'cell-click', 'save-edit', 'cancel-edit', 'assignee-change', 'contextmenu'],
 
     setup(props, { emit }) {
         const visibleColumns = computed(() => {
@@ -124,6 +124,52 @@ export default {
             if (event.target.closest('input, button, a, select, .cell-editor')) return;
             emit('click', props.task);
         };
+
+        const handleContextMenu = (event) => {
+            event.preventDefault();
+            emit('contextmenu', props.task, event);
+        };
+
+        // Long press support for mobile
+        let longPressTimer = null;
+        let longPressTriggered = false;
+
+        const handleTouchStart = (event) => {
+            longPressTriggered = false;
+            longPressTimer = setTimeout(() => {
+                longPressTriggered = true;
+                // Create a synthetic event with touch coordinates
+                const touch = event.touches[0];
+                const syntheticEvent = {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                    preventDefault: () => {}
+                };
+                emit('contextmenu', props.task, syntheticEvent);
+            }, 500); // 500ms long press
+        };
+
+        const handleTouchEnd = () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        };
+
+        const handleTouchMove = () => {
+            // Cancel long press if user moves finger
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        };
+
+        // Cleanup timer on unmount
+        onUnmounted(() => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+            }
+        });
 
         const handleSelect = (event) => {
             event.stopPropagation();
@@ -280,6 +326,10 @@ export default {
         return {
             visibleColumns,
             handleRowClick,
+            handleContextMenu,
+            handleTouchStart,
+            handleTouchEnd,
+            handleTouchMove,
             handleSelect,
             handleCellClick,
             handleToggleExpand,
@@ -319,6 +369,10 @@ export default {
             :aria-expanded="hasChildren || task.subtaskCount > 0 ? isExpanded : undefined"
             tabindex="0"
             @click="handleRowClick"
+            @contextmenu="handleContextMenu"
+            @touchstart.passive="handleTouchStart"
+            @touchend.passive="handleTouchEnd"
+            @touchmove.passive="handleTouchMove"
             @keydown.enter="handleRowClick"
             @keydown.space.prevent="$emit('select', task.id, !selected)">
 
