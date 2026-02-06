@@ -119,10 +119,35 @@ export default {
             }
         });
 
+        // Click delay timer for distinguishing single vs double click
+        let clickTimer = null;
+        let pendingClickEvent = null;
+
         const handleRowClick = (event) => {
             // Don't trigger row click if clicking on checkbox or interactive elements
             if (event.target.closest('input, button, a, select, .cell-editor')) return;
-            emit('click', props.task);
+
+            // Delay the click to allow double-click detection
+            pendingClickEvent = event;
+            if (clickTimer) {
+                clearTimeout(clickTimer);
+            }
+            clickTimer = setTimeout(() => {
+                // Only emit click if not cancelled by double-click
+                if (pendingClickEvent) {
+                    emit('click', props.task);
+                    pendingClickEvent = null;
+                }
+                clickTimer = null;
+            }, 250);
+        };
+
+        const cancelPendingClick = () => {
+            if (clickTimer) {
+                clearTimeout(clickTimer);
+                clickTimer = null;
+            }
+            pendingClickEvent = null;
         };
 
         const handleContextMenu = (event) => {
@@ -164,10 +189,13 @@ export default {
             }
         };
 
-        // Cleanup timer on unmount
+        // Cleanup timers on unmount
         onUnmounted(() => {
             if (longPressTimer) {
                 clearTimeout(longPressTimer);
+            }
+            if (clickTimer) {
+                clearTimeout(clickTimer);
             }
         });
 
@@ -179,6 +207,16 @@ export default {
         const handleCellClick = (event, columnKey) => {
             event.stopPropagation();
             emit('cell-click', props.task, columnKey, event);
+        };
+
+        // Double-click to edit (single click opens panel via row click)
+        const handleCellDblClick = (event, columnKey) => {
+            event.stopPropagation();
+            // Cancel the pending single-click that would open the panel
+            cancelPendingClick();
+            if (props.canEdit) {
+                emit('cell-click', props.task, columnKey, event);
+            }
         };
 
         const handleToggleExpand = (event) => {
@@ -332,6 +370,7 @@ export default {
             handleTouchMove,
             handleSelect,
             handleCellClick,
+            handleCellDblClick,
             handleToggleExpand,
             getColumnWidth,
             getStatusClass,
@@ -399,27 +438,27 @@ export default {
 
                 <!-- Title -->
                 <template v-else-if="column.key === 'title'">
-                    <div class="flex items-center gap-2" :style="{ paddingLeft: (depth * 24) + 'px' }">
+                    <div class="flex items-center" :style="{ paddingLeft: (depth * 20) + 'px' }">
                         <!-- Tree toggle -->
                         <button
                             v-if="hasChildren || task.subtaskCount > 0"
                             type="button"
-                            class="flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded"
+                            class="flex-shrink-0 w-4 h-4 mr-2 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded"
                             :disabled="isLoadingChildren"
                             @click="handleToggleExpand">
                             <!-- Loading spinner -->
-                            <svg v-if="isLoadingChildren" class="animate-spin w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24">
+                            <svg v-if="isLoadingChildren" class="animate-spin w-3.5 h-3.5 text-primary-500" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                             </svg>
-                            <svg v-else-if="isExpanded" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg v-else-if="isExpanded" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
-                            <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg v-else class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </button>
-                        <span v-else-if="depth > 0" class="flex-shrink-0 w-5"></span>
+                        <span v-else class="flex-shrink-0 w-4 mr-2"></span>
 
                         <div class="min-w-0 flex-1">
                             <!-- Edit mode -->
@@ -429,13 +468,14 @@ export default {
                                 type="text"
                                 v-model="editValue"
                                 @keydown="handleEditKeydown"
-                                @blur="saveEdit"
+                                @blur="cancelEdit"
                                 class="w-full px-2 py-1 text-sm font-medium border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
                             />
                             <!-- Display mode -->
                             <template v-else>
-                                <span class="task-title font-medium text-gray-900 line-clamp-2 hover:text-primary-600 cursor-pointer"
-                                      @click="handleCellClick($event, 'title')">
+                                <span class="task-title font-medium text-gray-900 line-clamp-2 hover:text-primary-600"
+                                      :title="canEdit ? 'Double-click to edit' : ''"
+                                      @dblclick="handleCellDblClick($event, 'title')">
                                     <template v-if="highlightedTitle.hasMatch">
                                         {{ highlightedTitle.before }}<mark class="bg-yellow-200 px-0.5 rounded">{{ highlightedTitle.match }}</mark>{{ highlightedTitle.after }}
                                     </template>
@@ -463,7 +503,7 @@ export default {
                         ref="inputRef"
                         v-model="editValue"
                         @change="handleSelectChange"
-                        @blur="saveEdit"
+                        @blur="cancelEdit"
                         @keydown="handleEditKeydown"
                         class="text-sm border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 py-1 px-2">
                         <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
@@ -473,8 +513,9 @@ export default {
                     <!-- Display mode -->
                     <span
                         v-else
-                        :class="['inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium cursor-pointer hover:ring-2 hover:ring-primary-200', getStatusClass]"
-                        @click="handleCellClick($event, 'status')">
+                        :class="['inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium hover:ring-2 hover:ring-primary-200', getStatusClass]"
+                        :title="canEdit ? 'Double-click to edit' : ''"
+                        @dblclick="handleCellDblClick($event, 'status')">
                         {{ task.status?.label || task.status }}
                     </span>
                 </template>
@@ -487,7 +528,7 @@ export default {
                         ref="inputRef"
                         v-model="editValue"
                         @change="handleSelectChange"
-                        @blur="saveEdit"
+                        @blur="cancelEdit"
                         @keydown="handleEditKeydown"
                         class="text-sm border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 py-1 px-2">
                         <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">
@@ -497,8 +538,9 @@ export default {
                     <!-- Display mode -->
                     <span
                         v-else
-                        :class="['inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium cursor-pointer hover:ring-2 hover:ring-primary-200', getPriorityClass]"
-                        @click="handleCellClick($event, 'priority')">
+                        :class="['inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium hover:ring-2 hover:ring-primary-200', getPriorityClass]"
+                        :title="canEdit ? 'Double-click to edit' : ''"
+                        @dblclick="handleCellDblClick($event, 'priority')">
                         {{ task.priority?.label || task.priority }}
                     </span>
                 </template>
@@ -558,7 +600,7 @@ export default {
                         </div>
                     </div>
                     <!-- Display mode -->
-                    <div v-else class="flex -space-x-1 cursor-pointer" @click="handleCellClick($event, 'assignees')">
+                    <div v-else class="flex -space-x-1" :title="canEdit ? 'Double-click to edit' : ''" @dblclick="handleCellDblClick($event, 'assignees')">
                         <template v-if="task.assignees && task.assignees.length > 0">
                             <span
                                 v-for="(assignee, idx) in task.assignees.slice(0, 3)"
@@ -596,15 +638,16 @@ export default {
                         type="date"
                         v-model="editValue"
                         @change="saveEdit"
-                        @blur="saveEdit"
+                        @blur="cancelEdit"
                         @keydown="handleEditKeydown"
                         class="text-sm border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 py-1 px-2"
                     />
                     <!-- Display mode -->
                     <span
                         v-else
-                        :class="[isOverdue ? 'text-red-600 font-medium' : 'text-gray-500', 'cursor-pointer hover:text-primary-600']"
-                        @click="handleCellClick($event, 'dueDate')">
+                        :class="[isOverdue ? 'text-red-600 font-medium' : 'text-gray-500', 'hover:text-primary-600']"
+                        :title="canEdit ? 'Double-click to edit' : ''"
+                        @dblclick="handleCellDblClick($event, 'dueDate')">
                         {{ formatDate(task.dueDate) }}
                     </span>
                 </template>
@@ -618,22 +661,23 @@ export default {
                         type="date"
                         v-model="editValue"
                         @change="saveEdit"
-                        @blur="saveEdit"
+                        @blur="cancelEdit"
                         @keydown="handleEditKeydown"
                         class="text-sm border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 py-1 px-2"
                     />
                     <!-- Display mode -->
                     <span
                         v-else
-                        class="text-gray-500 cursor-pointer hover:text-primary-600"
-                        @click="handleCellClick($event, 'startDate')">
+                        class="text-gray-500 hover:text-primary-600"
+                        :title="canEdit ? 'Double-click to edit' : ''"
+                        @dblclick="handleCellDblClick($event, 'startDate')">
                         {{ formatDate(task.startDate) }}
                     </span>
                 </template>
 
                 <!-- Tags -->
                 <template v-else-if="column.key === 'tags'">
-                    <div class="flex flex-wrap gap-1" @click="handleCellClick($event, 'tags')">
+                    <div class="flex flex-wrap gap-1" @dblclick="handleCellDblClick($event, 'tags')">
                         <template v-if="task.tags && task.tags.length > 0">
                             <span
                                 v-for="tag in task.tags.slice(0, 2)"
@@ -660,7 +704,7 @@ export default {
                         ref="inputRef"
                         v-model="editValue"
                         @change="handleSelectChange"
-                        @blur="saveEdit"
+                        @blur="cancelEdit"
                         @keydown="handleEditKeydown"
                         class="text-sm border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 py-1 px-2">
                         <option v-for="opt in milestoneOptions" :key="opt.value" :value="opt.value">
@@ -670,8 +714,9 @@ export default {
                     <!-- Display mode -->
                     <span
                         v-else
-                        class="text-gray-500 cursor-pointer hover:text-primary-600"
-                        @click="handleCellClick($event, 'milestone')">
+                        class="text-gray-500 hover:text-primary-600"
+                        :title="canEdit ? 'Double-click to edit' : ''"
+                        @dblclick="handleCellDblClick($event, 'milestone')">
                         {{ milestoneName }}
                     </span>
                 </template>

@@ -30,7 +30,7 @@ export default {
         }
     },
 
-    emits: ['sort', 'select-all'],
+    emits: ['sort', 'select-all', 'column-contextmenu'],
 
     setup(props, { emit }) {
         const visibleColumns = computed(() => {
@@ -57,12 +57,20 @@ export default {
             return typeof column.width === 'number' ? `${column.width}px` : column.width;
         };
 
+        const handleContextMenu = (event, column) => {
+            // Don't show context menu for checkbox column
+            if (column.key === 'checkbox') return;
+            event.preventDefault();
+            emit('column-contextmenu', column, event);
+        };
+
         return {
             visibleColumns,
             handleSort,
             getSortIcon,
             handleSelectAll,
-            getColumnWidth
+            getColumnWidth,
+            handleContextMenu
         };
     },
 
@@ -82,6 +90,7 @@ export default {
                     :aria-sort="column.sortable ? (sortColumn === column.key ? (sortDirection === 'asc' ? 'ascending' : sortDirection === 'desc' ? 'descending' : 'none') : 'none') : undefined"
                     :tabindex="column.sortable ? 0 : undefined"
                     @click="handleSort(column)"
+                    @contextmenu="handleContextMenu($event, column)"
                     @keydown.enter="handleSort(column)"
                     @keydown.space.prevent="handleSort(column)">
 
@@ -101,6 +110,8 @@ export default {
                     <!-- Regular column header -->
                     <template v-else-if="column.key !== 'checkbox'">
                         <div class="flex items-center gap-1">
+                            <!-- Spacer to align with task row expand button -->
+                            <span v-if="column.key === 'title'" class="w-4 mr-1 flex-shrink-0"></span>
                             <span>{{ column.label }}</span>
                             <template v-if="column.sortable">
                                 <!-- Neutral sort icon -->

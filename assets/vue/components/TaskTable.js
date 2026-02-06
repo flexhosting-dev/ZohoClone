@@ -6,12 +6,14 @@ import GroupRow from './TaskTable/GroupRow.js';
 import BulkActionBar from './TaskTable/BulkActionBar.js';
 import QuickAddRow from './TaskTable/QuickAddRow.js';
 import ContextMenu from './TaskTable/ContextMenu.js';
+import ColumnContextMenu from './TaskTable/ColumnContextMenu.js';
+import DatePickerPopup from './TaskTable/DatePickerPopup.js';
 import ConfirmDialog from './ConfirmDialog.js';
 
 export default {
     name: 'TaskTable',
 
-    components: { TableHeader, TaskRow, ColumnConfig, GroupRow, BulkActionBar, QuickAddRow, ContextMenu, ConfirmDialog },
+    components: { TableHeader, TaskRow, ColumnConfig, GroupRow, BulkActionBar, QuickAddRow, ContextMenu, ColumnContextMenu, DatePickerPopup, ConfirmDialog },
 
     props: {
         initialTasks: {
@@ -152,33 +154,98 @@ export default {
 
         const columns = ref([...defaultColumns]);
 
-        // Load/Save column config
+        // Debounce timer for saving preferences to API
+        let savePreferencesTimer = null;
+
+        // Apply saved column config to columns ref
+        const applyColumnConfig = (savedColumns) => {
+            if (!savedColumns || !Array.isArray(savedColumns)) return;
+            const newColumns = [];
+            savedColumns.forEach(saved => {
+                const defaultCol = defaultColumns.find(d => d.key === saved.key);
+                if (defaultCol) {
+                    newColumns.push({
+                        ...defaultCol,
+                        visible: saved.visible,
+                        width: saved.width || defaultCol.width
+                    });
+                }
+            });
+            defaultColumns.forEach(def => {
+                if (!newColumns.find(c => c.key === def.key)) {
+                    newColumns.push({ ...def });
+                }
+            });
+            columns.value = newColumns;
+        };
+
+        // Load preferences from API, falling back to localStorage
+        const loadPreferencesFromApi = async () => {
+            try {
+                const response = await fetch(`/settings/task-table-preferences/${encodeURIComponent(props.storageKey)}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+                if (data.success && data.preferences) {
+                    // Apply columns
+                    if (data.preferences.columns) {
+                        applyColumnConfig(data.preferences.columns);
+                        // Also update localStorage for faster subsequent loads
+                        localStorage.setItem(`${props.storageKey}_columns`, JSON.stringify(data.preferences.columns));
+                    }
+                    // Apply groupBy
+                    if (data.preferences.groupBy) {
+                        groupBy.value = data.preferences.groupBy;
+                        localStorage.setItem(`${props.storageKey}_groupBy`, data.preferences.groupBy);
+                    }
+                    return true;
+                }
+            } catch (e) {
+                console.warn('Could not load preferences from API, using localStorage', e);
+            }
+            return false;
+        };
+
+        // Save preferences to API (debounced)
+        const savePreferencesToApi = () => {
+            if (savePreferencesTimer) {
+                clearTimeout(savePreferencesTimer);
+            }
+            savePreferencesTimer = setTimeout(async () => {
+                try {
+                    const columnsData = columns.value.map(c => ({
+                        key: c.key,
+                        visible: c.visible,
+                        width: c.width
+                    }));
+                    await fetch(`/settings/task-table-preferences/${encodeURIComponent(props.storageKey)}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            columns: columnsData,
+                            groupBy: groupBy.value
+                        })
+                    });
+                } catch (e) {
+                    console.warn('Could not save preferences to API', e);
+                }
+            }, 500); // Debounce by 500ms
+        };
+
+        // Load column config from localStorage (immediate, for initial render)
         const loadColumnConfig = () => {
             try {
                 const saved = localStorage.getItem(`${props.storageKey}_columns`);
                 if (saved) {
-                    const savedColumns = JSON.parse(saved);
-                    const newColumns = [];
-                    savedColumns.forEach(saved => {
-                        const defaultCol = defaultColumns.find(d => d.key === saved.key);
-                        if (defaultCol) {
-                            newColumns.push({
-                                ...defaultCol,
-                                visible: saved.visible,
-                                width: saved.width || defaultCol.width
-                            });
-                        }
-                    });
-                    defaultColumns.forEach(def => {
-                        if (!newColumns.find(c => c.key === def.key)) {
-                            newColumns.push({ ...def });
-                        }
-                    });
-                    columns.value = newColumns;
+                    applyColumnConfig(JSON.parse(saved));
                 }
             } catch (e) {}
         };
 
+        // Save column config to localStorage and trigger API save
         const saveColumnConfig = () => {
             try {
                 const toSave = columns.value.map(c => ({
@@ -187,6 +254,7 @@ export default {
                     width: c.width
                 }));
                 localStorage.setItem(`${props.storageKey}_columns`, JSON.stringify(toSave));
+                savePreferencesToApi();
             } catch (e) {}
         };
 
@@ -214,6 +282,15 @@ export default {
             saveColumnConfig();
         };
 
+        // Show a column if it's currently hidden (used when a field is updated)
+        const showColumnIfHidden = (columnKey) => {
+            const col = columns.value.find(c => c.key === columnKey);
+            if (col && !col.visible) {
+                col.visible = true;
+                saveColumnConfig();
+            }
+        };
+
         // Load/Save group state
         const loadGroupState = () => {
             try {
@@ -229,6 +306,7 @@ export default {
             try {
                 localStorage.setItem(`${props.storageKey}_groupBy`, groupBy.value);
                 localStorage.setItem(`${props.storageKey}_collapsed_groups`, JSON.stringify([...collapsedGroups.value]));
+                savePreferencesToApi();
             } catch (e) {}
         };
 
@@ -1063,6 +1141,11 @@ export default {
             } else if (field === 'startDate') {
                 task.startDate = value;
             }
+
+            // Show the column if it was hidden
+            if (field) {
+                showColumnIfHidden(field);
+            }
         };
 
         const handleAssigneesUpdate = (e) => {
@@ -1070,6 +1153,9 @@ export default {
             const idx = tasks.value.findIndex(t => t.id == taskId);
             if (idx === -1) return;
             tasks.value[idx].assignees = assignees || [];
+
+            // Show the assignees column if it was hidden
+            showColumnIfHidden('assignees');
         };
 
         // Visible column count for group row colspan
@@ -1234,6 +1320,23 @@ export default {
             tasks: []
         });
 
+        // Column context menu state
+        const columnContextMenu = ref({
+            visible: false,
+            x: 0,
+            y: 0,
+            column: null
+        });
+
+        // Date picker popup state
+        const datePickerPopup = ref({
+            visible: false,
+            x: 0,
+            y: 0,
+            task: null,
+            value: ''
+        });
+
         // Long press timer for mobile
         let longPressTimer = null;
 
@@ -1264,6 +1367,43 @@ export default {
         // Handle row context menu (right-click)
         const handleRowContextMenu = (task, event) => {
             showContextMenu(task, event);
+        };
+
+        // Column context menu handlers
+        const showColumnContextMenu = (column, event) => {
+            columnContextMenu.value = {
+                visible: true,
+                x: event.clientX,
+                y: event.clientY,
+                column
+            };
+        };
+
+        const hideColumnContextMenu = () => {
+            columnContextMenu.value.visible = false;
+        };
+
+        const handleColumnSortAsc = (columnKey) => {
+            sortColumn.value = columnKey;
+            sortDirection.value = 'asc';
+        };
+
+        const handleColumnSortDesc = (columnKey) => {
+            sortColumn.value = columnKey;
+            sortDirection.value = 'desc';
+        };
+
+        const handleColumnClearSort = () => {
+            sortColumn.value = 'position';
+            sortDirection.value = 'asc';
+        };
+
+        const handleColumnGroupBy = (groupByValue) => {
+            setGroupBy(groupByValue);
+        };
+
+        const handleColumnClearGrouping = () => {
+            setGroupBy('none');
         };
 
         // Context menu action handlers
@@ -1326,8 +1466,25 @@ export default {
         };
 
         const handleContextSetDueDate = (task) => {
-            // Start inline editing for due date
-            editingCell.value = { taskId: task.id, field: 'dueDate' };
+            // Show the date picker popup at the context menu position
+            datePickerPopup.value = {
+                visible: true,
+                x: contextMenu.value.x,
+                y: contextMenu.value.y,
+                task: task,
+                value: task.dueDate || ''
+            };
+        };
+
+        const hideDatePickerPopup = () => {
+            datePickerPopup.value.visible = false;
+        };
+
+        const handleDatePickerSelect = async (date) => {
+            const task = datePickerPopup.value.task;
+            if (task) {
+                await saveInlineEdit(task.id, 'dueDate', date);
+            }
         };
 
         const handleContextSetMilestone = async (contextTasks, milestoneId) => {
@@ -1557,6 +1714,17 @@ export default {
             }
         };
 
+        // Global mousedown to cancel editing when clicking outside
+        const handleGlobalMousedown = (event) => {
+            if (!editingCell.value) return;
+
+            // Check if click is inside an editing input
+            const isInsideEditor = event.target.closest('.cell-editor, input, select, textarea');
+            if (!isInsideEditor) {
+                cancelEditing();
+            }
+        };
+
         // Handle keyboard navigation within table
         const handleTableKeydown = (event) => {
             const target = event.target;
@@ -1591,20 +1759,28 @@ export default {
 
         // Lifecycle
         onMounted(() => {
+            // Load from localStorage first for immediate render
             loadColumnConfig();
             loadExpandedState();
             loadGroupState();
+            // Then load from API to sync with database (may override localStorage)
+            loadPreferencesFromApi();
             document.addEventListener('task-updated', handleTaskUpdate);
             document.addEventListener('task-assignees-updated', handleAssigneesUpdate);
             document.addEventListener('keydown', handleGlobalKeydown);
+            document.addEventListener('mousedown', handleGlobalMousedown);
         });
 
         onUnmounted(() => {
             document.removeEventListener('task-updated', handleTaskUpdate);
             document.removeEventListener('task-assignees-updated', handleAssigneesUpdate);
             document.removeEventListener('keydown', handleGlobalKeydown);
+            document.removeEventListener('mousedown', handleGlobalMousedown);
             if (searchDebounceTimer) {
                 clearTimeout(searchDebounceTimer);
+            }
+            if (savePreferencesTimer) {
+                clearTimeout(savePreferencesTimer);
             }
         });
 
@@ -1703,6 +1879,19 @@ export default {
             handleContextAssignTo,
             handleContextSetDueDate,
             handleContextSetMilestone,
+            // Column context menu
+            columnContextMenu,
+            showColumnContextMenu,
+            hideColumnContextMenu,
+            handleColumnSortAsc,
+            handleColumnSortDesc,
+            handleColumnClearSort,
+            handleColumnGroupBy,
+            handleColumnClearGrouping,
+            // Date picker popup
+            datePickerPopup,
+            hideDatePickerPopup,
+            handleDatePickerSelect,
             handleContextAddSubtask,
             handleContextDuplicate,
             handleContextDelete,
@@ -1820,6 +2009,7 @@ export default {
                         :can-edit="canEdit"
                         @sort="handleSort"
                         @select-all="handleSelectAll"
+                        @column-contextmenu="showColumnContextMenu"
                     />
                     <tbody class="divide-y divide-gray-200 bg-white">
                         <!-- Quick Add Row at top (when no grouping) -->
@@ -1989,6 +2179,35 @@ export default {
                 @add-subtask="handleContextAddSubtask"
                 @duplicate="handleContextDuplicate"
                 @delete="handleContextDelete"
+            />
+
+            <!-- Column Context Menu -->
+            <ColumnContextMenu
+                :visible="columnContextMenu.visible"
+                :x="columnContextMenu.x"
+                :y="columnContextMenu.y"
+                :column="columnContextMenu.column"
+                :sort-column="sortColumn"
+                :sort-direction="sortDirection"
+                :group-by="groupBy"
+                @close="hideColumnContextMenu"
+                @sort-asc="handleColumnSortAsc"
+                @sort-desc="handleColumnSortDesc"
+                @clear-sort="handleColumnClearSort"
+                @hide-column="toggleColumnVisibility"
+                @group-by="handleColumnGroupBy"
+                @clear-grouping="handleColumnClearGrouping"
+            />
+
+            <!-- Date Picker Popup -->
+            <DatePickerPopup
+                :visible="datePickerPopup.visible"
+                :x="datePickerPopup.x"
+                :y="datePickerPopup.y"
+                :value="datePickerPopup.value"
+                label="Due Date"
+                @close="hideDatePickerPopup"
+                @select="handleDatePickerSelect"
             />
 
             <!-- Confirm Dialog -->
