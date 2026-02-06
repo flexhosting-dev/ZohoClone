@@ -300,13 +300,13 @@ export default {
         </tr>
         <!-- Action buttons row - sticky -->
         <tr class="bg-primary-50 border-b border-primary-200">
-            <td :colspan="visibleColumns.length" class="py-1.5">
+            <td :colspan="visibleColumns.length" class="py-2">
                 <div class="sticky left-0 w-fit flex items-center gap-2" :style="{ paddingLeft: (depth * 24 + 48) + 'px' }">
                     <button
                         type="button"
                         @click="save(false)"
                         :disabled="!formData.title.trim() || isCreating"
-                        class="text-xs text-primary-600 hover:text-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                         <span v-if="isCreating" class="flex items-center gap-1">
                             <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -316,20 +316,18 @@ export default {
                         </span>
                         <span v-else>Save</span>
                     </button>
-                    <span class="text-gray-300">|</span>
                     <button
                         type="button"
                         @click="save(true)"
                         :disabled="!formData.title.trim() || isCreating"
-                        class="text-xs text-gray-500 hover:text-primary-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                         Save &amp; add another
                     </button>
-                    <span class="text-gray-300">|</span>
                     <button
                         type="button"
                         @click="cancel"
                         :disabled="isCreating"
-                        class="text-xs text-gray-400 hover:text-gray-600">
+                        class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-white hover:bg-gray-100 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                         Cancel
                     </button>
                     <!-- Keyboard hints (desktop only) -->
