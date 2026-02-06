@@ -6,11 +6,12 @@ import GroupRow from './TaskTable/GroupRow.js';
 import BulkActionBar from './TaskTable/BulkActionBar.js';
 import QuickAddRow from './TaskTable/QuickAddRow.js';
 import ContextMenu from './TaskTable/ContextMenu.js';
+import ConfirmDialog from '../ConfirmDialog.js';
 
 export default {
     name: 'TaskTable',
 
-    components: { TableHeader, TaskRow, ColumnConfig, GroupRow, BulkActionBar, QuickAddRow, ContextMenu },
+    components: { TableHeader, TaskRow, ColumnConfig, GroupRow, BulkActionBar, QuickAddRow, ContextMenu, ConfirmDialog },
 
     props: {
         initialTasks: {
@@ -1222,6 +1223,9 @@ export default {
         // Table ref for keyboard navigation
         const tableRef = ref(null);
 
+        // Confirm dialog ref
+        const confirmDialogRef = ref(null);
+
         // Context menu state
         const contextMenu = ref({
             visible: false,
@@ -1270,7 +1274,8 @@ export default {
         };
 
         const handleContextCopyLink = (task) => {
-            const url = `${window.location.origin}/tasks/${task.id}`;
+            const basePath = props.basePath || window.BASE_PATH || '';
+            const url = `${window.location.origin}${basePath}/tasks/${task.id}`;
             navigator.clipboard.writeText(url).then(() => {
                 if (typeof Toastr !== 'undefined') {
                     Toastr.success('Link Copied', 'Task link copied to clipboard');
@@ -1480,11 +1485,20 @@ export default {
 
         const handleContextDelete = async (contextTasks) => {
             const count = contextTasks.length;
+            const title = count === 1 ? 'Delete Task' : `Delete ${count} Tasks`;
             const message = count === 1
-                ? `Delete "${contextTasks[0].title}"?`
-                : `Delete ${count} tasks?`;
+                ? `Are you sure you want to delete "${contextTasks[0].title}"? This action cannot be undone.`
+                : `Are you sure you want to delete ${count} tasks? This action cannot be undone.`;
 
-            if (!confirm(message)) return;
+            const confirmed = await confirmDialogRef.value?.show({
+                title,
+                message,
+                confirmText: 'Delete',
+                cancelText: 'Cancel',
+                type: 'danger'
+            });
+
+            if (!confirmed) return;
 
             if (count === 1) {
                 // Single task delete
@@ -1698,7 +1712,9 @@ export default {
             subtaskQuickAddRef,
             isCreatingSubtask,
             cancelSubtaskQuickAdd,
-            saveSubtaskQuickAdd
+            saveSubtaskQuickAdd,
+            // Confirm dialog
+            confirmDialogRef
         };
     },
 
@@ -1974,6 +1990,9 @@ export default {
                 @duplicate="handleContextDuplicate"
                 @delete="handleContextDelete"
             />
+
+            <!-- Confirm Dialog -->
+            <ConfirmDialog ref="confirmDialogRef" />
         </div>
     `
 };
