@@ -67,7 +67,8 @@ export default {
     setup(props, { emit }) {
         const menuRef = ref(null);
         const activeSubmenu = ref(null);
-        const submenuPosition = ref({ left: true }); // true = open to right, false = open to left
+        const menuPosition = ref({ dropDown: true }); // true = drop down, false = drop up
+        const submenuPosition = ref({ left: true, dropDown: true }); // horizontal and vertical directions
 
         // Is multi-select mode
         const isMultiSelect = computed(() => props.tasks.length > 1);
@@ -119,18 +120,38 @@ export default {
             const rect = menuRef.value.getBoundingClientRect();
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
+            const menuHeight = rect.height;
+            const menuWidth = rect.width;
 
             let adjustedX = props.x;
             let adjustedY = props.y;
+            let shouldDropDown = true;
 
-            // Check right edge
-            if (rect.right > viewportWidth - 10) {
-                adjustedX = viewportWidth - rect.width - 10;
+            // Check if menu would overflow bottom of viewport
+            const spaceBelow = viewportHeight - props.y;
+            const spaceAbove = props.y;
+
+            if (spaceBelow < menuHeight + 10) {
+                // Not enough space below
+                if (spaceAbove >= menuHeight + 10) {
+                    // Enough space above - drop up
+                    shouldDropDown = false;
+                    adjustedY = props.y - menuHeight;
+                } else {
+                    // Not enough space above either - position to fit
+                    if (spaceBelow > spaceAbove) {
+                        // More space below, align to bottom edge
+                        adjustedY = viewportHeight - menuHeight - 10;
+                    } else {
+                        // More space above, align to top edge
+                        adjustedY = 10;
+                    }
+                }
             }
 
-            // Check bottom edge
-            if (rect.bottom > viewportHeight - 10) {
-                adjustedY = viewportHeight - rect.height - 10;
+            // Check right edge
+            if (props.x + menuWidth > viewportWidth - 10) {
+                adjustedX = viewportWidth - menuWidth - 10;
             }
 
             // Check left edge
@@ -138,7 +159,7 @@ export default {
                 adjustedX = 10;
             }
 
-            // Check top edge
+            // Check top edge (for drop up case)
             if (adjustedY < 10) {
                 adjustedY = 10;
             }
@@ -147,10 +168,19 @@ export default {
             if (menuRef.value) {
                 menuRef.value.style.left = `${adjustedX}px`;
                 menuRef.value.style.top = `${adjustedY}px`;
+                // Set transform origin for animation based on drop direction
+                menuRef.value.style.transformOrigin = shouldDropDown ? 'top left' : 'bottom left';
             }
 
-            // Determine submenu direction
+            // Store menu direction
+            menuPosition.value.dropDown = shouldDropDown;
+
+            // Determine submenu direction (horizontal)
             submenuPosition.value.left = adjustedX < viewportWidth / 2;
+
+            // Determine submenu vertical direction based on remaining space
+            const menuBottom = adjustedY + menuHeight;
+            submenuPosition.value.dropDown = menuBottom < viewportHeight - 100;
         };
 
         // Handle click outside
@@ -260,6 +290,7 @@ export default {
             menuRef,
             menuStyle,
             activeSubmenu,
+            menuPosition,
             submenuPosition,
             isMultiSelect,
             singleTask,
@@ -354,8 +385,9 @@ export default {
                     <div
                         v-if="activeSubmenu === 'status'"
                         :class="[
-                            'absolute top-0 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[150px]',
-                            submenuPosition.left ? 'left-full ml-1' : 'right-full mr-1'
+                            'absolute bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[150px]',
+                            submenuPosition.left ? 'left-full ml-1' : 'right-full mr-1',
+                            submenuPosition.dropDown ? 'top-0' : 'bottom-0'
                         ]"
                         role="menu">
                         <button
@@ -400,8 +432,9 @@ export default {
                     <div
                         v-if="activeSubmenu === 'priority'"
                         :class="[
-                            'absolute top-0 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[150px]',
-                            submenuPosition.left ? 'left-full ml-1' : 'right-full mr-1'
+                            'absolute bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[150px]',
+                            submenuPosition.left ? 'left-full ml-1' : 'right-full mr-1',
+                            submenuPosition.dropDown ? 'top-0' : 'bottom-0'
                         ]"
                         role="menu">
                         <button
@@ -445,8 +478,9 @@ export default {
                     <div
                         v-if="activeSubmenu === 'assignee'"
                         :class="[
-                            'absolute top-0 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px] max-h-[250px] overflow-y-auto',
-                            submenuPosition.left ? 'left-full ml-1' : 'right-full mr-1'
+                            'absolute bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px] max-h-[250px] overflow-y-auto',
+                            submenuPosition.left ? 'left-full ml-1' : 'right-full mr-1',
+                            submenuPosition.dropDown ? 'top-0' : 'bottom-0'
                         ]"
                         role="menu">
                         <button
@@ -510,8 +544,9 @@ export default {
                     <div
                         v-if="activeSubmenu === 'milestone'"
                         :class="[
-                            'absolute top-0 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px] max-h-[250px] overflow-y-auto',
-                            submenuPosition.left ? 'left-full ml-1' : 'right-full mr-1'
+                            'absolute bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px] max-h-[250px] overflow-y-auto',
+                            submenuPosition.left ? 'left-full ml-1' : 'right-full mr-1',
+                            submenuPosition.dropDown ? 'top-0' : 'bottom-0'
                         ]"
                         role="menu">
                         <button
