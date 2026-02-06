@@ -1,4 +1,4 @@
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 
 export default {
     name: 'TableHeader',
@@ -30,12 +30,15 @@ export default {
         }
     },
 
-    emits: ['sort', 'select-all', 'column-contextmenu'],
+    emits: ['sort', 'select-all', 'column-contextmenu', 'resize-column'],
 
     setup(props, { emit }) {
         const visibleColumns = computed(() => {
             return props.columns.filter(col => col.visible);
         });
+
+        // Column resizing state
+        const resizing = ref(null); // { columnKey, startX, startWidth }
 
         const handleSort = (column) => {
             if (!column.sortable) return;
@@ -64,13 +67,116 @@ export default {
             emit('column-contextmenu', column, event);
         };
 
+        // Check if column is resizable (not checkbox)
+        const isResizable = (column) => {
+            return column.key !== 'checkbox';
+        };
+
+        // Get X coordinate from mouse or touch event
+        const getClientX = (event) => {
+            if (event.touches && event.touches.length > 0) {
+                return event.touches[0].clientX;
+            }
+            if (event.changedTouches && event.changedTouches.length > 0) {
+                return event.changedTouches[0].clientX;
+            }
+            return event.clientX;
+        };
+
+        // Start resizing a column (mouse)
+        const startResize = (event, column) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            // Get the current width of the column
+            const th = event.target.closest('th');
+            const currentWidth = th ? th.offsetWidth : (typeof column.width === 'number' ? column.width : 100);
+
+            resizing.value = {
+                columnKey: column.key,
+                startX: getClientX(event),
+                startWidth: currentWidth
+            };
+
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        };
+
+        // Start resizing a column (touch)
+        const startResizeTouch = (event, column) => {
+            // Prevent context menu and scrolling
+            event.preventDefault();
+            event.stopPropagation();
+
+            const th = event.target.closest('th');
+            const currentWidth = th ? th.offsetWidth : (typeof column.width === 'number' ? column.width : 100);
+
+            resizing.value = {
+                columnKey: column.key,
+                startX: getClientX(event),
+                startWidth: currentWidth
+            };
+        };
+
+        // Handle mouse move during resize
+        const handleMouseMove = (event) => {
+            if (!resizing.value) return;
+
+            const diff = getClientX(event) - resizing.value.startX;
+            const newWidth = Math.max(50, resizing.value.startWidth + diff); // Minimum 50px
+
+            emit('resize-column', resizing.value.columnKey, newWidth);
+        };
+
+        // Handle touch move during resize
+        const handleTouchMove = (event) => {
+            if (!resizing.value) return;
+
+            // Prevent scrolling while resizing
+            event.preventDefault();
+
+            const diff = getClientX(event) - resizing.value.startX;
+            const newWidth = Math.max(50, resizing.value.startWidth + diff);
+
+            emit('resize-column', resizing.value.columnKey, newWidth);
+        };
+
+        // End resizing
+        const handleMouseUp = () => {
+            if (resizing.value) {
+                resizing.value = null;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        };
+
+        onMounted(() => {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleMouseUp);
+            document.addEventListener('touchcancel', handleMouseUp);
+        });
+
+        onUnmounted(() => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleMouseUp);
+            document.removeEventListener('touchcancel', handleMouseUp);
+        });
+
         return {
             visibleColumns,
             handleSort,
             getSortIcon,
             handleSelectAll,
             getColumnWidth,
-            handleContextMenu
+            handleContextMenu,
+            isResizable,
+            startResize,
+            startResizeTouch,
+            resizing
         };
     },
 
@@ -82,7 +188,7 @@ export default {
                     scope="col"
                     :style="{ width: getColumnWidth(column), minWidth: getColumnWidth(column) }"
                     :class="[
-                        'px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500',
+                        'px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 relative',
                         column.sortable ? 'cursor-pointer hover:bg-gray-100 select-none' : '',
                         column.key === 'checkbox' ? 'w-10' : '',
                         column.width === 'flex' ? 'flex-1' : ''
@@ -132,6 +238,23 @@ export default {
                             </template>
                         </div>
                     </template>
+
+                    <!-- Column resize handle -->
+                    <div
+                        v-if="isResizable(column)"
+                        class="absolute top-0 right-0 w-3 h-full cursor-col-resize flex items-center justify-center touch-none group/resize"
+                        :class="{ 'bg-primary-100': resizing?.columnKey === column.key }"
+                        @mousedown="startResize($event, column)"
+                        @touchstart.prevent="startResizeTouch($event, column)"
+                        @contextmenu.prevent
+                        @click.stop
+                    >
+                        <!-- Visual grip indicator -->
+                        <div class="w-px h-3 bg-gray-200 group-hover/resize:bg-gray-400 group-hover/resize:h-4 transition-all"
+                             :class="{ '!bg-primary-400 !h-4': resizing?.columnKey === column.key }"></div>
+                        <!-- Larger hit area for touch -->
+                        <div class="absolute top-0 right-0 w-6 h-full -translate-x-1/2"></div>
+                    </div>
                 </th>
             </tr>
         </thead>

@@ -282,6 +282,15 @@ export default {
             saveColumnConfig();
         };
 
+        // Resize a column to a new width
+        const resizeColumn = (columnKey, newWidth) => {
+            const col = columns.value.find(c => c.key === columnKey);
+            if (col) {
+                col.width = newWidth;
+                saveColumnConfig();
+            }
+        };
+
         // Show a column if it's currently hidden (used when a field is updated)
         const showColumnIfHidden = (columnKey) => {
             const col = columns.value.find(c => c.key === columnKey);
@@ -1404,6 +1413,17 @@ export default {
             setGroupBy('none');
         };
 
+        const handleColumnResetWidth = (columnKey) => {
+            const defaultCol = defaultColumns.find(c => c.key === columnKey);
+            if (defaultCol) {
+                const col = columns.value.find(c => c.key === columnKey);
+                if (col) {
+                    col.width = defaultCol.width;
+                    saveColumnConfig();
+                }
+            }
+        };
+
         // Context menu action handlers
         const handleContextEdit = (task) => {
             if (typeof window.openTaskPanel === 'function') {
@@ -1836,6 +1856,7 @@ export default {
             toggleColumnVisibility,
             reorderColumns,
             resetColumns,
+            resizeColumn,
             saveInlineEdit,
             cancelEditing,
             isEditingCell,
@@ -1884,6 +1905,7 @@ export default {
             handleColumnClearSort,
             handleColumnGroupBy,
             handleColumnClearGrouping,
+            handleColumnResetWidth,
             // Date picker popup
             datePickerPopup,
             hideDatePickerPopup,
@@ -2006,6 +2028,7 @@ export default {
                         @sort="handleSort"
                         @select-all="handleSelectAll"
                         @column-contextmenu="showColumnContextMenu"
+                        @resize-column="resizeColumn"
                     />
                     <tbody class="divide-y divide-gray-200 bg-white">
                         <!-- Quick Add Row at top (when no grouping) -->
@@ -2193,6 +2216,7 @@ export default {
                 @hide-column="toggleColumnVisibility"
                 @group-by="handleColumnGroupBy"
                 @clear-grouping="handleColumnClearGrouping"
+                @reset-column-width="handleColumnResetWidth"
             />
 
             <!-- Date Picker Popup -->
