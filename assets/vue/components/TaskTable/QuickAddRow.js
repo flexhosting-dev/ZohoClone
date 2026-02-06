@@ -39,6 +39,18 @@ export default {
         isCreating: {
             type: Boolean,
             default: false
+        },
+        depth: {
+            type: Number,
+            default: 0
+        },
+        isSubtask: {
+            type: Boolean,
+            default: false
+        },
+        placeholder: {
+            type: String,
+            default: 'Task title...'
         }
     },
 
@@ -164,12 +176,19 @@ export default {
                 <!-- Title -->
                 <template v-else-if="column.key === 'title'">
                     <div class="flex items-center gap-2">
-                        <span class="w-5 flex-shrink-0"></span>
+                        <!-- Indentation based on depth -->
+                        <span :style="{ width: (depth * 24 + 20) + 'px' }" class="flex-shrink-0 flex items-center justify-end">
+                            <span v-if="isSubtask" class="text-gray-400 mr-1">
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                                </svg>
+                            </span>
+                        </span>
                         <input
                             ref="titleInputRef"
                             type="text"
                             v-model="formData.title"
-                            placeholder="Task title..."
+                            :placeholder="placeholder"
                             :disabled="isCreating"
                             @keydown="handleKeydown($event, 'title')"
                             class="flex-1 min-w-0 px-2 py-1 text-sm font-medium border border-primary-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
@@ -282,7 +301,7 @@ export default {
         <!-- Action buttons row - sticky -->
         <tr class="bg-primary-50 border-b border-primary-200">
             <td :colspan="visibleColumns.length" class="py-1.5">
-                <div class="sticky left-0 w-fit flex items-center gap-2 pl-12">
+                <div class="sticky left-0 w-fit flex items-center gap-2" :style="{ paddingLeft: (depth * 24 + 48) + 'px' }">
                     <button
                         type="button"
                         @click="save(false)"

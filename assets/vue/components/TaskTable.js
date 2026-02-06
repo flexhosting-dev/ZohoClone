@@ -1336,17 +1336,49 @@ export default {
             }
         };
 
+        // Subtask quick add state
+        const subtaskQuickAddParentId = ref(null);
+        const subtaskQuickAddRef = ref(null);
+        const isCreatingSubtask = ref(false);
+
         const handleContextAddSubtask = async (task) => {
             if (!props.subtaskUrlTemplate) {
                 console.warn('No subtask URL template configured');
                 return;
             }
 
-            // Prompt for subtask title
-            const title = prompt('Enter subtask title:');
-            if (!title || !title.trim()) return;
+            // Show quick add row below this task
+            subtaskQuickAddParentId.value = task.id;
 
-            const url = props.subtaskUrlTemplate.replace('__TASK_ID__', task.id);
+            // Expand parent to show the quick add row in context
+            if (!expandedIds.value.has(task.id)) {
+                expandedIds.value.add(task.id);
+                expandedIds.value = new Set(expandedIds.value);
+                saveExpandedState();
+            }
+
+            await nextTick();
+            if (subtaskQuickAddRef.value && subtaskQuickAddRef.value.focus) {
+                subtaskQuickAddRef.value.focus();
+            }
+        };
+
+        const cancelSubtaskQuickAdd = () => {
+            subtaskQuickAddParentId.value = null;
+        };
+
+        const saveSubtaskQuickAdd = async (formData, continueAdding = false) => {
+            const title = formData.title?.trim();
+            if (!title || isCreatingSubtask.value) return;
+
+            const parentId = subtaskQuickAddParentId.value;
+            if (!parentId || !props.subtaskUrlTemplate) {
+                cancelSubtaskQuickAdd();
+                return;
+            }
+
+            const url = props.subtaskUrlTemplate.replace('__TASK_ID__', parentId);
+            isCreatingSubtask.value = true;
 
             try {
                 const response = await fetch(url, {
@@ -1355,7 +1387,7 @@ export default {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({ title: title.trim() })
+                    body: JSON.stringify({ title })
                 });
 
                 const data = await response.json();
@@ -1368,13 +1400,8 @@ export default {
                 const newSubtask = data.subtask;
                 tasks.value.push(newSubtask);
 
-                // Expand parent to show subtask
-                expandedIds.value.add(task.id);
-                expandedIds.value = new Set(expandedIds.value);
-                saveExpandedState();
-
                 // Update parent's subtask count
-                const parent = tasks.value.find(t => t.id === task.id);
+                const parent = tasks.value.find(t => t.id === parentId);
                 if (parent) {
                     parent.subtaskCount = (parent.subtaskCount || 0) + 1;
                 }
@@ -1382,11 +1409,17 @@ export default {
                 if (typeof Toastr !== 'undefined') {
                     Toastr.success('Subtask Created', `"${title}" created successfully`);
                 }
+
+                if (!continueAdding) {
+                    cancelSubtaskQuickAdd();
+                }
             } catch (error) {
                 console.error('Error creating subtask:', error);
                 if (typeof Toastr !== 'undefined') {
                     Toastr.error('Create Failed', error.message || 'Could not create subtask');
                 }
+            } finally {
+                isCreatingSubtask.value = false;
             }
         };
 
@@ -1644,7 +1677,13 @@ export default {
             handleContextAddSubtask,
             handleContextDuplicate,
             handleContextDelete,
-            canAddSubtaskTo
+            canAddSubtaskTo,
+            // Subtask quick add
+            subtaskQuickAddParentId,
+            subtaskQuickAddRef,
+            isCreatingSubtask,
+            cancelSubtaskQuickAdd,
+            saveSubtaskQuickAdd
         };
     },
 
@@ -1830,6 +1869,26 @@ export default {
                                 @cancel-edit="cancelEditing"
                                 @assignee-change="handleAssigneeChange"
                                 @contextmenu="handleRowContextMenu"
+                            />
+
+                            <!-- Subtask Quick Add Row (appears below parent task) -->
+                            <QuickAddRow
+                                v-if="item.type === 'task' && subtaskQuickAddParentId === item.task.id"
+                                ref="subtaskQuickAddRef"
+                                :columns="columns"
+                                :status-options="statusOptions"
+                                :priority-options="priorityOptions"
+                                :milestone-options="milestoneOptions"
+                                :members="members"
+                                :default-status="'todo'"
+                                :default-priority="'none'"
+                                :default-milestone="item.task.milestoneId || ''"
+                                :is-creating="isCreatingSubtask"
+                                :depth="(item.task.displayDepth || 0) + 1"
+                                :is-subtask="true"
+                                :placeholder="'Add subtask...'"
+                                @save="saveSubtaskQuickAdd"
+                                @cancel="cancelSubtaskQuickAdd"
                             />
                         </template>
 
