@@ -1446,11 +1446,26 @@ export default {
                     throw new Error(data.error || 'Failed to duplicate task');
                 }
 
-                // Add the duplicate task to the list
+                // Add the duplicate task right after the original
                 const newTask = data.task;
                 newTask.assignees = newTask.assignees || [];
                 newTask.tags = newTask.tags || [];
-                tasks.value.push(newTask);
+
+                // Find the index of the original task and insert after it
+                const originalIndex = tasks.value.findIndex(t => t.id === task.id);
+                if (originalIndex !== -1) {
+                    // Update positions of tasks that come after
+                    tasks.value.forEach(t => {
+                        if (t.position >= newTask.position && t.id !== newTask.id) {
+                            t.position = t.position + 1;
+                        }
+                    });
+                    // Insert the new task right after the original
+                    tasks.value.splice(originalIndex + 1, 0, newTask);
+                } else {
+                    // Fallback: just push to end
+                    tasks.value.push(newTask);
+                }
 
                 if (typeof Toastr !== 'undefined') {
                     Toastr.success('Task Duplicated', `"${newTask.title}" created`);

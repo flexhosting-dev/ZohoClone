@@ -1534,8 +1534,25 @@ class TaskController extends AbstractController
         $duplicate->setStartDate($task->getStartDate());
 
         // Set position after the original task
-        $duplicate->setPosition($task->getPosition() + 1);
+        $newPosition = $task->getPosition() + 1;
 
+        // Shift all tasks at or after the new position down by 1
+        $milestone = $task->getMilestone();
+        if ($milestone) {
+            $tasksToShift = $this->taskRepository->createQueryBuilder('t')
+                ->where('t.milestone = :milestone')
+                ->andWhere('t.position >= :position')
+                ->setParameter('milestone', $milestone)
+                ->setParameter('position', $newPosition)
+                ->getQuery()
+                ->getResult();
+
+            foreach ($tasksToShift as $taskToShift) {
+                $taskToShift->setPosition($taskToShift->getPosition() + 1);
+            }
+        }
+
+        $duplicate->setPosition($newPosition);
         $this->entityManager->persist($duplicate);
 
         // Copy assignees
