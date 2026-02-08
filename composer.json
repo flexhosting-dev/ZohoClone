@@ -1,6 +1,6 @@
 {
-    "name": "workflow/api",
-    "description": "WorkFlow - Project Management Application",
+    "name": "honeyguide/projects",
+    "description": "Honeyguide Projects - Project Management Application",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",

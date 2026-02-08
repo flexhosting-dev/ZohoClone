@@ -1,6 +1,6 @@
 # Future Features
 
-This document outlines planned enhancements and architectural improvements for WorkFlow.
+This document outlines planned enhancements and architectural improvements for Honeyguide Projects.
 
 ---
 

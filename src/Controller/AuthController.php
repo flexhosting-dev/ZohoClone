@@ -236,7 +236,7 @@ class AuthController extends AbstractController
         <p>If you didn't request this reset, you can safely ignore this email.</p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
         <p style="color: #666; font-size: 12px;">
-            This is an automated email from WorkFlow. Please do not reply.
+            This is an automated email from Honeyguide Projects. Please do not reply.
         </p>
     </div>
 </body>

@@ -1,4 +1,4 @@
-# WorkFlow - Project Management System
+# Honeyguide Projects - Project Management System
 
 A Zoho Projects clone built with Symfony 7, featuring project management, task tracking, Kanban boards, and team collaboration.
 
