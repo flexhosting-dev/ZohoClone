@@ -2346,4 +2346,146 @@ public function up(Schema $schema): void
 
 ---
 
-*Last updated: 6 February 2026*
+## 12. Task Table View Export
+
+**Priority:** Medium
+**Complexity:** Low-Medium
+**Impact:** Enables users to export current view data for reporting and sharing
+
+### Overview
+
+Add export functionality to the task table view that respects the current view state: visible columns, sort order, grouping, and expand/collapse state for subtasks. Exports the data exactly as displayed in the table.
+
+### Export Formats
+
+| Format | Library | Description |
+|--------|---------|-------------|
+| **CSV** | Native JS | Universal format, UTF-8 with BOM for Excel compatibility |
+| **Excel (XLSX)** | SheetJS (xlsx) | Native Excel format with column widths and formatting |
+| **PDF** | jsPDF + jspdf-autotable | Printable report with header, page numbers, landscape layout |
+
+### Data Transformation
+
+#### Column Handling
+- Only export columns with `visible: true` (respects ColumnConfig settings)
+- Exclude checkbox column from export
+- Add "Depth" column to show hierarchy level (0, 1, 2...)
+
+#### Hierarchy Representation
+- Indent task titles with dashes for subtasks: `-- Subtask name`, `---- Sub-subtask`
+- Include numeric depth column for filtering/sorting in Excel
+
+#### Group Headers
+- When grouping is active, include group header rows
+- Format: `--- Status: In Progress (3/8 completed) ---`
+- Excel/PDF: Style group rows with gray background
+
+#### Field Formatting
+
+| Field | Export Format |
+|-------|---------------|
+| Title | Dashed indent + text (`-- Subtask name`) |
+| Status | Human-readable label ("In Progress") |
+| Priority | Human-readable label ("High", "Medium", "Low", "None") |
+| Assignees | Comma-separated full names |
+| Tags | Comma-separated tag names |
+| Dates | "Feb 8, 2026" format |
+| Milestone | Milestone name or empty |
+| Subtasks | "2/5" format |
+
+### UI Integration
+
+#### Export Dropdown Button
+
+Location: Table toolbar, between search and column config button
+
+```
+[Search Input] [Export ▼] [Columns ⚙]
+```
+
+Dropdown menu:
+- CSV (.csv)
+- Excel (.xlsx)
+- PDF (.pdf)
+
+Button shows loading spinner during export.
+
+### File Naming
+
+Format: `{ProjectName}_Export_{YYYY-MM-DD}.{ext}`
+
+Example: `Website_Redesign_Export_2026-02-08.xlsx`
+
+### Technical Implementation
+
+#### Libraries (via importmap.php CDN)
+
+```php
+'xlsx' => [
+    'version' => '0.18.5',
+    'url' => 'https://cdn.sheetjs.com/xlsx-0.20.2/package/xlsx.mjs'
+],
+'jspdf' => [
+    'version' => '2.5.1',
+],
+'jspdf-autotable' => [
+    'version' => '3.8.2',
+],
+```
+
+#### Files to Create
+
+| File | Purpose |
+|------|---------|
+| `assets/vue/utils/exportUtils.js` | Export logic (prepareData, CSV, Excel, PDF functions) |
+| `assets/vue/components/TaskTable/ExportMenu.js` | Dropdown UI component |
+
+#### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `importmap.php` | Add xlsx, jspdf, jspdf-autotable CDN imports |
+| `assets/vue/components/TaskTable.js` | Import ExportMenu, add to toolbar |
+| `templates/task/_table_vue.html.twig` | Add project-name prop for filename |
+
+### Format-Specific Details
+
+#### CSV
+- UTF-8 encoding with BOM for Excel compatibility
+- Escape commas, quotes, and newlines properly
+- Client-side generation and download
+
+#### Excel (XLSX)
+- Proportional column widths (title wider, depth narrow)
+- Header row with column labels
+- Text wrapping for long content
+
+#### PDF
+- Landscape A4 orientation
+- Project name as title, export date
+- Striped rows, blue header
+- Page numbers in footer
+- Proportional column widths capped at 60mm
+
+### Implementation Phases
+
+1. Create export utilities (`exportUtils.js`)
+2. Create ExportMenu component (follow ColumnConfig.js pattern)
+3. Update `importmap.php` with CDN libraries
+4. Integrate ExportMenu into TaskTable.js toolbar
+5. Add project-name prop to template
+6. Test with various view configurations
+
+### Verification
+
+1. Toggle column visibility, verify export matches
+2. Change sort order, verify export respects it
+3. Expand/collapse subtasks, verify only visible rows export
+4. Enable grouping, verify group headers appear
+5. Test CSV in Excel - verify no encoding issues
+6. Test XLSX formatting and column widths
+7. Test PDF layout and page breaks
+
+---
+
+*Last updated: 8 February 2026*
