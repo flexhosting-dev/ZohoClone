@@ -91,6 +91,14 @@ export default {
         subtaskUrlTemplate: {
             type: String,
             default: ''
+        },
+        reorderUrl: {
+            type: String,
+            default: ''
+        },
+        subtaskReorderUrlTemplate: {
+            type: String,
+            default: ''
         }
     },
 
@@ -695,6 +703,25 @@ export default {
         const loadingChildrenIds = ref(new Set());
         const loadedChildrenIds = ref(new Set());
 
+        // Drag and drop state
+        const dragState = ref({
+            isDragging: false,
+            draggedTaskId: null,
+            draggedTask: null,
+            dropTargetId: null,
+            dropPosition: null, // 'before' | 'after'
+            isValid: true
+        });
+
+        // Reorder mode for mobile (toggle between normal and reorder mode)
+        const reorderMode = ref(false);
+        const isTouchDevice = ref(false);
+
+        // Detect touch device
+        const detectTouchDevice = () => {
+            isTouchDevice.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        };
+
         // Toggle expanded state for tree with lazy loading
         const handleToggleExpand = async (taskId) => {
             try {
@@ -774,6 +801,280 @@ export default {
             expandedIds.value.clear();
             expandedIds.value = new Set();
             saveExpandedState();
+        };
+
+        // Drag and drop handlers
+
+        // Get all descendants of a task (for moving subtrees)
+        const getDescendantIds = (taskId) => {
+            const descendants = [];
+            const findDescendants = (parentId) => {
+                tasks.value.forEach(t => {
+                    if (t.parentId === parentId) {
+                        descendants.push(t.id);
+                        findDescendants(t.id);
+                    }
+                });
+            };
+            findDescendants(taskId);
+            return descendants;
+        };
+
+        // Check if task is a descendant of another task
+        const isDescendantOf = (taskId, potentialAncestorId) => {
+            let current = tasks.value.find(t => t.id === taskId);
+            while (current && current.parentId) {
+                if (current.parentId === potentialAncestorId) return true;
+                current = tasks.value.find(t => t.id === current.parentId);
+            }
+            return false;
+        };
+
+        // Validate if a drop is allowed
+        const validateDrop = (draggedTask, targetTask, position) => {
+            if (!draggedTask || !targetTask) return false;
+
+            // Can't drop on itself
+            if (draggedTask.id === targetTask.id) return false;
+
+            // Can't drop on own descendants
+            if (isDescendantOf(targetTask.id, draggedTask.id)) return false;
+
+            // For subtasks: can only reorder among siblings (same parent)
+            if (draggedTask.parentId) {
+                if (targetTask.parentId !== draggedTask.parentId) return false;
+            }
+
+            // For root tasks: target must also be root (when no grouping) or in same group
+            if (!draggedTask.parentId) {
+                // If target is a subtask, invalid
+                if (targetTask.parentId) return false;
+
+                // If grouping is active, must be in the same group
+                if (groupBy.value !== 'none') {
+                    const draggedGroupKey = getGroupKey(draggedTask);
+                    const targetGroupKey = getGroupKey(targetTask);
+                    if (draggedGroupKey !== targetGroupKey) return false;
+                }
+            }
+
+            return true;
+        };
+
+        // Handle drag start
+        const handleDragStart = (task, event) => {
+            if (!props.canEdit || sortColumn.value !== 'position') {
+                event.preventDefault();
+                return;
+            }
+
+            dragState.value = {
+                isDragging: true,
+                draggedTaskId: task.id,
+                draggedTask: task,
+                dropTargetId: null,
+                dropPosition: null,
+                isValid: true
+            };
+
+            // Set drag image and data
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', task.id);
+
+            // Use the row as drag image
+            const row = event.target.closest('tr');
+            if (row) {
+                const rect = row.getBoundingClientRect();
+                event.dataTransfer.setDragImage(row, event.clientX - rect.left, event.clientY - rect.top);
+            }
+        };
+
+        // Handle drag over
+        const handleDragOver = (task, event) => {
+            if (!dragState.value.isDragging) return;
+
+            event.preventDefault();
+
+            const draggedTask = dragState.value.draggedTask;
+            const isValid = validateDrop(draggedTask, task, null);
+
+            // Determine drop position based on mouse position
+            const row = event.target.closest('tr');
+            if (row) {
+                const rect = row.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                const position = event.clientY < midY ? 'before' : 'after';
+
+                dragState.value.dropTargetId = task.id;
+                dragState.value.dropPosition = position;
+                dragState.value.isValid = isValid;
+            }
+
+            event.dataTransfer.dropEffect = isValid ? 'move' : 'none';
+        };
+
+        // Handle drag leave
+        const handleDragLeave = (task, event) => {
+            // Only clear if leaving the row entirely (not just moving between cells)
+            const relatedTarget = event.relatedTarget;
+            const row = event.target.closest('tr');
+            if (row && relatedTarget && !row.contains(relatedTarget)) {
+                if (dragState.value.dropTargetId === task.id) {
+                    dragState.value.dropTargetId = null;
+                    dragState.value.dropPosition = null;
+                }
+            }
+        };
+
+        // Handle drag end
+        const handleDragEnd = () => {
+            dragState.value = {
+                isDragging: false,
+                draggedTaskId: null,
+                draggedTask: null,
+                dropTargetId: null,
+                dropPosition: null,
+                isValid: true
+            };
+        };
+
+        // Handle drop
+        const handleDrop = async (targetTask, event) => {
+            event.preventDefault();
+
+            const draggedTask = dragState.value.draggedTask;
+            const dropPosition = dragState.value.dropPosition;
+
+            if (!draggedTask || !dragState.value.isValid) {
+                handleDragEnd();
+                return;
+            }
+
+            // Calculate new order
+            const isSubtask = !!draggedTask.parentId;
+            const parentId = isSubtask ? draggedTask.parentId : null;
+
+            // Get siblings (tasks with same parent, or root tasks if no parent)
+            let siblings = tasks.value.filter(t => {
+                if (isSubtask) {
+                    return t.parentId === parentId;
+                } else {
+                    // For root tasks with grouping, only consider tasks in the same group
+                    if (groupBy.value !== 'none') {
+                        return !t.parentId && getGroupKey(t) === getGroupKey(draggedTask);
+                    }
+                    return !t.parentId;
+                }
+            });
+
+            // Sort by position
+            siblings.sort((a, b) => (a.position || 0) - (b.position || 0));
+
+            // Remove dragged task from siblings
+            siblings = siblings.filter(t => t.id !== draggedTask.id);
+
+            // Find target index
+            let targetIndex = siblings.findIndex(t => t.id === targetTask.id);
+            if (targetIndex === -1) {
+                handleDragEnd();
+                return;
+            }
+
+            // Adjust index based on drop position
+            if (dropPosition === 'after') {
+                targetIndex++;
+            }
+
+            // Insert dragged task at new position
+            siblings.splice(targetIndex, 0, draggedTask);
+
+            // Get ordered task IDs
+            const orderedIds = siblings.map(t => t.id);
+
+            // Call reorder API
+            try {
+                let url;
+                let payload;
+
+                if (isSubtask) {
+                    // Use subtask reorder endpoint
+                    url = props.subtaskReorderUrlTemplate.replace('__TASK_ID__', parentId);
+                    payload = { subtaskIds: orderedIds };
+                } else {
+                    // Use main reorder endpoint
+                    url = props.reorderUrl;
+                    payload = { taskIds: orderedIds };
+                }
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to reorder');
+                }
+
+                // Update local positions
+                orderedIds.forEach((id, index) => {
+                    const task = tasks.value.find(t => t.id === id);
+                    if (task) {
+                        task.position = index;
+                    }
+                });
+
+                // Force reactivity update
+                tasks.value = [...tasks.value];
+
+                if (typeof Toastr !== 'undefined') {
+                    Toastr.success('Reordered', 'Task order updated');
+                }
+            } catch (error) {
+                console.error('Error reordering tasks:', error);
+                if (typeof Toastr !== 'undefined') {
+                    Toastr.error('Reorder Failed', error.message || 'Could not reorder tasks');
+                }
+            } finally {
+                handleDragEnd();
+            }
+        };
+
+        // Get drag state for a specific task
+        const getTaskDragState = (taskId) => {
+            return {
+                isDragging: dragState.value.draggedTaskId === taskId,
+                isDropTarget: dragState.value.dropTargetId === taskId,
+                dropPosition: dragState.value.dropTargetId === taskId ? dragState.value.dropPosition : null,
+                isValid: dragState.value.dropTargetId === taskId ? dragState.value.isValid : true
+            };
+        };
+
+        // Check if drag and drop is enabled (only when sorted by position)
+        // On touch devices, also requires reorder mode to be active
+        const isDragEnabled = computed(() => {
+            if (!props.canEdit || sortColumn.value !== 'position') {
+                return false;
+            }
+            // On touch devices, require reorder mode
+            if (isTouchDevice.value) {
+                return reorderMode.value;
+            }
+            return true;
+        });
+
+        // Toggle reorder mode
+        const toggleReorderMode = () => {
+            reorderMode.value = !reorderMode.value;
+            // Clear any drag state when exiting reorder mode
+            if (!reorderMode.value) {
+                handleDragEnd();
+            }
         };
 
         // Row click
@@ -1167,9 +1468,20 @@ export default {
             showColumnIfHidden('assignees');
         };
 
+        // Columns to display (filters out checkbox when canEdit is false)
+        const displayColumns = computed(() => {
+            return columns.value.filter(c => {
+                // Hide checkbox column if user can't edit
+                if (c.key === 'checkbox' && !props.canEdit) {
+                    return false;
+                }
+                return true;
+            });
+        });
+
         // Visible column count for group row colspan
         const visibleColumnCount = computed(() => {
-            return columns.value.filter(c => c.visible).length;
+            return displayColumns.value.filter(c => c.visible).length;
         });
 
         // Bulk actions
@@ -1906,6 +2218,8 @@ export default {
 
         // Lifecycle
         onMounted(() => {
+            // Detect touch device for reorder mode toggle
+            detectTouchDevice();
             // Load from localStorage first for immediate render
             loadColumnConfig();
             loadExpandedState();
@@ -1954,6 +2268,7 @@ export default {
         return {
             tasks,
             columns,
+            displayColumns,
             sortColumn,
             sortDirection,
             selectedIds,
@@ -2061,7 +2376,20 @@ export default {
             cancelInlineAdd,
             saveInlineAdd,
             // Confirm dialog
-            confirmDialogRef
+            confirmDialogRef,
+            // Drag and drop
+            dragState,
+            handleDragStart,
+            handleDragOver,
+            handleDragLeave,
+            handleDragEnd,
+            handleDrop,
+            getTaskDragState,
+            isDragEnabled,
+            // Mobile reorder mode
+            reorderMode,
+            isTouchDevice,
+            toggleReorderMode
         };
     },
 
@@ -2108,6 +2436,26 @@ export default {
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"/>
                             </svg>
+                        </button>
+                    </div>
+
+                    <!-- Reorder Mode Toggle (touch devices only) -->
+                    <div v-if="isTouchDevice && canEdit && sortColumn === 'position'" class="flex items-center gap-1 border-l border-gray-300 pl-2 sm:pl-4">
+                        <button
+                            type="button"
+                            @click="toggleReorderMode"
+                            :class="[
+                                'inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium rounded-md transition-colors',
+                                reorderMode
+                                    ? 'bg-primary-100 text-primary-700 ring-1 ring-primary-300'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                            ]"
+                            :title="reorderMode ? 'Exit reorder mode' : 'Enter reorder mode'"
+                            :aria-pressed="reorderMode">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm8-12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
+                            </svg>
+                            <span>{{ reorderMode ? 'Done' : 'Reorder' }}</span>
                         </button>
                     </div>
                 </div>
@@ -2159,7 +2507,7 @@ export default {
             <div class="overflow-x-auto">
                 <table ref="tableRef" class="min-w-full divide-y divide-gray-200" role="grid" aria-label="Tasks" @keydown="handleTableKeydown">
                     <TableHeader
-                        :columns="columns"
+                        :columns="displayColumns"
                         :sort-column="sortColumn"
                         :sort-direction="sortDirection"
                         :all-selected="allSelected"
@@ -2175,7 +2523,7 @@ export default {
                         <QuickAddRow
                             v-if="groupBy === 'none' && quickAddGroupKey === '__all__'"
                             ref="quickAddRowRef"
-                            :columns="columns"
+                            :columns="displayColumns"
                             :status-options="statusOptions"
                             :priority-options="priorityOptions"
                             :milestone-options="milestoneOptions"
@@ -2208,7 +2556,7 @@ export default {
                             <QuickAddRow
                                 v-if="item.type === 'group' && quickAddGroupKey === item.groupKey && !item.isCollapsed"
                                 ref="quickAddRowRef"
-                                :columns="columns"
+                                :columns="displayColumns"
                                 :status-options="statusOptions"
                                 :priority-options="priorityOptions"
                                 :milestone-options="milestoneOptions"
@@ -2225,7 +2573,7 @@ export default {
                             <QuickAddRow
                                 v-if="item.type === 'task' && inlineAddAboveTaskId === item.task.id"
                                 ref="inlineAddRowRef"
-                                :columns="columns"
+                                :columns="displayColumns"
                                 :status-options="statusOptions"
                                 :priority-options="priorityOptions"
                                 :milestone-options="milestoneOptions"
@@ -2244,7 +2592,7 @@ export default {
                             <TaskRow
                                 v-if="item.type === 'task'"
                                 :task="item.task"
-                                :columns="columns"
+                                :columns="displayColumns"
                                 :base-path="basePath"
                                 :selected="selectedIds.has(item.task.id)"
                                 :can-edit="canEdit"
@@ -2260,6 +2608,9 @@ export default {
                                 :priority-options="priorityOptions"
                                 :milestone-options="milestoneOptions"
                                 :search-highlight="item.task.searchHighlight || ''"
+                                :drag-state="getTaskDragState(item.task.id)"
+                                :draggable="isDragEnabled"
+                                :reorder-mode="reorderMode"
                                 @click="handleRowClick"
                                 @select="handleSelect"
                                 @toggle-expand="handleToggleExpand"
@@ -2268,13 +2619,18 @@ export default {
                                 @cancel-edit="cancelEditing"
                                 @assignee-change="handleAssigneeChange"
                                 @contextmenu="handleRowContextMenu"
+                                @dragstart="handleDragStart(item.task, $event)"
+                                @dragover="handleDragOver(item.task, $event)"
+                                @dragleave="handleDragLeave(item.task, $event)"
+                                @dragend="handleDragEnd"
+                                @drop="handleDrop(item.task, $event)"
                             />
 
                             <!-- Inline Add Below Row -->
                             <QuickAddRow
                                 v-if="item.type === 'task' && inlineAddBelowTaskId === item.task.id"
                                 ref="inlineAddRowRef"
-                                :columns="columns"
+                                :columns="displayColumns"
                                 :status-options="statusOptions"
                                 :priority-options="priorityOptions"
                                 :milestone-options="milestoneOptions"
@@ -2293,7 +2649,7 @@ export default {
                             <QuickAddRow
                                 v-if="item.type === 'task' && subtaskQuickAddParentId === item.task.id"
                                 ref="subtaskQuickAddRef"
-                                :columns="columns"
+                                :columns="displayColumns"
                                 :status-options="statusOptions"
                                 :priority-options="priorityOptions"
                                 :milestone-options="milestoneOptions"

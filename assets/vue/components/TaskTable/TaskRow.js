@@ -71,10 +71,27 @@ export default {
         searchHighlight: {
             type: String,
             default: ''
+        },
+        dragState: {
+            type: Object,
+            default: () => ({
+                isDragging: false,
+                isDropTarget: false,
+                dropPosition: null,
+                isValid: true
+            })
+        },
+        draggable: {
+            type: Boolean,
+            default: false
+        },
+        reorderMode: {
+            type: Boolean,
+            default: false
         }
     },
 
-    emits: ['click', 'select', 'toggle-expand', 'cell-click', 'save-edit', 'cancel-edit', 'assignee-change', 'contextmenu'],
+    emits: ['click', 'select', 'toggle-expand', 'cell-click', 'save-edit', 'cancel-edit', 'assignee-change', 'contextmenu', 'dragstart', 'dragover', 'dragleave', 'dragend', 'drop'],
 
     setup(props, { emit }) {
         const visibleColumns = computed(() => {
@@ -151,6 +168,11 @@ export default {
         };
 
         const handleContextMenu = (event) => {
+            // Don't show context menu in reorder mode
+            if (props.reorderMode) {
+                event.preventDefault();
+                return;
+            }
             event.preventDefault();
             emit('contextmenu', props.task, event);
         };
@@ -160,6 +182,9 @@ export default {
         let longPressTriggered = false;
 
         const handleTouchStart = (event) => {
+            // Don't trigger context menu in reorder mode
+            if (props.reorderMode) return;
+
             longPressTriggered = false;
             longPressTimer = setTimeout(() => {
                 longPressTriggered = true;
@@ -361,6 +386,47 @@ export default {
             return { before, match, after, hasMatch: true };
         });
 
+        // Drag and drop handlers
+        const handleDragStart = (event) => {
+            if (!props.draggable) {
+                event.preventDefault();
+                return;
+            }
+            emit('dragstart', event);
+        };
+
+        const handleDragOver = (event) => {
+            emit('dragover', event);
+        };
+
+        const handleDragLeave = (event) => {
+            emit('dragleave', event);
+        };
+
+        const handleDragEnd = (event) => {
+            emit('dragend', event);
+        };
+
+        const handleDrop = (event) => {
+            emit('drop', event);
+        };
+
+        // Computed classes for drag state
+        const dragClasses = computed(() => {
+            const classes = [];
+            if (props.dragState.isDragging) {
+                classes.push('dragging');
+            }
+            if (props.dragState.isDropTarget) {
+                if (props.dragState.isValid) {
+                    classes.push(props.dragState.dropPosition === 'before' ? 'drag-over-before' : 'drag-over-after');
+                } else {
+                    classes.push('drag-invalid');
+                }
+            }
+            return classes;
+        });
+
         return {
             visibleColumns,
             handleRowClick,
@@ -389,7 +455,14 @@ export default {
             highlightedTitle,
             availableMembers,
             addAssignee,
-            removeAssignee
+            removeAssignee,
+            // Drag and drop
+            handleDragStart,
+            handleDragOver,
+            handleDragLeave,
+            handleDragEnd,
+            handleDrop,
+            dragClasses
         };
     },
 
@@ -399,21 +472,29 @@ export default {
             :class="[
                 'task-table-row hover:bg-gray-50 cursor-pointer transition-colors',
                 selected ? 'bg-primary-50' : '',
-                depth > 0 ? 'task-table-row-child' : ''
+                depth > 0 ? 'task-table-row-child' : '',
+                ...dragClasses
             ]"
             :data-task-id="task.id"
             :data-depth="depth"
+            :data-parent-id="task.parentId || ''"
             :aria-selected="selected"
             :aria-level="depth + 1"
             :aria-expanded="hasChildren || task.subtaskCount > 0 ? isExpanded : undefined"
             tabindex="0"
+            :draggable="draggable"
             @click="handleRowClick"
             @contextmenu="handleContextMenu"
             @touchstart.passive="handleTouchStart"
             @touchend.passive="handleTouchEnd"
             @touchmove.passive="handleTouchMove"
             @keydown.enter="handleRowClick"
-            @keydown.space.prevent="$emit('select', task.id, !selected)">
+            @keydown.space.prevent="$emit('select', task.id, !selected)"
+            @dragstart="handleDragStart"
+            @dragover.prevent="handleDragOver"
+            @dragleave="handleDragLeave"
+            @dragend="handleDragEnd"
+            @drop.prevent="handleDrop">
 
             <td v-for="column in visibleColumns"
                 :key="column.key"
@@ -439,6 +520,19 @@ export default {
                 <!-- Title -->
                 <template v-else-if="column.key === 'title'">
                     <div class="flex items-center" :style="{ paddingLeft: (depth * 20) + 'px' }">
+                        <!-- Drag handle -->
+                        <span
+                            v-if="draggable"
+                            :class="[
+                                'flex-shrink-0 w-4 h-4 mr-1 flex items-center justify-center cursor-grab',
+                                reorderMode ? 'text-primary-500 opacity-100' : 'drag-handle text-gray-400'
+                            ]"
+                            @mousedown.stop
+                            title="Drag to reorder">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm8-12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
+                            </svg>
+                        </span>
                         <!-- Tree toggle -->
                         <button
                             v-if="hasChildren || task.subtaskCount > 0"
