@@ -1586,7 +1586,29 @@ export default {
 
                 // Remove deleted tasks from local state
                 const deletedIds = new Set(selectedIds.value);
+
+                // Collect parent IDs of deleted tasks to update their subtaskCount
+                const affectedParentIds = new Set();
+                tasks.value.forEach(t => {
+                    if (deletedIds.has(t.id) && t.parentId) {
+                        affectedParentIds.add(t.parentId);
+                    }
+                });
+
                 tasks.value = tasks.value.filter(t => !deletedIds.has(t.id));
+
+                // Update subtaskCount for affected parent tasks
+                affectedParentIds.forEach(parentId => {
+                    const parentTask = tasks.value.find(t => t.id === parentId);
+                    if (parentTask) {
+                        // Recalculate subtask count from remaining tasks
+                        const remainingChildren = tasks.value.filter(t => t.parentId === parentId);
+                        parentTask.subtaskCount = remainingChildren.length;
+                        parentTask.completedSubtaskCount = remainingChildren.filter(
+                            t => (t.status?.value || t.status) === 'completed'
+                        ).length;
+                    }
+                });
 
                 if (typeof Toastr !== 'undefined') {
                     Toastr.success('Tasks Deleted', `${data.deleted} tasks deleted`);

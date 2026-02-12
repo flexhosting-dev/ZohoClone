@@ -1547,23 +1547,34 @@ class TaskController extends AbstractController
         $duplicate->setDueDate($task->getDueDate());
         $duplicate->setStartDate($task->getStartDate());
 
+        // Copy parent relationship (for subtasks)
+        if ($task->getParent()) {
+            $duplicate->setParent($task->getParent());
+        }
+
         // Set position after the original task
         $newPosition = $task->getPosition() + 1;
 
-        // Shift all tasks at or after the new position down by 1
+        // Shift all sibling tasks at or after the new position down by 1
         $milestone = $task->getMilestone();
-        if ($milestone) {
-            $tasksToShift = $this->taskRepository->createQueryBuilder('t')
-                ->where('t.milestone = :milestone')
-                ->andWhere('t.position >= :position')
-                ->setParameter('milestone', $milestone)
-                ->setParameter('position', $newPosition)
-                ->getQuery()
-                ->getResult();
+        $parentId = $task->getParent() ? $task->getParent()->getId() : null;
 
-            foreach ($tasksToShift as $taskToShift) {
-                $taskToShift->setPosition($taskToShift->getPosition() + 1);
-            }
+        $qb = $this->taskRepository->createQueryBuilder('t')
+            ->where('t.milestone = :milestone')
+            ->andWhere('t.position >= :position')
+            ->setParameter('milestone', $milestone)
+            ->setParameter('position', $newPosition);
+
+        // Only shift siblings (same parent level)
+        if ($parentId) {
+            $qb->andWhere('t.parent = :parent')->setParameter('parent', $parentId);
+        } else {
+            $qb->andWhere('t.parent IS NULL');
+        }
+
+        $tasksToShift = $qb->getQuery()->getResult();
+        foreach ($tasksToShift as $taskToShift) {
+            $taskToShift->setPosition($taskToShift->getPosition() + 1);
         }
 
         $duplicate->setPosition($newPosition);
@@ -1637,9 +1648,9 @@ class TaskController extends AbstractController
                 'completedChecklistCount' => 0,
                 'subtaskCount' => 0,
                 'completedSubtaskCount' => 0,
-                'parentId' => null,
-                'parentChain' => null,
-                'depth' => 0,
+                'parentId' => $duplicate->getParent() ? $duplicate->getParent()->getId()->toString() : null,
+                'parentChain' => $duplicate->getParent() ? $duplicate->getParent()->getTitle() : null,
+                'depth' => $duplicate->getDepth(),
             ],
         ]);
     }
