@@ -4,12 +4,14 @@
    - tasks: Task[] (flat list of all tasks)
    - milestones: list of Milestone entities
    - members: list of project members (for assignee context menu)
+   - allStatuses: list of TaskStatusType entities
    - canEdit: boolean (whether user can edit tasks)
    - storageKey: string (localStorage key for view persistence)
 #}
 
 {% set milestones = milestones|default([]) %}
 {% set members = members|default([]) %}
+{% set allStatuses = allStatuses|default([]) %}
 {% set canEdit = canEdit|default(false) %}
 {% set basePath = app.request.basePath %}
 
@@ -18,7 +20,7 @@
     data-vue-initial-tasks='{{ tasks|map(task => {
         id: task.id ~ '',
         title: task.title|default(''),
-        status: { value: task.status ? task.status.value : 'todo', label: task.status ? task.status.label : 'To Do' },
+        status: { value: task.effectiveStatusValue, label: task.effectiveStatusLabel, color: task.effectiveStatusColor },
         priority: { value: task.priority ? task.priority.value : 'none', label: task.priority ? task.priority.label : 'None' },
         milestoneId: task.milestone ? task.milestone.id ~ '' : null,
         milestoneName: task.milestone ? task.milestone.name : null,
@@ -48,6 +50,11 @@
         fullName: m.fullName|default('Unknown'),
         firstName: m.firstName|default(''),
         avatar: m.avatar ? basePath ~ '/uploads/avatars/' ~ m.avatar : null
+    })|json_encode|e('html_attr') }}'
+    data-vue-status-options='{{ allStatuses|map(s => {
+        value: s.slug,
+        label: s.name,
+        color: s.color
     })|json_encode|e('html_attr') }}'
     data-vue-start-date-url-template="{{ path('app_task_update_start_date', {id: '__TASK_ID__'}) }}"
     data-vue-due-date-url-template="{{ path('app_task_update_due_date', {id: '__TASK_ID__'}) }}"

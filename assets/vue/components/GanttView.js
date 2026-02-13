@@ -57,6 +57,10 @@ export default {
             type: Array,
             default: () => []
         },
+        statusOptions: {
+            type: Array,
+            default: () => []
+        },
         canEdit: {
             type: Boolean,
             default: false
@@ -101,12 +105,12 @@ export default {
             { value: 'title', label: 'Title' }
         ];
 
-        // Status and priority configs (same as TaskTable)
-        const statusConfig = [
-            { value: 'todo', label: 'To Do', color: '#6b7280' },
-            { value: 'in_progress', label: 'In Progress', color: '#3b82f6' },
-            { value: 'in_review', label: 'In Review', color: '#eab308' },
-            { value: 'completed', label: 'Completed', color: '#22c55e' }
+        // Default status and priority configs (fallback if not passed from props)
+        const defaultStatusConfig = [
+            { value: 'open', label: 'Open', color: '#3B82F6' },
+            { value: 'in_progress', label: 'In Progress', color: '#F59E0B' },
+            { value: 'completed', label: 'Completed', color: '#10B981' },
+            { value: 'cancelled', label: 'Cancelled', color: '#EF4444' }
         ];
 
         const priorityConfig = [
@@ -116,11 +120,21 @@ export default {
             { value: 'none', label: 'None', color: '#6b7280' }
         ];
 
-        // Computed options for ContextMenu
-        const statusOptions = computed(() => statusConfig.map(s => ({
-            value: s.value,
-            label: s.label
-        })));
+        // Computed options for ContextMenu - use props if available, otherwise fallback
+        const computedStatusOptions = computed(() => {
+            if (props.statusOptions && props.statusOptions.length > 0) {
+                return props.statusOptions.map(s => ({
+                    value: s.value,
+                    label: s.label,
+                    color: s.color
+                }));
+            }
+            return defaultStatusConfig.map(s => ({
+                value: s.value,
+                label: s.label,
+                color: s.color
+            }));
+        });
 
         const priorityOptions = computed(() => priorityConfig.map(p => ({
             value: p.value,
@@ -131,12 +145,19 @@ export default {
         const GANTT_ROW_HEIGHT = 38; // bar_height (20) + padding (18)
         const ganttHeaderHeight = ref(50); // Will be measured dynamically
 
-        // Status colors for task bars
-        const statusColors = {
-            'todo': '#6b7280',
-            'in_progress': '#3b82f6',
-            'in_review': '#eab308',
-            'completed': '#22c55e'
+        // Get status color from task or fallback to default
+        const getStatusColor = (task) => {
+            if (task?.status?.color) return task.status.color;
+            // Fallback for legacy statuses
+            const fallbackColors = {
+                'open': '#3B82F6',
+                'todo': '#6b7280',
+                'in_progress': '#F59E0B',
+                'in_review': '#eab308',
+                'completed': '#10B981',
+                'cancelled': '#EF4444'
+            };
+            return fallbackColors[task?.status?.value] || '#6b7280';
         };
 
         // Priority bar accents
@@ -162,10 +183,11 @@ export default {
 
                     // Calculate progress based on status
                     let progress = 0;
-                    if (task.status?.value === 'completed') progress = 100;
-                    else if (task.status?.value === 'in_review') progress = 75;
-                    else if (task.status?.value === 'in_progress') progress = 50;
-                    else if (task.status?.value === 'todo') progress = 0;
+                    const statusValue = task.status?.value || 'open';
+                    if (statusValue === 'completed' || statusValue === 'cancelled') progress = 100;
+                    else if (statusValue === 'in_review') progress = 75;
+                    else if (statusValue === 'in_progress') progress = 50;
+                    else progress = 0; // open, todo, etc.
 
                     // Find dependencies (parent tasks)
                     const dependencies = task.parentId ? [task.parentId] : [];
@@ -177,10 +199,11 @@ export default {
                         end: formatDate(endDate),
                         progress: progress,
                         dependencies: dependencies.join(', '),
-                        custom_class: `gantt-task-${task.status?.value || 'todo'} gantt-priority-${task.priority?.value || 'none'}`,
+                        custom_class: `gantt-task-${task.status?.value || 'open'} gantt-priority-${task.priority?.value || 'none'}`,
                         _originalIndex: task._originalIndex,
                         depth: task.depth || 0,
-                        parentId: task.parentId || null
+                        parentId: task.parentId || null,
+                        statusColor: task.status?.color || getStatusColor(task)
                     };
                 });
 
@@ -293,10 +316,11 @@ export default {
                         const originalTask = tasks.value.find(t => t.id === task.id);
                         if (!originalTask) return '';
 
+                        const statusColor = getStatusColor(originalTask);
                         const statusBadge = originalTask.status ?
                             `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                                   style="background-color: ${statusColors[originalTask.status.value] || '#6b7280'}20;
-                                          color: ${statusColors[originalTask.status.value] || '#6b7280'}">
+                                   style="background-color: ${statusColor}20;
+                                          color: ${statusColor}">
                                 ${originalTask.status.label || originalTask.status.value}
                             </span>` : '';
 
@@ -885,7 +909,7 @@ export default {
         async function handleContextSetStatus(taskList, status) {
             if (!props.statusUrlTemplate) return;
 
-            const statusOpt = statusConfig.find(s => s.value === status);
+            const statusOpt = computedStatusOptions.value.find(s => s.value === status);
 
             for (const task of taskList) {
                 try {
@@ -1114,7 +1138,7 @@ export default {
             handleContextSetPriority,
             handleContextAssignTo,
             milestoneOptions,
-            statusOptions,
+            statusOptions: computedStatusOptions,
             priorityOptions
         };
     },
@@ -1289,11 +1313,7 @@ export default {
                             <!-- Status indicator dot -->
                             <span
                                 class="w-2 h-2 rounded-full mr-1.5 flex-shrink-0"
-                                :style="{
-                                    backgroundColor: task.custom_class.includes('completed') ? '#22c55e' :
-                                        task.custom_class.includes('in_review') ? '#eab308' :
-                                        task.custom_class.includes('in_progress') ? '#3b82f6' : '#6b7280'
-                                }"
+                                :style="{ backgroundColor: task.statusColor || '#6b7280' }"
                             ></span>
                             <!-- Task name -->
                             <span
@@ -1355,15 +1375,11 @@ export default {
                                     <span
                                         class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium"
                                         :style="{
-                                            backgroundColor: (task.status?.value === 'completed' ? '#22c55e' :
-                                                task.status?.value === 'in_review' ? '#eab308' :
-                                                task.status?.value === 'in_progress' ? '#3b82f6' : '#6b7280') + '20',
-                                            color: task.status?.value === 'completed' ? '#22c55e' :
-                                                task.status?.value === 'in_review' ? '#eab308' :
-                                                task.status?.value === 'in_progress' ? '#3b82f6' : '#6b7280'
+                                            backgroundColor: (task.status?.color || '#6b7280') + '20',
+                                            color: task.status?.color || '#6b7280'
                                         }"
                                     >
-                                        {{ task.status?.label || 'To Do' }}
+                                        {{ task.status?.label || 'Open' }}
                                     </span>
                                 </div>
                             </div>
@@ -1393,15 +1409,11 @@ export default {
                                 <span
                                     class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium"
                                     :style="{
-                                        backgroundColor: (task.status?.value === 'completed' ? '#22c55e' :
-                                            task.status?.value === 'in_review' ? '#eab308' :
-                                            task.status?.value === 'in_progress' ? '#3b82f6' : '#6b7280') + '20',
-                                        color: task.status?.value === 'completed' ? '#22c55e' :
-                                            task.status?.value === 'in_review' ? '#eab308' :
-                                            task.status?.value === 'in_progress' ? '#3b82f6' : '#6b7280'
+                                        backgroundColor: (task.status?.color || '#6b7280') + '20',
+                                        color: task.status?.color || '#6b7280'
                                     }"
                                 >
-                                    {{ task.status?.label || 'To Do' }}
+                                    {{ task.status?.label || 'Open' }}
                                 </span>
                             </div>
                         </div>
