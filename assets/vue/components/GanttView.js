@@ -1159,7 +1159,20 @@ export default {
                             parentId: quickAddTargetTaskId.value,
                             assignees: []
                         };
-                        tasks.value.push(newTask);
+
+                        // Insert subtask right after the parent task
+                        const parentIndex = tasks.value.findIndex(t => t.id === quickAddTargetTaskId.value);
+                        if (parentIndex !== -1) {
+                            // Find the last existing child of this parent to insert after
+                            let insertIndex = parentIndex + 1;
+                            while (insertIndex < tasks.value.length &&
+                                   tasks.value[insertIndex].parentId === quickAddTargetTaskId.value) {
+                                insertIndex++;
+                            }
+                            tasks.value.splice(insertIndex, 0, newTask);
+                        } else {
+                            tasks.value.push(newTask);
+                        }
                     }
 
                     if (window.Toastr) {
