@@ -64,6 +64,18 @@ export default {
         canEdit: {
             type: Boolean,
             default: false
+        },
+        createUrl: {
+            type: String,
+            default: ''
+        },
+        subtaskUrlTemplate: {
+            type: String,
+            default: ''
+        },
+        defaultMilestoneId: {
+            type: String,
+            default: ''
         }
     },
 
@@ -97,6 +109,13 @@ export default {
         // Long press timer for mobile context menu
         let longPressTimer = null;
         const longPressDelay = 500;
+
+        // Quick add state
+        const quickAddMode = ref(null); // 'above', 'below', or 'subtask'
+        const quickAddTargetTaskId = ref(null);
+        const quickAddInputRef = ref(null);
+        const quickAddTitle = ref('');
+        const isCreatingTask = ref(false);
 
         const viewModes = ['Day', 'Week', 'Month', 'Year'];
         const sortOptions = [
@@ -1037,6 +1056,202 @@ export default {
             nextTick(() => initGantt());
         }
 
+        // Quick add handlers
+        function handleContextAddSubtask(task) {
+            if (!props.subtaskUrlTemplate) {
+                console.warn('No subtask URL template configured');
+                return;
+            }
+            quickAddMode.value = 'subtask';
+            quickAddTargetTaskId.value = task.id;
+            quickAddTitle.value = '';
+
+            // Expand parent to show subtasks
+            if (collapsedTaskIds.value.has(task.id)) {
+                collapsedTaskIds.value.delete(task.id);
+                collapsedTaskIds.value = new Set(collapsedTaskIds.value);
+            }
+
+            nextTick(() => {
+                if (quickAddInputRef.value) {
+                    quickAddInputRef.value.focus();
+                }
+            });
+        }
+
+        function handleContextAddAbove(task) {
+            if (!props.createUrl) {
+                console.warn('No create URL configured');
+                return;
+            }
+            quickAddMode.value = 'above';
+            quickAddTargetTaskId.value = task.id;
+            quickAddTitle.value = '';
+            nextTick(() => {
+                if (quickAddInputRef.value) {
+                    quickAddInputRef.value.focus();
+                }
+            });
+        }
+
+        function handleContextAddBelow(task) {
+            if (!props.createUrl) {
+                console.warn('No create URL configured');
+                return;
+            }
+            quickAddMode.value = 'below';
+            quickAddTargetTaskId.value = task.id;
+            quickAddTitle.value = '';
+            nextTick(() => {
+                if (quickAddInputRef.value) {
+                    quickAddInputRef.value.focus();
+                }
+            });
+        }
+
+        function cancelQuickAdd() {
+            quickAddMode.value = null;
+            quickAddTargetTaskId.value = null;
+            quickAddTitle.value = '';
+        }
+
+        async function saveQuickAdd() {
+            const title = quickAddTitle.value.trim();
+            if (!title || isCreatingTask.value) return;
+
+            isCreatingTask.value = true;
+            const targetTask = tasks.value.find(t => t.id === quickAddTargetTaskId.value);
+
+            try {
+                if (quickAddMode.value === 'subtask') {
+                    // Create subtask
+                    const url = props.subtaskUrlTemplate.replace('__TASK_ID__', quickAddTargetTaskId.value);
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ title })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to create subtask');
+
+                    const data = await response.json();
+                    if (data.task) {
+                        // Add new task to local state
+                        const newTask = {
+                            id: data.task.id + '',
+                            title: data.task.title,
+                            status: { value: 'todo', label: 'To Do', color: '#6B7280' },
+                            priority: { value: 'none', label: 'None' },
+                            milestoneId: targetTask?.milestoneId,
+                            milestoneName: targetTask?.milestoneName,
+                            dueDate: null,
+                            startDate: null,
+                            position: data.task.position || 0,
+                            depth: (targetTask?.depth || 0) + 1,
+                            parentId: quickAddTargetTaskId.value,
+                            assignees: []
+                        };
+                        tasks.value.push(newTask);
+                    }
+
+                    if (window.Toastr) {
+                        window.Toastr.success('Subtask created');
+                    }
+                } else {
+                    // Create task above or below
+                    const payload = {
+                        title,
+                        parentId: targetTask?.parentId || null,
+                        milestoneId: props.defaultMilestoneId || targetTask?.milestoneId || null
+                    };
+
+                    // Calculate position based on above/below
+                    if (quickAddMode.value === 'above') {
+                        payload.position = (targetTask?.position || 0);
+                        payload.insertBefore = quickAddTargetTaskId.value;
+                    } else {
+                        payload.position = (targetTask?.position || 0) + 1;
+                        payload.insertAfter = quickAddTargetTaskId.value;
+                    }
+
+                    const response = await fetch(props.createUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error('Failed to create task');
+
+                    const data = await response.json();
+                    if (data.task) {
+                        const newTask = {
+                            id: data.task.id + '',
+                            title: data.task.title,
+                            status: { value: 'todo', label: 'To Do', color: '#6B7280' },
+                            priority: { value: 'none', label: 'None' },
+                            milestoneId: data.task.milestoneId || targetTask?.milestoneId,
+                            milestoneName: data.task.milestoneName || targetTask?.milestoneName,
+                            dueDate: null,
+                            startDate: null,
+                            position: data.task.position || 0,
+                            depth: targetTask?.depth || 0,
+                            parentId: targetTask?.parentId || null,
+                            assignees: []
+                        };
+
+                        // Insert at correct position
+                        const targetIndex = tasks.value.findIndex(t => t.id === quickAddTargetTaskId.value);
+                        if (targetIndex !== -1) {
+                            const insertIndex = quickAddMode.value === 'above' ? targetIndex : targetIndex + 1;
+                            tasks.value.splice(insertIndex, 0, newTask);
+                        } else {
+                            tasks.value.push(newTask);
+                        }
+                    }
+
+                    if (window.Toastr) {
+                        window.Toastr.success('Task created');
+                    }
+                }
+
+                // Dispatch event for other components
+                document.dispatchEvent(new CustomEvent('task-created', {
+                    detail: { refresh: true }
+                }));
+
+                cancelQuickAdd();
+                nextTick(() => initGantt());
+            } catch (error) {
+                console.error('Failed to create task:', error);
+                if (window.Toastr) {
+                    window.Toastr.error('Failed to create task');
+                }
+            } finally {
+                isCreatingTask.value = false;
+            }
+        }
+
+        function handleQuickAddKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                saveQuickAdd();
+            } else if (event.key === 'Escape') {
+                event.preventDefault();
+                cancelQuickAdd();
+            }
+        }
+
+        // Check if task can have subtasks (depth limit)
+        function canAddSubtaskTo(task) {
+            const maxDepth = 3;
+            return (task.depth || 0) < maxDepth;
+        }
 
         onMounted(() => {
             loadViewPreference();
@@ -1116,6 +1331,19 @@ export default {
             handleContextCopyLink,
             handleContextSetStatus,
             handleContextSetPriority,
+            // Quick add
+            quickAddMode,
+            quickAddTargetTaskId,
+            quickAddInputRef,
+            quickAddTitle,
+            isCreatingTask,
+            handleContextAddSubtask,
+            handleContextAddAbove,
+            handleContextAddBelow,
+            cancelQuickAdd,
+            saveQuickAdd,
+            handleQuickAddKeydown,
+            canAddSubtaskTo,
             statusOptions: computedStatusOptions,
             priorityOptions
         };
@@ -1243,68 +1471,197 @@ export default {
                         class="flex-1 overflow-y-auto overflow-x-hidden"
                         @scroll="syncScrollFromTaskList"
                     >
-                        <div
-                            v-for="(task, index) in visibleGanttTasks"
-                            :key="task.id"
-                            class="flex items-center border-b border-gray-100 cursor-pointer transition-colors"
-                            :class="[
-                                hoveredTaskId === task.id ? 'bg-primary-50' : 'hover:bg-gray-50'
-                            ]"
-                            :style="{
-                                height: GANTT_ROW_HEIGHT + 'px',
-                                paddingLeft: (isMobile ? (4 + task.depth * 10) : (8 + task.depth * 14)) + 'px',
-                                paddingRight: (isMobile ? 4 : 8) + 'px'
-                            }"
-                            @mouseenter="handleTaskHover(task.id)"
-                            @mouseleave="handleTaskLeave"
-                            @click="openTask(task.id)"
-                            @contextmenu="handleTaskContextMenu(task, $event)"
-                            @touchstart="handleTouchStart(task, $event)"
-                            @touchend="handleTouchEnd"
-                            @touchmove="handleTouchMove"
-                        >
-                            <!-- Expand/Collapse toggle for tasks with children -->
-                            <button
-                                v-if="tasksWithChildren.has(task.id)"
-                                @click.stop="toggleTaskCollapse(task.id)"
-                                class="flex-shrink-0 w-4 h-4 mr-1 flex items-center justify-center rounded hover:bg-gray-200 transition-colors"
+                        <template v-for="(task, index) in visibleGanttTasks" :key="task.id">
+                            <!-- Quick Add Above Row -->
+                            <div
+                                v-if="quickAddMode === 'above' && quickAddTargetTaskId === task.id"
+                                class="flex items-center border-b border-primary-200 bg-primary-50"
+                                :style="{
+                                    height: GANTT_ROW_HEIGHT + 'px',
+                                    paddingLeft: (isMobile ? (4 + (task.depth || 0) * 10) : (8 + (task.depth || 0) * 14)) + 'px',
+                                    paddingRight: (isMobile ? 4 : 8) + 'px'
+                                }"
                             >
-                                <svg
-                                    class="w-3 h-3 text-gray-500 transition-transform"
-                                    :class="collapsedTaskIds.has(task.id) ? '' : 'rotate-90'"
-                                    fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                                <span class="w-2 h-2 rounded-full mr-1.5 flex-shrink-0 bg-gray-400"></span>
+                                <input
+                                    ref="quickAddInputRef"
+                                    type="text"
+                                    v-model="quickAddTitle"
+                                    placeholder="New task title..."
+                                    :disabled="isCreatingTask"
+                                    @keydown="handleQuickAddKeydown"
+                                    @blur="quickAddTitle.trim() ? null : cancelQuickAdd()"
+                                    class="flex-1 min-w-0 px-2 py-1 text-sm border border-primary-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                                />
+                                <button
+                                    @click="saveQuickAdd"
+                                    :disabled="!quickAddTitle.trim() || isCreatingTask"
+                                    class="ml-1 p-1 text-primary-600 hover:text-primary-800 disabled:opacity-50"
                                 >
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                                </svg>
-                            </button>
-                            <!-- Spacer for tasks without children (to align with those that have toggle) -->
-                            <span v-else-if="tasksWithChildren.size > 0" class="flex-shrink-0 w-4 mr-1"></span>
-                            <!-- Tree indent indicator for nested tasks -->
-                            <span
-                                v-if="task.depth > 0"
-                                class="flex-shrink-0 mr-1 text-gray-300"
-                            >
-                                <svg class="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                                    <path d="M3 1v6h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </span>
-                            <!-- Status indicator dot -->
-                            <span
-                                class="w-2 h-2 rounded-full mr-1.5 flex-shrink-0"
-                                :style="{ backgroundColor: task.statusColor || '#6b7280' }"
-                            ></span>
-                            <!-- Task name -->
-                            <span
-                                class="truncate"
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                </button>
+                                <button
+                                    @click="cancelQuickAdd"
+                                    :disabled="isCreatingTask"
+                                    class="p-1 text-gray-400 hover:text-gray-600"
+                                >
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Task Row -->
+                            <div
+                                class="flex items-center border-b border-gray-100 cursor-pointer transition-colors"
                                 :class="[
-                                    isMobile ? 'text-xs' : 'text-sm',
-                                    task.depth === 0 ? 'text-gray-900 font-medium' : 'text-gray-700'
+                                    hoveredTaskId === task.id ? 'bg-primary-50' : 'hover:bg-gray-50'
                                 ]"
-                                :title="task.name"
+                                :style="{
+                                    height: GANTT_ROW_HEIGHT + 'px',
+                                    paddingLeft: (isMobile ? (4 + task.depth * 10) : (8 + task.depth * 14)) + 'px',
+                                    paddingRight: (isMobile ? 4 : 8) + 'px'
+                                }"
+                                @mouseenter="handleTaskHover(task.id)"
+                                @mouseleave="handleTaskLeave"
+                                @click="openTask(task.id)"
+                                @contextmenu="handleTaskContextMenu(task, $event)"
+                                @touchstart="handleTouchStart(task, $event)"
+                                @touchend="handleTouchEnd"
+                                @touchmove="handleTouchMove"
                             >
-                                {{ task.name }}
-                            </span>
-                        </div>
+                                <!-- Expand/Collapse toggle for tasks with children -->
+                                <button
+                                    v-if="tasksWithChildren.has(task.id)"
+                                    @click.stop="toggleTaskCollapse(task.id)"
+                                    class="flex-shrink-0 w-4 h-4 mr-1 flex items-center justify-center rounded hover:bg-gray-200 transition-colors"
+                                >
+                                    <svg
+                                        class="w-3 h-3 text-gray-500 transition-transform"
+                                        :class="collapsedTaskIds.has(task.id) ? '' : 'rotate-90'"
+                                        fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                                    >
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                    </svg>
+                                </button>
+                                <!-- Spacer for tasks without children (to align with those that have toggle) -->
+                                <span v-else-if="tasksWithChildren.size > 0" class="flex-shrink-0 w-4 mr-1"></span>
+                                <!-- Tree indent indicator for nested tasks -->
+                                <span
+                                    v-if="task.depth > 0"
+                                    class="flex-shrink-0 mr-1 text-gray-300"
+                                >
+                                    <svg class="w-3 h-3" viewBox="0 0 12 12" fill="none">
+                                        <path d="M3 1v6h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </span>
+                                <!-- Status indicator dot -->
+                                <span
+                                    class="w-2 h-2 rounded-full mr-1.5 flex-shrink-0"
+                                    :style="{ backgroundColor: task.statusColor || '#6b7280' }"
+                                ></span>
+                                <!-- Task name -->
+                                <span
+                                    class="truncate"
+                                    :class="[
+                                        isMobile ? 'text-xs' : 'text-sm',
+                                        task.depth === 0 ? 'text-gray-900 font-medium' : 'text-gray-700'
+                                    ]"
+                                    :title="task.name"
+                                >
+                                    {{ task.name }}
+                                </span>
+                            </div>
+
+                            <!-- Quick Add Below Row -->
+                            <div
+                                v-if="quickAddMode === 'below' && quickAddTargetTaskId === task.id"
+                                class="flex items-center border-b border-primary-200 bg-primary-50"
+                                :style="{
+                                    height: GANTT_ROW_HEIGHT + 'px',
+                                    paddingLeft: (isMobile ? (4 + (task.depth || 0) * 10) : (8 + (task.depth || 0) * 14)) + 'px',
+                                    paddingRight: (isMobile ? 4 : 8) + 'px'
+                                }"
+                            >
+                                <span class="w-2 h-2 rounded-full mr-1.5 flex-shrink-0 bg-gray-400"></span>
+                                <input
+                                    ref="quickAddInputRef"
+                                    type="text"
+                                    v-model="quickAddTitle"
+                                    placeholder="New task title..."
+                                    :disabled="isCreatingTask"
+                                    @keydown="handleQuickAddKeydown"
+                                    @blur="quickAddTitle.trim() ? null : cancelQuickAdd()"
+                                    class="flex-1 min-w-0 px-2 py-1 text-sm border border-primary-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                                />
+                                <button
+                                    @click="saveQuickAdd"
+                                    :disabled="!quickAddTitle.trim() || isCreatingTask"
+                                    class="ml-1 p-1 text-primary-600 hover:text-primary-800 disabled:opacity-50"
+                                >
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                </button>
+                                <button
+                                    @click="cancelQuickAdd"
+                                    :disabled="isCreatingTask"
+                                    class="p-1 text-gray-400 hover:text-gray-600"
+                                >
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Quick Add Subtask Row -->
+                            <div
+                                v-if="quickAddMode === 'subtask' && quickAddTargetTaskId === task.id"
+                                class="flex items-center border-b border-primary-200 bg-primary-50"
+                                :style="{
+                                    height: GANTT_ROW_HEIGHT + 'px',
+                                    paddingLeft: (isMobile ? (4 + ((task.depth || 0) + 1) * 10) : (8 + ((task.depth || 0) + 1) * 14)) + 'px',
+                                    paddingRight: (isMobile ? 4 : 8) + 'px'
+                                }"
+                            >
+                                <span class="flex-shrink-0 mr-1 text-gray-300">
+                                    <svg class="w-3 h-3" viewBox="0 0 12 12" fill="none">
+                                        <path d="M3 1v6h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </span>
+                                <span class="w-2 h-2 rounded-full mr-1.5 flex-shrink-0 bg-gray-400"></span>
+                                <input
+                                    ref="quickAddInputRef"
+                                    type="text"
+                                    v-model="quickAddTitle"
+                                    placeholder="New subtask title..."
+                                    :disabled="isCreatingTask"
+                                    @keydown="handleQuickAddKeydown"
+                                    @blur="quickAddTitle.trim() ? null : cancelQuickAdd()"
+                                    class="flex-1 min-w-0 px-2 py-1 text-sm border border-primary-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                                />
+                                <button
+                                    @click="saveQuickAdd"
+                                    :disabled="!quickAddTitle.trim() || isCreatingTask"
+                                    class="ml-1 p-1 text-primary-600 hover:text-primary-800 disabled:opacity-50"
+                                >
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                </button>
+                                <button
+                                    @click="cancelQuickAdd"
+                                    :disabled="isCreatingTask"
+                                    class="p-1 text-gray-400 hover:text-gray-600"
+                                >
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </template>
                     </div>
                     <!-- Resize Handle (wider touch target on mobile) -->
                     <div
@@ -1421,7 +1778,7 @@ export default {
                 :milestone-options="[]"
                 :members="[]"
                 :can-edit="$props.canEdit"
-                :can-add-subtask="false"
+                :can-add-subtask="contextMenu.tasks.length === 1 && $props.subtaskUrlTemplate && canAddSubtaskTo(contextMenu.tasks[0])"
                 :can-duplicate="false"
                 :can-promote="false"
                 :can-demote="false"
@@ -1431,6 +1788,9 @@ export default {
                 @copy-link="handleContextCopyLink"
                 @set-status="handleContextSetStatus"
                 @set-priority="handleContextSetPriority"
+                @add-subtask="handleContextAddSubtask"
+                @add-above="handleContextAddAbove"
+                @add-below="handleContextAddBelow"
             />
         </div>
     `

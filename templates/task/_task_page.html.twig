@@ -170,7 +170,9 @@
                 members: projectMembers|default([]),
                 canEdit: canEdit|default(false),
                 allStatuses: allStatuses|default([]),
-                storageKey: storageKey ~ '_gantt'
+                storageKey: storageKey ~ '_gantt',
+                project: project|default(null),
+                defaultMilestoneId: currentMilestone is defined and currentMilestone ? currentMilestone.id : ''
             } %}
         </div>
     {% else %}
