@@ -843,7 +843,8 @@ export default {
                     needsRefresh = true;
                     break;
                 case 'status':
-                    tasks.value[taskIndex].status = { value: value, label: label || value };
+                    const statusColor = event.detail.color;
+                    tasks.value[taskIndex].status = { value: value, label: label || value, color: statusColor || tasks.value[taskIndex].status?.color };
                     needsRefresh = true;
                     break;
                 case 'title':
@@ -961,7 +962,8 @@ export default {
                         if (taskIndex !== -1) {
                             tasks.value[taskIndex].status = {
                                 value: status,
-                                label: statusOpt?.label || status
+                                label: statusOpt?.label || status,
+                                color: statusOpt?.color
                             };
                         }
 
@@ -971,7 +973,8 @@ export default {
                                 taskId: task.id,
                                 field: 'status',
                                 value: status,
-                                label: statusOpt?.label || status
+                                label: statusOpt?.label || status,
+                                color: statusOpt?.color
                             }
                         }));
                     }

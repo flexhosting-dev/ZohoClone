@@ -602,7 +602,8 @@
     });
 
     // Toggle Status Dropdown
-    function toggleStatusDropdown(btn) {
+    function toggleStatusDropdown(btn, event) {
+        if (event) event.stopPropagation();
         const dropdown = btn.parentElement.querySelector('.status-dropdown');
         const isHidden = dropdown.classList.contains('hidden');
         closeAllDropdowns();
@@ -612,7 +613,8 @@
     }
 
     // Toggle Priority Dropdown
-    function togglePriorityDropdown(btn) {
+    function togglePriorityDropdown(btn, event) {
+        if (event) event.stopPropagation();
         const dropdown = btn.parentElement.querySelector('.priority-dropdown');
         const isHidden = dropdown.classList.contains('hidden');
         closeAllDropdowns();
@@ -622,7 +624,8 @@
     }
 
     // Toggle Milestone Dropdown
-    function toggleMilestoneDropdown(btn) {
+    function toggleMilestoneDropdown(btn, event) {
+        if (event) event.stopPropagation();
         const dropdown = btn.parentElement.querySelector('.milestone-dropdown');
         const isHidden = dropdown.classList.contains('hidden');
         closeAllDropdowns();
@@ -633,18 +636,9 @@
 
     // Update Task Status
     async function updateTaskStatus(taskId, status, btn) {
-        const statusLabels = {
-            'todo': 'To Do',
-            'in_progress': 'In Progress',
-            'in_review': 'In Review',
-            'completed': 'Completed'
-        };
-        const statusColors = {
-            'todo': 'bg-gray-100 text-gray-700',
-            'in_progress': 'bg-blue-100 text-blue-700',
-            'in_review': 'bg-yellow-100 text-yellow-700',
-            'completed': 'bg-green-100 text-green-700'
-        };
+        // Get label and color from the clicked button (dynamic from database)
+        const statusLabel = btn.textContent.trim();
+        const statusColor = btn.getAttribute('data-color') || '#6B7280';
 
         try {
             const response = await fetch(`${BASE_PATH}/tasks/${taskId}/status`, {
@@ -664,18 +658,24 @@
 
             const data = await response.json();
 
-            // Update the badge
+            // Prefer color from response (more authoritative), fallback to button data
+            const finalColor = data.statusColor || statusColor;
+            const finalLabel = data.statusLabel || statusLabel;
+
+            // Update the badge - uses inline styles with color-mix
             const badgeBtn = btn.closest('.status-dropdown').previousElementSibling;
-            badgeBtn.querySelector('.status-label').textContent = statusLabels[status];
-            badgeBtn.className = badgeBtn.className.replace(/bg-\w+-100 text-\w+-700/g, '');
-            badgeBtn.classList.add(...statusColors[status].split(' '));
+            badgeBtn.querySelector('.status-label').textContent = finalLabel;
+            badgeBtn.style.backgroundColor = `color-mix(in srgb, ${finalColor} 15%, white)`;
+            badgeBtn.style.color = `color-mix(in srgb, ${finalColor} 80%, black)`;
+            badgeBtn.setAttribute('data-current', status);
+            badgeBtn.setAttribute('data-color', finalColor);
 
             closeAllDropdowns();
             Toastr.success('Status updated');
 
-            // Notify other components (e.g., KanbanBoard)
+            // Notify other components (e.g., KanbanBoard, GanttView)
             document.dispatchEvent(new CustomEvent('task-updated', {
-                detail: { taskId, field: 'status', value: status, label: statusLabels[status] }
+                detail: { taskId, field: 'status', value: status, label: finalLabel, color: finalColor }
             }));
         } catch (error) {
             console.error('Error updating status:', error);
