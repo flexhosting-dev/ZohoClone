@@ -1143,18 +1143,18 @@ export default {
                     if (!response.ok) throw new Error('Failed to create subtask');
 
                     const data = await response.json();
-                    if (data.task) {
+                    if (data.subtask) {
                         // Add new task to local state with inherited dates
                         const newTask = {
-                            id: data.task.id + '',
-                            title: data.task.title,
+                            id: data.subtask.id + '',
+                            title: data.subtask.title,
                             status: { value: 'todo', label: 'To Do', color: '#6B7280' },
                             priority: { value: 'none', label: 'None' },
                             milestoneId: targetTask?.milestoneId,
                             milestoneName: targetTask?.milestoneName,
-                            dueDate: targetTask?.dueDate || null,
-                            startDate: targetTask?.startDate || null,
-                            position: data.task.position || 0,
+                            dueDate: data.subtask.dueDate || targetTask?.dueDate || null,
+                            startDate: data.subtask.startDate || targetTask?.startDate || null,
+                            position: data.subtask.position || 0,
                             depth: (targetTask?.depth || 0) + 1,
                             parentId: quickAddTargetTaskId.value,
                             assignees: []
