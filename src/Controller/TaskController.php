@@ -1066,6 +1066,14 @@ class TaskController extends AbstractController
         $subtask->setMilestone($parentTask->getMilestone());
         $subtask->setParent($parentTask);
 
+        if (!empty($data['startDate'])) {
+            try {
+                $subtask->setStartDate(new \DateTimeImmutable($data['startDate']));
+            } catch (\Exception $e) {
+                // Ignore invalid date
+            }
+        }
+
         if (!empty($data['dueDate'])) {
             try {
                 $subtask->setDueDate(new \DateTimeImmutable($data['dueDate']));
@@ -1102,6 +1110,7 @@ class TaskController extends AbstractController
                     'label' => $subtask->getPriority()->label(),
                 ],
                 'milestoneId' => $subtask->getMilestone() ? $subtask->getMilestone()->getId()->toString() : null,
+                'startDate' => $subtask->getStartDate()?->format('Y-m-d'),
                 'dueDate' => $subtask->getDueDate()?->format('Y-m-d'),
                 'position' => $subtask->getPosition(),
                 'projectName' => $project->getName(),

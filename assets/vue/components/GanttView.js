@@ -1124,22 +1124,27 @@ export default {
 
             try {
                 if (quickAddMode.value === 'subtask') {
-                    // Create subtask
+                    // Create subtask - inherit dates from parent
                     const url = props.subtaskUrlTemplate.replace('__TASK_ID__', quickAddTargetTaskId.value);
+                    const subtaskPayload = {
+                        title,
+                        startDate: targetTask?.startDate || null,
+                        dueDate: targetTask?.dueDate || null
+                    };
                     const response = await fetch(url, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
-                        body: JSON.stringify({ title })
+                        body: JSON.stringify(subtaskPayload)
                     });
 
                     if (!response.ok) throw new Error('Failed to create subtask');
 
                     const data = await response.json();
                     if (data.task) {
-                        // Add new task to local state
+                        // Add new task to local state with inherited dates
                         const newTask = {
                             id: data.task.id + '',
                             title: data.task.title,
@@ -1147,8 +1152,8 @@ export default {
                             priority: { value: 'none', label: 'None' },
                             milestoneId: targetTask?.milestoneId,
                             milestoneName: targetTask?.milestoneName,
-                            dueDate: null,
-                            startDate: null,
+                            dueDate: targetTask?.dueDate || null,
+                            startDate: targetTask?.startDate || null,
                             position: data.task.position || 0,
                             depth: (targetTask?.depth || 0) + 1,
                             parentId: quickAddTargetTaskId.value,
@@ -1161,11 +1166,13 @@ export default {
                         window.Toastr.success('Subtask created');
                     }
                 } else {
-                    // Create task above or below
+                    // Create task above or below - inherit dates from target task
                     const payload = {
                         title,
                         parentId: targetTask?.parentId || null,
-                        milestoneId: props.defaultMilestoneId || targetTask?.milestoneId || null
+                        milestone: props.defaultMilestoneId || targetTask?.milestoneId || null,
+                        startDate: targetTask?.startDate || null,
+                        dueDate: targetTask?.dueDate || null
                     };
 
                     // Calculate position based on above/below
@@ -1197,8 +1204,8 @@ export default {
                             priority: { value: 'none', label: 'None' },
                             milestoneId: data.task.milestoneId || targetTask?.milestoneId,
                             milestoneName: data.task.milestoneName || targetTask?.milestoneName,
-                            dueDate: null,
-                            startDate: null,
+                            dueDate: targetTask?.dueDate || null,
+                            startDate: targetTask?.startDate || null,
                             position: data.task.position || 0,
                             depth: targetTask?.depth || 0,
                             parentId: targetTask?.parentId || null,
