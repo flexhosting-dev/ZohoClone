@@ -167,4 +167,40 @@ class SettingsController extends AbstractController
             'changelogs' => array_map(fn($c) => $c->toArray(), $changelogs),
         ]);
     }
+
+    #[Route('/task-table-preferences/{key}', name: 'app_settings_task_table_preferences_get', methods: ['GET'])]
+    public function getTaskTablePreferences(string $key): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['success' => false, 'error' => 'Not authenticated'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $preferences = $user->getTablePreference($key);
+
+        return $this->json([
+            'success' => true,
+            'preferences' => $preferences,
+        ]);
+    }
+
+    #[Route('/task-table-preferences/{key}', name: 'app_settings_task_table_preferences_set', methods: ['POST'])]
+    public function setTaskTablePreferences(string $key, Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['success' => false, 'error' => 'Not authenticated'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        $user->setTablePreference($key, $data);
+        $this->entityManager->flush();
+
+        return $this->json(['success' => true]);
+    }
 }

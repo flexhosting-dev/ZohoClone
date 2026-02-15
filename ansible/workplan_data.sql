@@ -69,8 +69,8 @@ SET @proj_i = UUID();
 -- ============================================
 -- 1. CREATE USERS
 -- ============================================
--- Get existing user IDs from database
-SET @user_admin = (SELECT id FROM user WHERE email = 'admin@honeyguide.org');
+-- Get existing user IDs from database (use Sam as fallback for admin)
+SET @user_admin = COALESCE((SELECT id FROM user WHERE email = 'admin@honeyguide.org'), @sam_id);
 SET @user_sylvester = (SELECT id FROM user WHERE email = 'sylvester@honeyguide.org');
 SET @user_max = (SELECT id FROM user WHERE email = 'max@honeyguide.org');
 SET @user_fatma = (SELECT id FROM user WHERE email = 'fatma@honeyguide.org');
