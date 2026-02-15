@@ -35,7 +35,14 @@
       "Bash(git status:*)",
       "WebFetch(domain:docs.dhtmlx.com)",
       "Bash(find:*)",
-      "Bash(vendor/bin/dep list:*)"
+      "Bash(vendor/bin/dep list:*)",
+      "Bash(git checkout:*)",
+      "Bash(ls:*)",
+      "Bash(node --check:*)",
+      "Bash(node -e:*)",
+      "Bash(ssh:*)",
+      "Bash(gh api:*)",
+      "Bash(scp:*)"
     ]
   }
 }

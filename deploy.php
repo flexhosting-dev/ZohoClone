@@ -3,6 +3,7 @@
 namespace Deployer;
 
 require 'recipe/symfony.php';
+require 'recipe/provision.php';
 
 // =============================================================================
 // Project Configuration
@@ -10,6 +11,21 @@ require 'recipe/symfony.php';
 
 set('application', 'honeyguide-projects');
 set('repository', 'git@github.com:flexhosting-dev/honeyguide-projects.git');
+
+// =============================================================================
+// Provisioning Configuration
+// =============================================================================
+
+// Domain for the website
+set('domain', 'projects.honeyguide.org');
+
+// PHP version to install
+set('php_version', '8.3');
+
+// Database configuration
+set('mysql_database', 'honeyguide_projects');
+set('mysql_user', 'honeyguide');
+set('mysql_password', 'HoneyguideApp2024Secure');
 
 // Default branch to deploy
 set('branch', 'liveApp');
@@ -67,7 +83,10 @@ host('production')
     ->setDeployPath('/var/www/honeyguide-projects')
     ->set('branch', 'liveApp')
     ->set('http_user', 'www-data')
+    ->set('domain', 'projects.honeyguide.org')
+    ->set('public_path', 'public')
     ->setSshArguments([
+        '-A',
         '-o StrictHostKeyChecking=no',
     ]);
 
@@ -84,6 +103,16 @@ task('database:backup', function () {
     $dbPass = 'HoneyguideApp2024Secure';
     $timestamp = date('Ymd_His');
     $backupFile = "{$backupDir}/db_{$dbName}_{$timestamp}.sql.gz";
+
+    // Create backup directory if it doesn't exist
+    run("mkdir -p {$backupDir}");
+
+    // Check if database exists and has tables before backing up
+    $tableCount = run("mysql -u{$dbUser} -p{$dbPass} -N -e \"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='{$dbName}'\" 2>/dev/null || echo '0'");
+    if (trim($tableCount) === '0') {
+        writeln("<comment>Database is empty or doesn't exist, skipping backup</comment>");
+        return;
+    }
 
     run("mysqldump -u{$dbUser} -p{$dbPass} {$dbName} 2>/dev/null | gzip > {$backupFile}");
     writeln("<info>Database backed up to: {$backupFile}</info>");
@@ -103,14 +132,14 @@ task('deploy:dump-env', function () {
 desc('Install importmap packages');
 task('deploy:importmap', function () {
     cd('{{release_path}}');
-    run('{{bin/php}} {{bin/console}} importmap:install --no-interaction');
+    run('{{bin/console}} importmap:install --no-interaction');
 });
 
 // Compile assets for production
 desc('Compile assets for production');
 task('deploy:assets:compile', function () {
     cd('{{release_path}}');
-    run('{{bin/php}} {{bin/console}} asset-map:compile --no-interaction');
+    run('{{bin/console}} asset-map:compile --no-interaction');
 
     // Create symlinks from unhashed to hashed filenames
     // This is needed because compiled JS files use relative imports that
@@ -128,7 +157,8 @@ task('deploy:assets:compile', function () {
 // Restart PHP-FPM
 desc('Restart PHP-FPM');
 task('php-fpm:restart', function () {
-    run('systemctl restart php8.3-fpm');
+    $phpVersion = get('php_version', '8.3');
+    run("systemctl restart php{$phpVersion}-fpm");
 });
 
 // Fix ownership after deploy
@@ -136,6 +166,12 @@ desc('Fix file ownership');
 task('deploy:ownership', function () {
     run('chown -R www-data:www-data {{release_path}}');
     run('chown -R www-data:www-data {{deploy_path}}/shared');
+});
+
+// Run database migrations
+desc('Run database migrations');
+task('database:migrate', function () {
+    run('{{bin/console}} doctrine:migrations:migrate --no-interaction --allow-no-migration');
 });
 
 // =============================================================================
@@ -154,6 +190,9 @@ after('deploy:dump-env', 'deploy:importmap');
 // Compile assets after importmap
 after('deploy:importmap', 'deploy:assets:compile');
 
+// Run database migrations after assets are compiled
+after('deploy:assets:compile', 'database:migrate');
+
 // Fix ownership after cache clear (cache is created by root, needs www-data ownership)
 after('deploy:cache:clear', 'deploy:ownership');
 
@@ -169,3 +208,184 @@ after('deploy:failed', 'deploy:unlock');
 
 // Restart PHP-FPM after rollback too
 after('rollback', 'php-fpm:restart');
+
+// =============================================================================
+// Apache Provisioning (custom tasks to replace Caddy-based provision)
+// =============================================================================
+
+desc('Provision server with Apache');
+task('provision:apache', [
+    'provision:apache:update',
+    'provision:apache:packages',
+    'provision:apache:php',
+    'provision:apache:mysql',
+    'provision:apache:composer',
+    'provision:apache:webserver',
+    'provision:apache:ssl',
+    'provision:apache:firewall',
+    'provision:apache:directories',
+]);
+
+desc('Update package lists');
+task('provision:apache:update', function () {
+    run('apt-get update');
+});
+
+desc('Install base packages');
+task('provision:apache:packages', function () {
+    run('DEBIAN_FRONTEND=noninteractive apt-get install -y curl wget git unzip acl ufw fail2ban htop vim software-properties-common apt-transport-https ca-certificates gnupg zip');
+});
+
+desc('Install PHP');
+task('provision:apache:php', function () {
+    $phpVersion = get('php_version', '8.3');
+
+    // Add PHP repository
+    run('add-apt-repository -y ppa:ondrej/php');
+    run('apt-get update');
+
+    // Install PHP and extensions (including FPM for production deployments)
+    run("DEBIAN_FRONTEND=noninteractive apt-get install -y php{$phpVersion} php{$phpVersion}-cli php{$phpVersion}-fpm php{$phpVersion}-mysql php{$phpVersion}-xml php{$phpVersion}-mbstring php{$phpVersion}-curl php{$phpVersion}-zip php{$phpVersion}-intl php{$phpVersion}-gd php{$phpVersion}-opcache php{$phpVersion}-redis libapache2-mod-php{$phpVersion}");
+
+    // Configure PHP-FPM
+    run("sed -i 's/memory_limit = .*/memory_limit = 256M/' /etc/php/{$phpVersion}/fpm/php.ini");
+    run("sed -i 's/upload_max_filesize = .*/upload_max_filesize = 64M/' /etc/php/{$phpVersion}/fpm/php.ini");
+    run("sed -i 's/post_max_size = .*/post_max_size = 64M/' /etc/php/{$phpVersion}/fpm/php.ini");
+    run("sed -i 's/max_execution_time = .*/max_execution_time = 60/' /etc/php/{$phpVersion}/fpm/php.ini");
+
+    // Enable PHP-FPM with Apache
+    run("a2enmod proxy_fcgi setenvif");
+    run("a2enconf php{$phpVersion}-fpm");
+    run("systemctl restart php{$phpVersion}-fpm");
+
+    writeln('<info>PHP ' . $phpVersion . ' with FPM installed</info>');
+});
+
+desc('Install and configure MySQL');
+task('provision:apache:mysql', function () {
+    $dbName = get('mysql_database');
+    $dbUser = get('mysql_user');
+    $dbPass = get('mysql_password');
+
+    // Install MySQL
+    run('DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server mysql-client');
+    run('systemctl enable mysql');
+    run('systemctl start mysql');
+
+    // Create database and user
+    run("mysql -e \"CREATE DATABASE IF NOT EXISTS {$dbName}\"");
+    run("mysql -e \"CREATE USER IF NOT EXISTS '{$dbUser}'@'localhost' IDENTIFIED BY '{$dbPass}'\"");
+    run("mysql -e \"GRANT ALL PRIVILEGES ON {$dbName}.* TO '{$dbUser}'@'localhost'\"");
+    run("mysql -e \"FLUSH PRIVILEGES\"");
+
+    writeln('<info>MySQL configured with database: ' . $dbName . '</info>');
+});
+
+desc('Install Composer');
+task('provision:apache:composer', function () {
+    run('curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer');
+    writeln('<info>Composer installed</info>');
+});
+
+desc('Install and configure Apache');
+task('provision:apache:webserver', function () {
+    $domain = get('domain');
+    $deployPath = get('deploy_path');
+    $phpVersion = get('php_version', '8.3');
+
+    // Install Apache
+    run('DEBIAN_FRONTEND=noninteractive apt-get install -y apache2');
+
+    // Enable required modules
+    run('a2enmod rewrite');
+    run('a2enmod ssl');
+    run('a2enmod headers');
+
+    // Create virtual host configuration
+    $vhostConfig = <<<APACHE
+<VirtualHost *:80>
+    ServerName {$domain}
+    DocumentRoot {$deployPath}/current/public
+
+    <Directory {$deployPath}/current/public>
+        AllowOverride All
+        Require all granted
+        FallbackResource /index.php
+    </Directory>
+
+    # For Symfony
+    <Directory {$deployPath}/current/public/bundles>
+        FallbackResource disabled
+    </Directory>
+
+    ErrorLog \${APACHE_LOG_DIR}/{$domain}-error.log
+    CustomLog \${APACHE_LOG_DIR}/{$domain}-access.log combined
+</VirtualHost>
+APACHE;
+
+    run("echo " . escapeshellarg($vhostConfig) . " > /etc/apache2/sites-available/{$domain}.conf");
+
+    // Disable default site and enable our site
+    run('a2dissite 000-default.conf || true');
+    run("a2ensite {$domain}.conf");
+
+    // Start Apache
+    run('systemctl enable apache2');
+    run('systemctl restart apache2');
+
+    writeln('<info>Apache configured for ' . $domain . '</info>');
+});
+
+desc('Setup SSL with Let\'s Encrypt');
+task('provision:apache:ssl', function () {
+    $domain = get('domain');
+
+    // Install certbot
+    run('DEBIAN_FRONTEND=noninteractive apt-get install -y certbot python3-certbot-apache');
+
+    // Obtain SSL certificate
+    run("certbot --apache -d {$domain} --non-interactive --agree-tos --email admin@{$domain} --redirect || true");
+
+    // Setup auto-renewal
+    run('systemctl enable certbot.timer || true');
+
+    writeln('<info>SSL configured for ' . $domain . '</info>');
+});
+
+desc('Configure firewall');
+task('provision:apache:firewall', function () {
+    run('ufw allow 22/tcp');
+    run('ufw allow 80/tcp');
+    run('ufw allow 443/tcp');
+    run('ufw --force enable');
+    writeln('<info>Firewall configured</info>');
+});
+
+desc('Create deployment directories');
+task('provision:apache:directories', function () {
+    $deployPath = get('deploy_path');
+
+    // Create Deployer directory structure
+    run("mkdir -p {$deployPath}");
+    run("mkdir -p {$deployPath}/shared");
+    run("mkdir -p {$deployPath}/shared/var/log");
+    run("mkdir -p {$deployPath}/shared/public/uploads");
+    run("mkdir -p /var/backups/honeyguide-projects");
+
+    // Set ownership
+    run("chown -R www-data:www-data {$deployPath}");
+    run("chown -R www-data:www-data /var/backups/honeyguide-projects");
+
+    writeln('<info>Directories created at ' . $deployPath . '</info>');
+});
+
+desc('Restart Apache');
+task('apache:restart', function () {
+    run('systemctl restart apache2');
+});
+
+// Use Apache restart instead of PHP-FPM for Apache setup
+// Override for Apache-based deployments
+task('webserver:restart', function () {
+    run('systemctl restart apache2');
+});

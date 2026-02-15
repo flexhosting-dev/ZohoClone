@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
+use Symfony\Bundle\SecurityBundle\Security;
 
 class SecurityController extends AbstractController
 {
@@ -47,6 +48,7 @@ class SecurityController extends AbstractController
         UserRepository $userRepository,
         PersonalProjectService $personalProjectService,
         RegistrationRequestService $registrationRequestService,
+        Security $security,
     ): Response {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_dashboard');
@@ -85,9 +87,12 @@ class SecurityController extends AbstractController
             $personalProjectService->createPersonalProject($user);
             $entityManager->flush();
 
-            $this->addFlash('success', 'Your account has been created. Please log in.');
+            // Auto-login the user after registration
+            $security->login($user, 'form_login', 'main');
 
-            return $this->redirectToRoute('app_login');
+            $this->addFlash('success', 'Welcome! Your account has been created.');
+
+            return $this->redirectToRoute('app_dashboard');
         }
 
         return $this->render('security/register.html.twig', [
