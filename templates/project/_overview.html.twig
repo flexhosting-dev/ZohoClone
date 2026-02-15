@@ -129,7 +129,7 @@
         {% if milestones|length > 0 %}
             <div class="space-y-3">
                 {% for milestone in milestones %}
-                    {% set msId = milestone.id|raw %}
+                    {% set msId = milestone.id.toString() %}
                     {% set msTasks = tasksByMilestone[msId]|default([]) %}
                     {% set msTotal = msTasks|length %}
                     {% set msCompleted = msTasks|filter(t => t.status.value == 'completed')|length %}
