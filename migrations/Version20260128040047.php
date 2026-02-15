@@ -20,7 +20,8 @@ final class Version20260128040047 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE user ADD hidden_recent_project_ids JSON NOT NULL DEFAULT \'[]\' COMMENT \'(DC2Type:json)\'');
+        $this->addSql('ALTER TABLE user ADD hidden_recent_project_ids JSON DEFAULT NULL COMMENT \'(DC2Type:json)\'');
+        $this->addSql('UPDATE user SET hidden_recent_project_ids = \'[]\' WHERE hidden_recent_project_ids IS NULL');
     }
 
     public function down(Schema $schema): void
