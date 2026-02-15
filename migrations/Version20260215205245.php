@@ -22,7 +22,8 @@ final class Version20260215205245 extends AbstractMigration
         // this up() migration is auto-generated, please modify it to your needs
         $this->addSql('ALTER TABLE task CHANGE status_type_id status_type_id CHAR(36) DEFAULT NULL COMMENT \'(DC2Type:uuid)\'');
         $this->addSql('ALTER TABLE task RENAME INDEX idx_527edb2570a22ce8 TO idx_task_status_type');
-        $this->addSql('ALTER TABLE user ADD table_preferences JSON NOT NULL COMMENT \'(DC2Type:json)\', CHANGE hidden_recent_project_ids hidden_recent_project_ids JSON NOT NULL COMMENT \'(DC2Type:json)\', CHANGE hidden_project_ids hidden_project_ids JSON NOT NULL COMMENT \'(DC2Type:json)\'');
+        $this->addSql('ALTER TABLE user ADD table_preferences JSON NOT NULL DEFAULT (\'[]\') COMMENT \'(DC2Type:json)\', CHANGE hidden_recent_project_ids hidden_recent_project_ids JSON NOT NULL COMMENT \'(DC2Type:json)\', CHANGE hidden_project_ids hidden_project_ids JSON NOT NULL COMMENT \'(DC2Type:json)\'');
+        $this->addSql('UPDATE user SET table_preferences = \'[]\' WHERE table_preferences IS NULL');
     }
 
     public function down(Schema $schema): void

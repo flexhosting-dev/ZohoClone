@@ -42,7 +42,8 @@
       "Bash(node -e:*)",
       "Bash(ssh:*)",
       "Bash(gh api:*)",
-      "Bash(scp:*)"
+      "Bash(scp:*)",
+      "Bash(git push:*)"
     ]
   }
 }
