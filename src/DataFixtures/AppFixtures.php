@@ -49,19 +49,11 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
         $projectMember = $this->getReference(RoleFixtures::PROJECT_MEMBER, Role::class);
 
         // Create users
-        $testUser = new User();
-        $testUser->setEmail('test@example.com');
-        $testUser->setFirstName('Test');
-        $testUser->setLastName('User');
-        $testUser->setPassword($this->passwordHasher->hashPassword($testUser, 'password123'));
-        $testUser->setIsVerified(true);
-        $manager->persist($testUser);
-
         $adminUser = new User();
-        $adminUser->setEmail('admin@example.com');
-        $adminUser->setFirstName('Admin');
-        $adminUser->setLastName('User');
-        $adminUser->setPassword($this->passwordHasher->hashPassword($adminUser, 'admin123'));
+        $adminUser->setEmail('ceo@honeyguide.org');
+        $adminUser->setFirstName('System');
+        $adminUser->setLastName('Admin');
+        $adminUser->setPassword($this->passwordHasher->hashPassword($adminUser, '@ProtectProjects'));
         $adminUser->setIsVerified(true);
         $adminUser->setRoles(['ROLE_ADMIN']);
         $adminUser->setPortalRole($portalSuperAdmin);
@@ -153,12 +145,14 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
         $sam->setLastName('Shaba');
         $sam->setPassword($this->passwordHasher->hashPassword($sam, 'password123'));
         $sam->setIsVerified(true);
+        $sam->setRoles(['ROLE_ADMIN']);
+        $sam->setPortalRole($portalSuperAdmin);
         $manager->persist($sam);
 
         // ============================================
         // Create personal projects for all users
         // ============================================
-        $allUsers = [$testUser, $adminUser, $sylvester, $max, $fatma, $namnyaki, $kateto, $lemuta, $glad, $daudi, $michael, $meleck, $sam];
+        $allUsers = [$adminUser, $sylvester, $max, $fatma, $namnyaki, $kateto, $lemuta, $glad, $daudi, $michael, $meleck, $sam];
         foreach ($allUsers as $user) {
             $this->createPersonalProject($manager, $user, $projectManager);
         }

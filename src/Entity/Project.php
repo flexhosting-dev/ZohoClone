@@ -243,6 +243,11 @@ class Project
 
     public function isUserViewer(User $user): bool
     {
+        // Portal SuperAdmin and Admin always have full access
+        if ($user->isPortalAdmin()) {
+            return false;
+        }
+
         // Owner always has full access
         if ($this->owner === $user) {
             return false;
