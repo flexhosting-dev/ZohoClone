@@ -81,6 +81,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json')]
     private array $notificationPreferences = [];
 
+    #[ORM\Column(type: 'json')]
+    private array $uiPreferences = [];
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -502,5 +505,27 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
         // Default: use the enum defaults
         return $channel === 'in_app' ? $type->defaultInApp() : $type->defaultEmail();
+    }
+
+    public function getUiPreferences(): array
+    {
+        return $this->uiPreferences;
+    }
+
+    public function setUiPreferences(array $uiPreferences): static
+    {
+        $this->uiPreferences = $uiPreferences;
+        return $this;
+    }
+
+    public function getUiPreference(string $key): ?array
+    {
+        return $this->uiPreferences[$key] ?? null;
+    }
+
+    public function setUiPreference(string $key, array $value): static
+    {
+        $this->uiPreferences[$key] = $value;
+        return $this;
     }
 }
