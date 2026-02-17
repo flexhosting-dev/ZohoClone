@@ -78,10 +78,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 50, options: ['default' => 'gradient'])]
     private string $uiTheme = 'gradient';
 
-    #[ORM\Column(type: 'json')]
+    #[ORM\Column(type: 'json', options: ['default' => '[]'])]
     private array $notificationPreferences = [];
 
-    #[ORM\Column(type: 'json')]
+    #[ORM\Column(type: 'json', options: ['default' => '[]'])]
     private array $uiPreferences = [];
 
     #[ORM\Column]
