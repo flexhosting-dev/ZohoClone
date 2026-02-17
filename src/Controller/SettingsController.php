@@ -168,8 +168,8 @@ class SettingsController extends AbstractController
         ]);
     }
 
-    #[Route('/task-table-preferences/{key}', name: 'app_settings_task_table_preferences_get', methods: ['GET'])]
-    public function getTaskTablePreferences(string $key): JsonResponse
+    #[Route('/task-table-preferences/{key}', name: 'app_settings_task_table_preferences', methods: ['GET', 'POST'])]
+    public function taskTablePreferences(Request $request, string $key): JsonResponse
     {
         /** @var User|null $user */
         $user = $this->getUser();
@@ -178,29 +178,19 @@ class SettingsController extends AbstractController
             return $this->json(['success' => false, 'error' => 'Not authenticated'], Response::HTTP_UNAUTHORIZED);
         }
 
-        $preferences = $user->getTablePreference($key);
+        if ($request->isMethod('POST')) {
+            $data = json_decode($request->getContent(), true);
+            $user->setUiPreference($key, $data);
+            $this->entityManager->flush();
+
+            return $this->json(['success' => true]);
+        }
+
+        $preferences = $user->getUiPreference($key);
 
         return $this->json([
             'success' => true,
             'preferences' => $preferences,
         ]);
-    }
-
-    #[Route('/task-table-preferences/{key}', name: 'app_settings_task_table_preferences_set', methods: ['POST'])]
-    public function setTaskTablePreferences(string $key, Request $request): JsonResponse
-    {
-        /** @var User|null $user */
-        $user = $this->getUser();
-
-        if (!$user) {
-            return $this->json(['success' => false, 'error' => 'Not authenticated'], Response::HTTP_UNAUTHORIZED);
-        }
-
-        $data = json_decode($request->getContent(), true);
-
-        $user->setTablePreference($key, $data);
-        $this->entityManager->flush();
-
-        return $this->json(['success' => true]);
     }
 }

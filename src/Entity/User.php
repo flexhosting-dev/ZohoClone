@@ -81,8 +81,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json')]
     private array $notificationPreferences = [];
 
-    #[ORM\Column(type: 'json', nullable: true)]
-    private ?array $tablePreferences = [];
+    #[ORM\Column(type: 'json')]
+    private array $uiPreferences = [];
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
@@ -497,28 +497,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getTablePreferences(): array
-    {
-        return $this->tablePreferences ?? [];
-    }
-
-    public function setTablePreferences(array $tablePreferences): static
-    {
-        $this->tablePreferences = $tablePreferences;
-        return $this;
-    }
-
-    public function getTablePreference(string $key): ?array
-    {
-        return ($this->tablePreferences ?? [])[$key] ?? null;
-    }
-
-    public function setTablePreference(string $key, array $preferences): static
-    {
-        $this->tablePreferences[$key] = $preferences;
-        return $this;
-    }
-
     public function shouldReceiveNotification(\App\Enum\NotificationType $type, string $channel): bool
     {
         $prefs = $this->notificationPreferences;
@@ -527,5 +505,27 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
         // Default: use the enum defaults
         return $channel === 'in_app' ? $type->defaultInApp() : $type->defaultEmail();
+    }
+
+    public function getUiPreferences(): array
+    {
+        return $this->uiPreferences;
+    }
+
+    public function setUiPreferences(array $uiPreferences): static
+    {
+        $this->uiPreferences = $uiPreferences;
+        return $this;
+    }
+
+    public function getUiPreference(string $key): ?array
+    {
+        return $this->uiPreferences[$key] ?? null;
+    }
+
+    public function setUiPreference(string $key, array $value): static
+    {
+        $this->uiPreferences[$key] = $value;
+        return $this;
     }
 }
