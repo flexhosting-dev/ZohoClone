@@ -55,16 +55,41 @@ class SettingsController extends AbstractController
 
         if ($request->isMethod('POST')) {
             $data = json_decode($request->getContent(), true);
+
+            // Single toggle update: { type, channel, enabled }
+            if (isset($data['type']) && isset($data['channel']) && isset($data['enabled'])) {
+                $type = $data['type'];
+                $channel = $data['channel'];
+                $enabled = (bool) $data['enabled'];
+
+                $prefs = $user->getNotificationPreferences();
+                if (!isset($prefs[$type])) {
+                    $prefs[$type] = [];
+                }
+                $prefs[$type][$channel] = $enabled;
+
+                $user->setNotificationPreferences($prefs);
+                $this->entityManager->flush();
+
+                return $this->json(['success' => true]);
+            }
+
+            // Bulk update: { preferences: {...} }
             $preferences = $data['preferences'] ?? [];
+            if (empty($preferences)) {
+                return $this->json(['success' => false, 'error' => 'No preferences received']);
+            }
+
             $user->setNotificationPreferences($preferences);
             $this->entityManager->flush();
 
             return $this->json(['success' => true]);
         }
 
-        // Group types by category and build defaults
+        // Group types by category and build defaults/labels
         $categories = [];
         $defaults = [];
+        $labels = [];
         foreach (NotificationType::cases() as $type) {
             $category = $type->category();
             $categories[$category][] = $type;
@@ -72,12 +97,14 @@ class SettingsController extends AbstractController
                 'in_app' => $type->defaultInApp(),
                 'email' => $type->defaultEmail(),
             ];
+            $labels[$type->value] = $type->label();
         }
 
         return $this->render('settings/notifications.html.twig', [
             'page_title' => 'Notification Preferences',
             'preferences' => $user->getNotificationPreferences(),
             'defaults' => $defaults,
+            'labels' => $labels,
             'categories' => $categories,
         ]);
     }

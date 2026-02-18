@@ -19,7 +19,7 @@
         <p class="mt-1 text-sm text-gray-500">Choose which notifications you receive</p>
     </div>
 
-    <div class="notifications-content max-w-3xl mx-auto space-y-6" x-data="notificationPreferences({{ preferences|json_encode|e('html_attr') }}, {{ defaults|json_encode|e('html_attr') }})">
+    <div class="notifications-content max-w-3xl mx-auto space-y-6" x-data="notificationPreferences({{ preferences|json_encode|e('html_attr') }}, {{ defaults|json_encode|e('html_attr') }}, {{ labels|json_encode|e('html_attr') }})">
 
     {% for category, types in categories %}
     <div class="mb-8">
@@ -63,58 +63,64 @@
     </div>
     {% endfor %}
 
-    <div class="flex justify-end mb-8">
-        <button @click="save()" :disabled="saving"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors">
-            <span x-show="saving" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-            Save Preferences
-        </button>
-    </div>
+    <p class="text-sm text-gray-500 text-center mb-8">Changes are saved automatically</p>
     </div>
 </div>
 
 <script>
-function notificationPreferences(initial, defaults) {
+// Store prefs outside Alpine to avoid proxy issues
+let _notificationPrefs = {};
+
+function notificationPreferences(initial, defaults, labels) {
+    _notificationPrefs = JSON.parse(JSON.stringify(initial || {}));
+
     return {
-        prefs: initial || {},
         defaults: defaults || {},
-        saving: false,
+        labels: labels || {},
+        version: 0,
         isEnabled(type, channel) {
-            if (this.prefs[type] && this.prefs[type][channel] !== undefined) {
-                return this.prefs[type][channel];
+            this.version;
+            if (_notificationPrefs[type] && _notificationPrefs[type][channel] !== undefined) {
+                return _notificationPrefs[type][channel];
             }
-            // Use server-provided defaults
             if (this.defaults[type] && this.defaults[type][channel] !== undefined) {
                 return this.defaults[type][channel];
             }
             return channel === 'in_app';
         },
         toggle(type, channel) {
-            if (!this.prefs[type]) this.prefs[type] = {};
-            this.prefs[type][channel] = !this.isEnabled(type, channel);
-        },
-        save() {
-            this.saving = true;
+            if (!_notificationPrefs[type]) _notificationPrefs[type] = {};
+            const newValue = !this.isEnabled(type, channel);
+            _notificationPrefs[type][channel] = newValue;
+            this.version++;
+
+            const label = this.labels[type] || type;
+            const channelLabel = channel === 'email' ? 'email' : 'in-app';
+            const action = newValue ? 'enabled' : 'disabled';
+
+            // Save immediately
             fetch('{{ path("app_settings_notifications") }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                body: JSON.stringify({ preferences: this.prefs }),
+                body: JSON.stringify({
+                    type: type,
+                    channel: channel,
+                    enabled: newValue
+                }),
             })
             .then(r => r.json())
             .then(data => {
-                this.saving = false;
-                if (data.success && typeof toastr !== 'undefined') {
-                    toastr.success('Preferences saved');
+                if (data.success) {
+                    Toastr.success('Saved', channelLabel + ' notifications ' + action + ' for ' + label);
+                } else {
+                    Toastr.error('Error', data.error || 'Failed to save');
                 }
             })
             .catch(() => {
-                this.saving = false;
-                if (typeof toastr !== 'undefined') {
-                    toastr.error('Failed to save preferences');
-                }
+                Toastr.error('Error', 'Failed to save preference');
             });
         }
     };
