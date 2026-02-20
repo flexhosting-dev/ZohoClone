@@ -9,6 +9,7 @@ use App\Enum\RegistrationType;
 use App\Repository\PendingRegistrationRequestRepository;
 use App\Repository\UserRepository;
 use App\Service\NotificationService;
+use App\Service\PersonalProjectService;
 use App\Service\RegistrationRequestService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -21,6 +22,7 @@ class RegistrationRequestServiceTest extends TestCase
         $pendingRequestRepository = $this->createMock(PendingRegistrationRequestRepository::class);
         $userRepository = $this->createMock(UserRepository::class);
         $notificationService = $this->createMock(NotificationService::class);
+        $personalProjectService = $this->createMock(PersonalProjectService::class);
 
         // Mock findPendingByEmail to return null (no existing request)
         $pendingRequestRepository->method('findPendingByEmail')->willReturn(null);
@@ -34,6 +36,7 @@ class RegistrationRequestServiceTest extends TestCase
             $pendingRequestRepository,
             $userRepository,
             $notificationService,
+            $personalProjectService,
         );
     }
 
@@ -99,6 +102,7 @@ class RegistrationRequestServiceTest extends TestCase
         $pendingRequestRepository = $this->createMock(PendingRegistrationRequestRepository::class);
         $userRepository = $this->createMock(UserRepository::class);
         $notificationService = $this->createMock(NotificationService::class);
+        $personalProjectService = $this->createMock(PersonalProjectService::class);
 
         $service = new RegistrationRequestService(
             '',
@@ -106,6 +110,7 @@ class RegistrationRequestServiceTest extends TestCase
             $pendingRequestRepository,
             $userRepository,
             $notificationService,
+            $personalProjectService,
         );
 
         $request = new PendingRegistrationRequest();
@@ -132,6 +137,7 @@ class RegistrationRequestServiceTest extends TestCase
         $pendingRequestRepository = $this->createMock(PendingRegistrationRequestRepository::class);
         $userRepository = $this->createMock(UserRepository::class);
         $notificationService = $this->createMock(NotificationService::class);
+        $personalProjectService = $this->createMock(PersonalProjectService::class);
 
         $service = new RegistrationRequestService(
             '',
@@ -139,6 +145,7 @@ class RegistrationRequestServiceTest extends TestCase
             $pendingRequestRepository,
             $userRepository,
             $notificationService,
+            $personalProjectService,
         );
 
         $request = new PendingRegistrationRequest();
