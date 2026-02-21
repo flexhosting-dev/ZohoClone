@@ -508,6 +508,106 @@
         </div>
     </div>
 
+    {# Project Picker Modal for moving tasks to different projects #}
+    <div id="project-picker-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-50" onclick="closeProjectPickerModal()"></div>
+        <div class="fixed inset-0 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Move Task to Different Project</h3>
+                            <button type="button" onclick="closeProjectPickerModal()" class="text-gray-400 hover:text-gray-500">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="mb-4">
+                            <input type="text"
+                                   id="project-picker-search"
+                                   oninput="filterProjectPickerList()"
+                                   placeholder="Search projects..."
+                                   class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm">
+                        </div>
+                        <div id="project-picker-list" class="max-h-80 overflow-y-auto border border-gray-200 rounded-md">
+                            <div class="px-4 py-8 text-center text-gray-500">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 flex justify-end sm:px-6">
+                        <button type="button" onclick="closeProjectPickerModal()" class="inline-flex justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Milestone Picker Modal for moving tasks #}
+    <div id="milestone-picker-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-50" onclick="closeMilestonePickerModal()"></div>
+        <div class="fixed inset-0 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900" id="milestone-picker-title">Select Milestone</h3>
+                            <button type="button" onclick="closeMilestonePickerModal()" class="text-gray-400 hover:text-gray-500">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="milestone-picker-list" class="max-h-80 overflow-y-auto border border-gray-200 rounded-md">
+                            <div class="px-4 py-8 text-center text-gray-500">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 flex justify-end sm:px-6">
+                        <button type="button" onclick="closeMilestonePickerModal()" class="inline-flex justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Assignee Warning Modal #}
+    <div id="assignee-warning-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-50"></div>
+        <div class="fixed inset-0 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-1">
+                                <h3 class="text-base font-semibold leading-6 text-gray-900">Assignee Access Warning</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500" id="assignee-warning-message"></p>
+                                    <ul class="mt-2 text-sm text-gray-700 list-disc list-inside" id="assignee-warning-list"></ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:px-6">
+                        <button type="button" onclick="closeAssigneeWarningModal()" class="inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto">
+                            Cancel
+                        </button>
+                        <button type="button" id="assignee-warning-confirm-btn" class="inline-flex w-full justify-center rounded-md bg-yellow-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500 sm:w-auto">
+                            Move Anyway
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <style>
     .weekday-btn input:checked + span {
         background-color: #4f46e5;
@@ -532,13 +632,17 @@
         </div>`;
     }
 
-    function _errorContent() {
+    function _errorContent(errorDetail = '') {
+        const detailHtml = errorDetail ?
+            `<p class="text-gray-600 text-xs mt-2 font-mono bg-gray-100 p-2 rounded">${errorDetail}</p>` :
+            '';
         return `<div class="flex flex-col items-center justify-center h-full text-center p-6">
             <svg class="h-12 w-12 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
             </svg>
             <p class="text-gray-900 font-medium">Failed to load task</p>
             <p class="text-gray-500 text-sm mt-1">Please try again</p>
+            ${detailHtml}
             <button onclick="closeTaskPanel()" class="mt-4 text-sm text-primary-600 hover:text-primary-500">Close</button>
         </div>`;
     }
@@ -563,20 +667,37 @@
     }
 
     function _fetchPanelContent(layer, taskId) {
-        fetch(`${BASE_PATH}/tasks/${taskId}/panel`, {
+        const url = `${BASE_PATH}/tasks/${taskId}/panel`;
+        fetch(url, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
-        .then(r => { if (!r.ok) throw new Error('Failed'); return r.text(); })
+        .then(r => {
+            if (!r.ok) {
+                console.error('Failed to load task panel:', r.status, r.statusText);
+                throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+            }
+            return r.text();
+        })
         .then(html => {
             layer.innerHTML = html;
             _updatePanelCloseButtons();
             if (typeof mountVueComponents === 'function') mountVueComponents();
         })
-        .catch(() => { layer.innerHTML = _errorContent(); });
+        .catch(err => {
+            console.error('Error fetching panel content:', err);
+            const errorMsg = err.message || 'Network error';
+            layer.innerHTML = _errorContent(`${errorMsg} - URL: ${url}`);
+        });
     }
 
     // Use openTaskPanel for normal opens; use pushSubtaskPanel from within a panel
     function openTaskPanel(taskId, updateUrl = true) {
+        if (!taskId || taskId === 'null' || taskId === 'undefined') {
+            console.error('Invalid taskId passed to openTaskPanel:', taskId);
+            Toastr.error('Invalid task ID');
+            return;
+        }
+
         const panel = document.getElementById('task-panel');
         const overlay = document.getElementById('task-panel-overlay');
         const stack = document.getElementById('task-panel-stack');
@@ -709,7 +830,7 @@
         }
     }
 
-    function openTaskCreatePanel(projectId, updateUrl = true) {
+    function openTaskCreatePanel(projectId, updateUrl = true, autoAssignToMe = false) {
         const panel = document.getElementById('task-panel');
         const overlay = document.getElementById('task-panel-overlay');
         const stack = document.getElementById('task-panel-stack');
@@ -736,7 +857,8 @@
         overlay.classList.remove('opacity-0', 'pointer-events-none');
         document.body.style.overflow = 'hidden';
 
-        fetch(`${BASE_PATH}/projects/${projectId}/tasks/create-panel`, {
+        const queryParams = autoAssignToMe ? '?autoAssignToMe=1' : '';
+        fetch(`${BASE_PATH}/projects/${projectId}/tasks/create-panel${queryParams}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(r => { if (!r.ok) throw new Error('Failed'); return r.text(); })
@@ -768,8 +890,32 @@
     document.addEventListener('DOMContentLoaded', function() {
         const url = new URL(window.location);
         const taskId = url.searchParams.get('task');
+        const openTaskId = url.searchParams.get('openTask');
         const createTaskProjectId = url.searchParams.get('create-task');
-        if (taskId) {
+
+        console.log('URL params:', { taskId, openTaskId, createTaskProjectId, fullUrl: window.location.href });
+
+        // Debug: show params if task param is present (temporary debugging)
+        if (url.searchParams.has('task') || url.searchParams.has('openTask')) {
+            const debugMsg = `URL has task param. task=${taskId}, openTask=${openTaskId}, URL=${window.location.href.substring(0, 100)}`;
+            console.log(debugMsg);
+            // Show as toast for mobile debugging
+            if (!taskId && !openTaskId) {
+                Toastr.warning('Task param found but value is null');
+            }
+        }
+
+        if (openTaskId) {
+            // Task was just moved - show success and reopen with slight delay
+            Toastr.success('Task moved to new parent');
+            // Clean up URL first
+            url.searchParams.delete('openTask');
+            window.history.replaceState({}, '', url.toString());
+            // Small delay to ensure everything is ready
+            setTimeout(() => {
+                openTaskPanel(openTaskId, false);
+            }, 100);
+        } else if (taskId) {
             openTaskPanel(taskId, false);
         } else if (createTaskProjectId) {
             openTaskCreatePanel(createTaskProjectId, false);
@@ -1628,16 +1774,297 @@
             }
 
             closeTaskPickerModal();
+            closeTaskPanel(false);
             Toastr.success('Task moved to new parent');
 
-            // Refresh the panel to show updated state
-            const taskId = _taskPickerTaskId;
-            openTaskPanel(taskId);
+            // Small delay to ensure DB transaction is committed, then reload page
+            setTimeout(() => {
+                window.location.reload();
+            }, 300);
+        } catch (error) {
+            console.error('Error moving task:', error);
+            Toastr.error('Failed to move task');
+        }
+    }
 
-            // Notify other components
-            document.dispatchEvent(new CustomEvent('task-updated', {
-                detail: { taskId, field: 'parent', value: newParentId }
-            }));
+    // Move to Different Project - Step 1: Open project picker
+    let _moveToProjectTaskId = null;
+    let _moveToProjectData = null;
+
+    async function openMoveToProjectModal(taskId) {
+        closeAllDropdowns();
+        _moveToProjectTaskId = taskId;
+        _moveToProjectData = null;
+
+        // Load editable projects
+        const container = document.getElementById('project-picker-list');
+        container.innerHTML = '<div class="px-4 py-8 text-center text-gray-500">Loading...</div>';
+
+        try {
+            const response = await fetch(`${BASE_PATH}/projects/json`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (!response.ok) throw new Error('Failed to load projects');
+
+            const projects = await response.json();
+
+            if (!projects || projects.length === 0) {
+                container.innerHTML = '<div class="px-4 py-8 text-center text-gray-500">No projects available</div>';
+                return;
+            }
+
+            // Store projects for search filtering
+            container.dataset.projects = JSON.stringify(projects);
+            renderProjectList(projects);
+        } catch (error) {
+            console.error('Error loading projects:', error);
+            container.innerHTML = '<div class="px-4 py-8 text-center text-red-500">Failed to load projects</div>';
+        }
+
+        document.getElementById('project-picker-modal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+
+        setTimeout(() => {
+            document.getElementById('project-picker-search')?.focus();
+        }, 100);
+    }
+
+    function renderProjectList(projects) {
+        const container = document.getElementById('project-picker-list');
+        if (projects.length === 0) {
+            container.innerHTML = '<div class="px-4 py-8 text-center text-gray-500">No matching projects</div>';
+            return;
+        }
+
+        const html = projects.map(project => `
+            <button type="button"
+                    onclick="selectTargetProject('${project.id}', '${escapeHtml(project.name)}')"
+                    class="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                <div class="font-medium text-gray-900">${escapeHtml(project.name)}</div>
+            </button>
+        `).join('');
+        container.innerHTML = html;
+    }
+
+    function filterProjectPickerList() {
+        const search = document.getElementById('project-picker-search').value.toLowerCase();
+        const container = document.getElementById('project-picker-list');
+        const projects = JSON.parse(container.dataset.projects || '[]');
+
+        const filtered = projects.filter(p =>
+            p.name.toLowerCase().includes(search)
+        );
+
+        renderProjectList(filtered);
+    }
+
+    function closeProjectPickerModal() {
+        document.getElementById('project-picker-modal').classList.add('hidden');
+        document.body.style.overflow = '';
+        _moveToProjectTaskId = null;
+        _moveToProjectData = null;
+        document.getElementById('project-picker-search').value = '';
+    }
+
+    // Move to Different Project - Step 2: Select target project, then show milestone picker
+    async function selectTargetProject(projectId, projectName) {
+        if (!_moveToProjectTaskId) return;
+
+        _moveToProjectData = { projectId, projectName };
+
+        // Close project picker
+        closeProjectPickerModal();
+
+        // Load milestones for selected project
+        const container = document.getElementById('milestone-picker-list');
+        const titleEl = document.getElementById('milestone-picker-title');
+        titleEl.textContent = `Select Milestone in ${projectName}`;
+        container.innerHTML = '<div class="px-4 py-8 text-center text-gray-500">Loading...</div>';
+
+        try {
+            const response = await fetch(`${BASE_PATH}/projects/${projectId}/milestones/json`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (!response.ok) throw new Error('Failed to load milestones');
+
+            const data = await response.json();
+            const milestones = data.milestones || [];
+
+            if (!milestones || milestones.length === 0) {
+                container.innerHTML = '<div class="px-4 py-8 text-center text-gray-500">No milestones available</div>';
+                return;
+            }
+
+            const html = milestones.map(milestone => `
+                <button type="button"
+                        onclick="confirmMoveToProject('${_moveToProjectTaskId}', '${projectId}', '${milestone.id}', false)"
+                        class="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                    <div class="font-medium text-gray-900">${escapeHtml(milestone.name)}</div>
+                </button>
+            `).join('');
+            container.innerHTML = html;
+        } catch (error) {
+            console.error('Error loading milestones:', error);
+            container.innerHTML = '<div class="px-4 py-8 text-center text-red-500">Failed to load milestones</div>';
+        }
+
+        document.getElementById('milestone-picker-modal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    // Move to Different Project - Step 3: Confirm move (with optional assignee warning)
+    async function confirmMoveToProject(taskId, projectId, milestoneId, confirmed = false) {
+        try {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/move-to-project`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    targetProjectId: projectId,
+                    targetMilestoneId: milestoneId,
+                    confirmed: confirmed
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.requiresConfirmation) {
+                // Show assignee warning modal
+                closeMilestonePickerModal();
+                showAssigneeWarning(data.warning, data.orphanedAssignees, () => {
+                    confirmMoveToProject(taskId, projectId, milestoneId, true);
+                });
+                return;
+            }
+
+            if (!response.ok) {
+                Toastr.error(data.error || 'Failed to move task');
+                return;
+            }
+
+            if (data.success) {
+                closeMilestonePickerModal();
+                Toastr.success('Task moved to different project');
+
+                // Close panel and stay on current page
+                closeAllPanels();
+
+                // Notify other components
+                document.dispatchEvent(new CustomEvent('task-updated', {
+                    detail: { taskId, field: 'project', value: projectId }
+                }));
+            }
+        } catch (error) {
+            console.error('Error moving task:', error);
+            Toastr.error('Failed to move task');
+        }
+    }
+
+    function closeMilestonePickerModal() {
+        document.getElementById('milestone-picker-modal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    // Show assignee warning modal
+    function showAssigneeWarning(message, orphanedAssignees, onConfirm) {
+        const modal = document.getElementById('assignee-warning-modal');
+        const messageEl = document.getElementById('assignee-warning-message');
+        const listEl = document.getElementById('assignee-warning-list');
+        const confirmBtn = document.getElementById('assignee-warning-confirm-btn');
+
+        messageEl.textContent = message;
+        listEl.innerHTML = orphanedAssignees.map(name => `<li>${escapeHtml(name)}</li>`).join('');
+
+        // Set up confirm button
+        confirmBtn.onclick = () => {
+            closeAssigneeWarningModal();
+            onConfirm();
+        };
+
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeAssigneeWarningModal() {
+        document.getElementById('assignee-warning-modal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    // Move to Different Milestone (same project)
+    async function openMoveToMilestoneModal(taskId, projectId) {
+        closeAllDropdowns();
+
+        const container = document.getElementById('milestone-picker-list');
+        const titleEl = document.getElementById('milestone-picker-title');
+        titleEl.textContent = 'Select Milestone';
+        container.innerHTML = '<div class="px-4 py-8 text-center text-gray-500">Loading...</div>';
+
+        try {
+            const response = await fetch(`${BASE_PATH}/projects/${projectId}/milestones/json`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (!response.ok) throw new Error('Failed to load milestones');
+
+            const data = await response.json();
+            const milestones = data.milestones || [];
+
+            if (!milestones || milestones.length === 0) {
+                container.innerHTML = '<div class="px-4 py-8 text-center text-gray-500">No milestones available</div>';
+                return;
+            }
+
+            const html = milestones.map(milestone => `
+                <button type="button"
+                        onclick="confirmMoveToMilestone('${taskId}', '${milestone.id}')"
+                        class="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                    <div class="font-medium text-gray-900">${escapeHtml(milestone.name)}</div>
+                </button>
+            `).join('');
+            container.innerHTML = html;
+        } catch (error) {
+            console.error('Error loading milestones:', error);
+            container.innerHTML = '<div class="px-4 py-8 text-center text-red-500">Failed to load milestones</div>';
+        }
+
+        document.getElementById('milestone-picker-modal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    async function confirmMoveToMilestone(taskId, milestoneId) {
+        try {
+            const response = await fetch(`${BASE_PATH}/tasks/${taskId}/move-to-milestone`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ targetMilestoneId: milestoneId })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                Toastr.error(data.error || 'Failed to move task');
+                return;
+            }
+
+            if (data.success) {
+                closeMilestonePickerModal();
+                Toastr.success('Task moved to new milestone');
+
+                // Refresh the panel to show updated milestone
+                openTaskPanel(taskId);
+
+                // Notify other components
+                document.dispatchEvent(new CustomEvent('task-updated', {
+                    detail: { taskId, field: 'milestone', value: milestoneId }
+                }));
+            }
         } catch (error) {
             console.error('Error moving task:', error);
             Toastr.error('Failed to move task');
