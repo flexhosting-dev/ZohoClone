@@ -30,7 +30,12 @@ final class Version20260208131448 extends AbstractMigration
             'Role-based permissions and user management',
             'Real-time notifications',
         ]);
-        $this->addSql("INSERT INTO changelog (id, version, title, changes, release_date, created_at, updated_at) VALUES ('{$id}', '1.0.0', 'Initial Release', '{$changes}', '2026-02-08', '{$now}', '{$now}')");
+        $this->addSql("
+            INSERT INTO changelog (id, version, title, changes, release_date, created_at, updated_at)
+            SELECT '{$id}', '1.0.0', 'Initial Release', '{$changes}', '2026-02-08', '{$now}', '{$now}'
+            FROM DUAL
+            WHERE NOT EXISTS (SELECT 1 FROM changelog WHERE version = '1.0.0')
+        ");
     }
 
     public function down(Schema $schema): void
