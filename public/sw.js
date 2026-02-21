@@ -1,8 +1,15 @@
 // Service Worker for Honeyguide Projects PWA
 const CACHE_NAME = 'honeyguide-v1';
+
+// Determine basePath from service worker location
+// If SW is at /zohoclone/sw.js, basePath is /zohoclone
+// If SW is at /sw.js, basePath is ''
+const swPath = self.location.pathname;
+const basePath = swPath.substring(0, swPath.lastIndexOf('/'));
+
 const urlsToCache = [
-  '/',
-  '/manifest.json'
+  basePath + '/',
+  basePath + '/manifest.json'
 ];
 
 // Install event - cache essential files

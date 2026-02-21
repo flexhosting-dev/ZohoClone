@@ -12,13 +12,24 @@ Honeyguide Projects is now installable as a Progressive Web App on mobile device
 ## Files Added
 
 ### Core PWA Files
-- `public/manifest.json` - App metadata and configuration
-- `public/sw.js` - Service Worker for offline support
+- `src/Controller/ManifestController.php` - Dynamic manifest generation (respects basePath)
+- `public/sw.js` - Service Worker for offline support (basePath-aware)
 - `public/icon-192.png` - App icon (192x192)
 - `public/icon-512.png` - App icon (512x512)
 
 ### Template Updates
 - `templates/base.html.twig` - Added PWA meta tags and service worker registration
+
+## BasePath Support
+
+**The PWA automatically adapts to your deployment path!**
+
+The manifest and service worker are basePath-aware, meaning they work correctly whether deployed at:
+- Development: `dev.flexhosting.co/zohoclone`
+- Production: `projects.honeyguide.org/` (root)
+- Any subdirectory: `example.com/any/path`
+
+The manifest is generated dynamically by `ManifestController` using Symfony's request basePath, and the service worker detects its own location to determine the correct scope.
 
 ### Helper Tools
 - `generate_icons.py` - Python script to regenerate icons
@@ -55,12 +66,14 @@ If you want to change the app icons, you have three options:
    Replace `public/icon-192.png` and `public/icon-512.png` with your own icons
 
 ### Updating App Metadata
-Edit `public/manifest.json` to change:
+Edit `src/Controller/ManifestController.php` to change:
 - `name` and `short_name` - App display names
 - `theme_color` - Browser UI color
 - `background_color` - Splash screen color
 - `description` - App description
 - `shortcuts` - Quick actions from home screen icon
+
+Note: The manifest is generated dynamically to support different basePaths, so there is no static `manifest.json` file.
 
 ### Service Worker Cache
 The service worker (`public/sw.js`) uses a network-first strategy:
