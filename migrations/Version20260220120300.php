@@ -21,15 +21,11 @@ final class Version20260220120300 extends AbstractMigration
     {
         $this->addSql("
             INSERT INTO changelog (id, version, title, changes, release_date, created_at, updated_at)
-            VALUES (
-                UUID(),
-                '1.0.1',
-                'Default Milestones and Ordering',
-                '[\"Added default General milestone to all projects\", \"Tasks auto-assigned to General if no milestone specified\", \"Added position-based ordering for projects, milestones, and tasks\", \"Added milestone reordering within projects (PROJECT_EDIT permission)\", \"Added admin project reordering (admin only)\", \"All Tasks page now respects project and milestone ordering\", \"Default milestone cannot be deleted or renamed\"]',
-                CURDATE(),
-                NOW(),
-                NOW()
-            )
+            SELECT UUID(), '1.0.1', 'Default Milestones and Ordering',
+                   '[\"New default General milestone in every project\", \"Tasks organized by project and milestone order\", \"Drag and drop to reorder projects and milestones\"]',
+                   CURDATE(), NOW(), NOW()
+            FROM DUAL
+            WHERE NOT EXISTS (SELECT 1 FROM changelog WHERE version = '1.0.1')
         ");
     }
 
