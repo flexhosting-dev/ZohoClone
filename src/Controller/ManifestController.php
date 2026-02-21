@@ -41,6 +41,18 @@ class ManifestController extends AbstractController
             'categories' => ['productivity', 'business'],
             'shortcuts' => [
                 [
+                    'name' => 'Projects',
+                    'short_name' => 'Projects',
+                    'description' => 'View all projects',
+                    'url' => ($basePath ?: '') . '/projects',
+                    'icons' => [
+                        [
+                            'src' => ($basePath ?: '') . '/icon-192.png',
+                            'sizes' => '192x192',
+                        ],
+                    ],
+                ],
+                [
                     'name' => 'My Tasks',
                     'short_name' => 'Tasks',
                     'description' => 'View your tasks',
@@ -53,10 +65,22 @@ class ManifestController extends AbstractController
                     ],
                 ],
                 [
-                    'name' => 'Projects',
-                    'short_name' => 'Projects',
-                    'description' => 'View all projects',
-                    'url' => ($basePath ?: '') . '/projects',
+                    'name' => 'All Tasks',
+                    'short_name' => 'All Tasks',
+                    'description' => 'View all tasks',
+                    'url' => ($basePath ?: '') . '/tasks',
+                    'icons' => [
+                        [
+                            'src' => ($basePath ?: '') . '/icon-192.png',
+                            'sizes' => '192x192',
+                        ],
+                    ],
+                ],
+                [
+                    'name' => 'Settings',
+                    'short_name' => 'Settings',
+                    'description' => 'Manage settings',
+                    'url' => ($basePath ?: '') . '/settings',
                     'icons' => [
                         [
                             'src' => ($basePath ?: '') . '/icon-192.png',
